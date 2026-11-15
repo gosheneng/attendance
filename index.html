@@ -2543,7 +2543,7 @@ const entryMin=e=>{const sp=span(e);return sp?sp[1]-sp[0]:0;};
 const totalMin=r=>(r.entries||[]).reduce((a,e)=>a+entryMin(e),0);
 function absMin(r,c){if(!c||!c.time)return null;return toMin(c.time)+(c.date&&c.date!==r.date?1440:0);}
 function stayMin(r){const a=absMin(r,r.checkIn),b=absMin(r,r.checkOut);return(a!=null&&b!=null)?b-a:null;}
-function nearest(lat,lng){let best=null;S.projects.filter(p=>p.active).forEach(p=>{const d=haversine(lat,lng,p.lat,p.lng);if(!best||d<best.d)best={p,d};});return best;}
+function nearest(lat,lng){let best=null;S.projects.filter(p=>p.active&&p.lat>33&&p.lng>124).forEach(p=>{const d=haversine(lat,lng,p.lat,p.lng);if(!best||d<best.d)best={p,d};});return best;}
 function locChip(c){
   if(!c)return '<span class="chip">미기록</span>';
   if(c.via==='qr'){const nm='QR';if(c.lat==null)return `<span class="chip c-out">${nm} · GPS없음</span>`;return c.inside?`<span class="chip c-in">${nm} · 위치일치 ${fmtDist(c.dist)}</span>`:`<span class="chip c-out">${nm} · 위치불일치 ${fmtDist(c.dist)}</span>`;}
@@ -3208,27 +3208,24 @@ async function aPin(id){const w=W(id);if(!(await confirmBox(`<b>${esc(w.name)}</
 /* ---------- 공사(현장) 관리 ---------- */
 function aProjects(){
   let h=`<div class="card"><div class="row"><h3 style="margin:0">공사(현장) 목록</h3><span class="sp"></span><button class="btn pri" onclick="aProjForm('')">+ 공사 등록</button></div>
-  <div class="row" style="margin:8px 0"><select style="width:auto" onchange="ui.pf=this.value;render()">${[['','진행 중 (사용·중지)'],['done','완료'],['all','전체']].map(([v,l])=>`<option value="${v}" ${(ui.pf||'')===v?'selected':''}>${l}</option>`).join('')}</select><span class="mute">"사용"인 공사만 근로자 드롭다운에 나타납니다. <b>완료</b>하거나 사용중지한 공사는 드롭다운에서 사라지고, 기존 기록은 그대로 남습니다.</span></div><div class="tbl-wrap"><table class="nw"><tr><th>발주번호</th><th>발주처</th><th>공사명</th><th>현장 좌표 · 반경</th><th>기록</th><th>사용</th><th>관리</th></tr>`;
+  <div class="row" style="margin:8px 0"><select style="width:auto" onchange="ui.pf=this.value;render()">${[['','진행 중 (사용·중지)'],['done','완료'],['all','전체']].map(([v,l])=>`<option value="${v}" ${(ui.pf||'')===v?'selected':''}>${l}</option>`).join('')}</select><span class="mute">"사용"인 공사만 근로자 드롭다운에 나타납니다. <b>완료</b>하거나 사용중지한 공사는 드롭다운에서 사라지고, 기존 기록은 그대로 남습니다.</span></div><div class="tbl-wrap"><table class="nw"><tr><th>발주번호</th><th>발주처</th><th>공사명</th><th>기록</th><th>사용</th><th>관리</th></tr>`;
   const pl=S.projects.filter(p=>ui.pf==='all'?true:ui.pf==='done'?p.done:!p.done);
-  if(!pl.length)h+=`<tr><td colspan="7" class="mute">해당하는 공사가 없습니다.</td></tr>`;
+  if(!pl.length)h+=`<tr><td colspan="6" class="mute">해당하는 공사가 없습니다.</td></tr>`;
   pl.forEach(p=>{const n=S.records.filter(r=>r.entries.some(e=>e.projectId===p.id)).length;
     const st=p.done?'<span class="chip st-pend">완료</span>':`<span class="chip ${p.active?'st-ok':'st-draft'}">${p.active?'사용':'중지'}</span>`;
-    h+=`<tr><td>${esc(p.code)||'-'}</td><td>${esc(p.client)||'-'}</td><td><b>${esc(p.name)}</b>${p.done&&p.doneAt?` <span class="mute">(${esc(p.doneAt.slice(0,10))} 완료)</span>`:''}</td><td>${p.lat}, ${p.lng} <span class="mute">· 반경 ${p.radius}m</span> <a href="${GMAP}${p.lat},${p.lng}" target="_blank" rel="noopener">지도</a></td><td>${n}건</td><td>${st}</td><td><button class="btn sm" onclick="aProjForm('${p.id}')">수정</button> ${p.done?`<button class="btn sm" onclick="aProjDone('${p.id}',false)">완료 취소</button>`:`<button class="btn sm ok" onclick="aProjDone('${p.id}',true)">완료</button> <button class="btn sm" onclick="aProjToggle('${p.id}')">${p.active?'사용중지':'다시 사용'}</button>`} <button class="btn sm bad" onclick="aProjDel('${p.id}')">삭제</button></td></tr>`;});
+    h+=`<tr><td>${esc(p.code)||'-'}</td><td>${esc(p.client)||'-'}</td><td><b>${esc(p.name)}</b>${p.done&&p.doneAt?` <span class="mute">(${esc(p.doneAt.slice(0,10))} 완료)</span>`:''}</td><td>${n}건</td><td>${st}</td><td><button class="btn sm" onclick="aProjForm('${p.id}')">수정</button> ${p.done?`<button class="btn sm" onclick="aProjDone('${p.id}',false)">완료 취소</button>`:`<button class="btn sm ok" onclick="aProjDone('${p.id}',true)">완료</button> <button class="btn sm" onclick="aProjToggle('${p.id}')">${p.active?'사용중지':'다시 사용'}</button>`} <button class="btn sm bad" onclick="aProjDel('${p.id}')">삭제</button></td></tr>`;});
   return h+'</table></div></div>';
 }
 function aProjForm(id){const p=id?P(id):{code:'',name:'',client:'',addr:'',lat:'',lng:'',radius:500,start:today(),end:'',active:true};
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h2 style="margin:0">${id?'공사 수정':'공사 등록'}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:12px"><label class="f"><span>발주번호</span><input id="fp_code" value="${esc(p.code)}" placeholder="발주처에서 받은 발주번호"></label><label class="f"><span>발주처</span><input id="fp_client" value="${esc(p.client)}"></label></div>
   <label class="f"><span>공사명 * (근로자 드롭다운에 표시)</span><input id="fp_name" value="${esc(p.name)}"></label>
-  <label class="f"><span>현장 주소</span><input id="fp_addr" value="${esc(p.addr)}"></label>
-  <div class="grid3"><label class="f"><span>위도 *</span><input id="fp_lat" inputmode="decimal" value="${p.lat}" placeholder="36.9890"></label><label class="f"><span>경도 *</span><input id="fp_lng" inputmode="decimal" value="${p.lng}" placeholder="126.7520"></label><label class="f"><span>출근 인정 반경(m)</span><input id="fp_rad" inputmode="numeric" value="${p.radius}"></label></div>
-  <p class="mute" style="margin-top:0">좌표 확인: 휴대폰 구글 지도에서 현장 위치를 길게 누르면 위도·경도가 표시됩니다. 제철소처럼 부지가 넓으면 반경을 크게 잡으세요.</p>
+  <p class="mute" style="margin-top:0">출퇴근 위치는 공사가 아니라 <b>출근 QR</b> 탭의 휴게쉼터(QR 장소)로 확인합니다.</p>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="aProjSave('${id}')">저장</button></div></div>`);}
 function aProjSave(id){const g=k=>document.getElementById(k).value.trim();
-  const name=g('fp_name'),lat=parseFloat(g('fp_lat')),lng=parseFloat(g('fp_lng')),radius=parseInt(g('fp_rad'))||500;
+  const name=g('fp_name');
   if(!name){toast('공사명을 입력하세요.');return;}
-  if(!(lat>33&&lat<39)||!(lng>124&&lng<132)){toast('위도·경도를 확인하세요 (국내 좌표 범위).');return;}
-  const data={code:g('fp_code'),name,client:g('fp_client'),addr:g('fp_addr'),lat,lng,radius};
+  const data={code:g('fp_code'),name,client:g('fp_client')};
   if(id){Object.assign(P(id),data);logG(ses.uid,'공사 수정',name);}
   else{S.projects.push(Object.assign({id:uid(),active:true,done:false},data));logG(ses.uid,'공사 등록',`${data.code?data.code+' ':''}${name}`);}
   save();closeModal();render();toast('저장했습니다.');}
@@ -3678,7 +3675,7 @@ aRejoinDo=function(id){const d=document.getElementById('rj_date').value;if(!d)re
 aPin=async function(id){const w=W(id);if(!(await confirmBox(`<b>${esc(w.name)}</b>의 비밀번호를 초기화할까요?\n\n다음 로그인 때 주민등록번호로 본인 확인 후 새 비밀번호를 직접 정하게 됩니다.`,'초기화')))return;run('resetPw',{id});};
 
 /* ----- 관리자: 공사 ----- */
-aProjSave=function(id){const g=k=>document.getElementById(k).value.trim();run('saveProject',{id,data:{code:g('fp_code'),client:g('fp_client'),name:g('fp_name'),addr:g('fp_addr'),lat:g('fp_lat'),lng:g('fp_lng'),radius:g('fp_rad')}},null,true).then(r=>{if(r)closeModal(),render();});};
+aProjSave=function(id){const g=k=>document.getElementById(k).value.trim();run('saveProject',{id,data:{code:g('fp_code'),client:g('fp_client'),name:g('fp_name'),}},null,true).then(r=>{if(r)closeModal(),render();});};
 aProjToggle=function(id){run('projectToggle',{id});};
 aProjDone=async function(id,on){const p=P(id);
   if(on){const pend=S.records.filter(r=>(r.status==='pending'||r.status==='draft')&&r.entries.some(e=>e.projectId===id)).length;
