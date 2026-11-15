@@ -88,6 +88,7 @@ table.led th{text-align:center;line-height:1.25}
 .mgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:0 8px}
 @media(max-width:640px){.mgrid{grid-template-columns:repeat(3,1fr)}}
 .mgrbox{margin:-4px 0 10px;padding:8px 10px;background:#eef5ff;border:1px solid #cfe0f7;border-radius:8px;font-size:14px}
+.kpi .k b small{font-size:.62em;font-weight:600;margin-left:1px;color:inherit;opacity:.8}.kpi .kfull{font-size:11px;color:var(--mute,#6b7280);margin-top:2px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -2964,6 +2965,10 @@ function histHtml(r){if(!r.history||!r.history.length)return '';return `<details
 function aTab(k){ui.aTab=k;render();}
 /* ---------- 기성준공 · 안전관리비 대장 ---------- */
 const won=v=>(v===''||v==null||!isFinite(Number(v)))?'':Number(v).toLocaleString('ko-KR');
+function wonK(v){v=Math.round(Number(v)||0);const neg=v<0;v=Math.abs(v);const e=Math.floor(v/1e8),m=Math.round((v%1e8)/1e4);let t;
+  if(e)t=`${e.toLocaleString('ko-KR')}<small>억</small>${m?` ${m.toLocaleString('ko-KR')}<small>만</small>`:''}`;else if(m)t=`${m.toLocaleString('ko-KR')}<small>만</small>`;else t=v.toLocaleString('ko-KR');
+  return (neg?'−':'')+t+'<small>원</small>';}
+const kWon=(v,c)=>`<b${c?` style="color:${c}"`:''}>${wonK(v)}</b><div class="kfull">${won(Math.round(Number(v)||0))||0}원</div>`;
 const pctS=v=>(v===''||v==null||!isFinite(v))?'':(Math.round(v*1000)/10)+'%';
 const msum=a=>(a||[]).reduce((t,v)=>t+(Number(v)||0),0);
 function numIn(v){const d=String(v==null?'':v).replace(/[^0-9-]/g,'');return (d===''||d==='-')?'':Number(d);}
@@ -2988,7 +2993,7 @@ function sList(){const y=ledY();return (S.safety||[]).filter(s=>Number(s.year)==
 const MH=[1,2,3,4,5,6,7,8,9,10,11,12];
 function aGisung(){const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=y===Number(today().slice(0,4));
   const tot={A:0,B:0,X:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.A+=x.c.A;tot.B+=x.c.B;tot.X+=x.c.X;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.g.m||[])[i])||0);});
-  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>수주금액 합계 (A)</span><b>${won(tot.A)}</b></div><div class="k"><span>당해년도 기성금</span><b style="color:var(--pri2)">${won(tot.X)}</b></div><div class="k"><span>이월 잔금 합계 (E)</span><b style="color:var(--warn)">${won(tot.E)}</b></div>${thisY?`<div class="k"><span>${cm}월 기성</span><b>${won(tot.m[cm-1])}</b></div>`:''}</div>
+  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>수주금액 합계 (A)</span>${kWon(tot.A)}</div><div class="k"><span>당해년도 기성금</span>${kWon(tot.X,'var(--pri2)')}</div><div class="k"><span>이월 잔금 합계 (E)</span>${kWon(tot.E,'var(--warn)')}</div>${thisY?`<div class="k"><span>${cm}월 기성</span>${kWon(tot.m[cm-1])}</div>`:''}</div>
   <div class="card"><div class="row"><h3 style="margin:0">${y}년 기성준공 관리대장</h3></div>${ledHead('g')}
   <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>PM</th><th>허가서<br>등록</th><th>계약<br>종료</th><th>수주금액<br>(A)</th><th>보험료<br>정산</th><th>전년도<br>기성금 (B)</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>기성<br>진행률</th><th>당해년도<br>기성금</th><th>이월 잔금<br>(E)</th></tr>`;
   if(!L.length)h+=`<tr><td colspan="24" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
@@ -3000,7 +3005,7 @@ function aGisung(){const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=
 function aSafety(){const y=ledY(),L=sList();
   const tot={D:0,C:0,S:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.D+=x.c.D;tot.C+=Number(x.s.carry)||0;tot.S+=x.c.S;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.s.m||[])[i])||0);});
   const overN=L.filter(x=>x.c.E!==''&&x.c.E<0).length;
-  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>계상된 안전관리비</span><b>${won(tot.D)}</b></div><div class="k"><span>사용 계 (D)</span><b style="color:var(--pri2)">${won(tot.S)}</b></div><div class="k"><span>잔액 합계 (E)</span><b>${won(tot.E)}</b></div><div class="k"><span>계상액 초과 공사</span><b style="color:var(--bad)">${overN}건</b></div></div>
+  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>계상된 안전관리비</span>${kWon(tot.D)}</div><div class="k"><span>사용 계 (D)</span>${kWon(tot.S,'var(--pri2)')}</div><div class="k"><span>잔액 합계 (E)</span>${kWon(tot.E)}</div><div class="k"><span>계상액 초과 공사</span><b style="color:var(--bad)">${overN}건</b></div></div>
   <div class="card"><div class="row"><h3 style="margin:0">${y}년 산업안전보건관리비 관리대장</h3></div>${ledHead('s')}
   <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>계상된<br>안전관리비</th><th>전년도<br>이월금</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>산안비<br>진행률</th><th>계 (D)</th><th>잔액 (E)</th></tr>`;
   if(!L.length)h+=`<tr><td colspan="20" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
