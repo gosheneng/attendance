@@ -87,6 +87,7 @@ table.led tr.tot td{background:#eef2f7;font-weight:600}
 table.led th{text-align:center;line-height:1.25}
 .mgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:0 8px}
 @media(max-width:640px){.mgrid{grid-template-columns:repeat(3,1fr)}}
+.mgrbox{margin:-4px 0 10px;padding:8px 10px;background:#eef5ff;border:1px solid #cfe0f7;border-radius:8px;font-size:14px}
 </style>
 </head>
 <body>
@@ -2910,16 +2911,20 @@ function summaryLine(r){
   const tot=totalMin(r),st=stayMin(r);
   return `<div style="margin-top:10px;padding:10px;background:#f7f9fb;border-radius:8px"><b>등록 근무시간 합계 ${fmtH(tot)}</b>${st!=null?` <span class="mute">· 출퇴근 체류 ${fmtH(st)} (차이 ${fmtH(st-tot)} — 휴게·이동 등)</span>`:''}</div>`;
 }
+function mgrLine(pid,small){const p=pid&&P(pid);if(!p||(!p.mgrName&&!p.mgrPhone))return '';
+  const ph=p.mgrPhone?`<a href="tel:${esc(p.mgrPhone)}" style="font-weight:600;white-space:nowrap">📞 ${esc(fmtPhone(p.mgrPhone))}</a>`:'';
+  if(small)return `<div class="mute" style="font-size:12px;margin-top:2px">담당 ${esc(p.mgrName||'')} ${ph}</div>`;
+  return `<div class="mgrbox">고센이엔지 담당자 <b>${esc(p.mgrName||'-')}</b>${ph?' · '+ph:''}</div>`;}
 function entriesEditor(es,ns,ed){
   if(!ed){
     if(!es.length)return '<p class="mute">등록된 작업이 없습니다.</p>';
-    return `<div class="tbl-wrap"><table><tr><th>공사</th><th>시간</th><th>작업내용</th><th>소계</th></tr>${es.map(e=>`<tr><td>${esc(pname(e.projectId))}</td><td style="white-space:nowrap">${e.start}~${e.end}${crosses(e)?' (익일)':''}</td><td>${esc(e.desc)}</td><td>${fmtH(entryMin(e))}</td></tr>`).join('')}</table></div>`;
+    return `<div class="tbl-wrap"><table><tr><th>공사</th><th>시간</th><th>작업내용</th><th>소계</th></tr>${es.map(e=>`<tr><td>${esc(pname(e.projectId))}${mgrLine(e.projectId,true)}</td><td style="white-space:nowrap">${e.start}~${e.end}${crosses(e)?' (익일)':''}</td><td>${esc(e.desc)}</td><td>${fmtH(entryMin(e))}</td></tr>`).join('')}</table></div>`;
   }
   const act=S.projects.filter(p=>p.active);let h='';
   es.forEach((e,i)=>{
     const opts=act.slice();if(e.projectId&&!act.find(p=>p.id===e.projectId)&&P(e.projectId))opts.push(P(e.projectId));
     h+=`<div class="entry"><div class="row"><b>작업 ${i+1}</b><span class="mute">${fmtH(entryMin(e))}</span><span class="sp"></span><button class="btn sm bad" onclick="entDel('${ns}',${i})">삭제</button></div>
-    <label class="f" style="margin-top:6px"><span>공사 선택</span><select onchange="entSet('${ns}',${i},'projectId',this.value)"><option value="">— 공사를 선택하세요 —</option>${opts.map(p=>`<option value="${p.id}" ${p.id===e.projectId?'selected':''}>${esc(p.name)}${p.active?'':' (사용중지)'}</option>`).join('')}</select></label>
+    <label class="f" style="margin-top:6px"><span>공사 선택</span><select onchange="entSet('${ns}',${i},'projectId',this.value)"><option value="">— 공사를 선택하세요 —</option>${opts.map(p=>`<option value="${p.id}" ${p.id===e.projectId?'selected':''}>${esc(p.name)}${p.active?'':' (사용중지)'}</option>`).join('')}</select></label>${mgrLine(e.projectId)}
     <div class="grid2 g2fixed"><label class="f"><span>시작</span><input type="time" value="${e.start||''}" onchange="entSet('${ns}',${i},'start',this.value)"></label><label class="f"><span>종료${crosses(e)?' (익일)':''}</span><input type="time" value="${e.end||''}" onchange="entSet('${ns}',${i},'end',this.value)"></label></div>
     <label class="f" style="margin-bottom:0"><span>작업내용</span><textarea rows="2" placeholder="예: 열연 2호기 롤 레벨 측정" onchange="entSet('${ns}',${i},'desc',this.value)">${esc(e.desc)}</textarea></label></div>`;
   });
