@@ -81,6 +81,12 @@ label.f>span{display:block;margin-bottom:4px}
 .consent table td,.consent table th{font-size:13px}
 .plan li{margin-bottom:6px}
 @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr}.demo-acc{grid-template-columns:1fr}.wrap{padding:10px}}
+table.led td.num{text-align:right;font-variant-numeric:tabular-nums}
+table.led tr.click{cursor:pointer}table.led tr.click:hover td{background:#f3f7fd}
+table.led tr.tot td{background:#eef2f7;font-weight:600}
+table.led th{text-align:center;line-height:1.25}
+.mgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:0 8px}
+@media(max-width:640px){.mgrid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -2506,7 +2512,7 @@ function addQrDefaults(D){
 }
 
 /* ---------- 저장소 ---------- */
-function load(){if(LIVE)return {projects:[],workers:[],records:[],log:[],spots:[],leaves:[],settings:{qrOnly:true,strict:true},seq:{}};try{const t=localStorage.getItem(KEY);if(t)return addQrDefaults(JSON.parse(t));}catch(e){}return seed();}
+function load(){if(LIVE)return {projects:[],workers:[],records:[],log:[],spots:[],leaves:[],gisung:[],safety:[],settings:{qrOnly:true,strict:true},seq:{}};try{const t=localStorage.getItem(KEY);if(t)return addQrDefaults(JSON.parse(t));}catch(e){}return seed();}
 const KEEP='goshen_attendance_keep';
 function keepGet(){try{return localStorage.getItem(KEEP)||'';}catch(e){return '';}}
 function keepSet(v){try{v?localStorage.setItem(KEEP,v):localStorage.removeItem(KEEP);}catch(e){}}
@@ -2951,11 +2957,115 @@ function histHtml(r){if(!r.history||!r.history.length)return '';return `<details
    관리자 화면
    ========================================================= */
 function aTab(k){ui.aTab=k;render();}
+/* ---------- 기성준공 · 안전관리비 대장 ---------- */
+const won=v=>(v===''||v==null||!isFinite(Number(v)))?'':Number(v).toLocaleString('ko-KR');
+const pctS=v=>(v===''||v==null||!isFinite(v))?'':(Math.round(v*1000)/10)+'%';
+const msum=a=>(a||[]).reduce((t,v)=>t+(Number(v)||0),0);
+function numIn(v){const d=String(v==null?'':v).replace(/[^0-9-]/g,'');return (d===''||d==='-')?'':Number(d);}
+function wonInput(el){const neg=/^-/.test(el.value.trim());const d=el.value.replace(/[^0-9]/g,'');el.value=d?(neg?'-':'')+Number(d).toLocaleString('ko-KR'):(neg?'-':'');ledPreview();}
+function ledY(){return Number(ui.ly||today().slice(0,4));}
+function ledYears(){const ys=new Set([Number(today().slice(0,4))]);(S.gisung||[]).concat(S.safety||[]).forEach(r=>ys.add(Number(r.year)));return [...ys].sort((a,b)=>b-a);}
+function gCalc(p,g){const A=Number(p&&p.amount)||0,B=Number(g&&g.prev)||0,X=msum(g&&g.m);return {A,B,X,rate:A?(B+X)/A:'',E:A?A-B-X:''};}
+function sCalc(s){const D=Number(s&&s.budget)||0,S2=(Number(s&&s.carry)||0)+msum(s&&s.m);return {D,S:S2,rate:D?S2/D:'',E:D?D-S2:''};}
+function pCode(p){return p.code||((p.client||'').split('\n')[0])||'-';}
+const ledSort=(a,b)=>((a.p.plant||'').localeCompare(b.p.plant||'','ko'))||((a.p.name||'').localeCompare(b.p.name||'','ko'));
+function ledCsv(name,head,rows){const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const t='﻿'+[head].concat(rows).map(r=>r.map(q).join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function ledHead(kind){const y=ledY(),ys=ledYears();
+  return `<div class="row" style="margin:8px 0;flex-wrap:wrap;gap:6px"><select style="width:auto" onchange="ui.ly=this.value;render()">${ys.map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}년</option>`).join('')}</select>
+  <select style="width:auto" onchange="ui.lf=this.value;render()">${[['','전체'],['open','잔액 남음'],['closed','잔액 없음(완료)']].map(([v,l])=>`<option value="${v}" ${(ui.lf||'')===v?'selected':''}>${l}</option>`).join('')}</select>
+  <input style="width:200px" placeholder="공장명·공사명·발주번호 검색" value="${esc(ui.lq||'')}" onchange="ui.lq=this.value;render()">
+  <span class="sp"></span><button class="btn" onclick="ledAddForm('${kind}')">+ 대장에 공사 추가</button><button class="btn" onclick="ledExport('${kind}')">엑셀(CSV) 내려받기</button><button class="btn" onclick="ledRoll()">${y+1}년 대장 만들기</button></div>`;}
+function ledMatch(p,c){const q=(ui.lq||'').trim();if(q&&![p.plant,p.name,p.code,p.client,p.mgrName].some(v=>String(v||'').includes(q)))return false;
+  if(ui.lf==='open')return c.E===''||c.E>0;if(ui.lf==='closed')return c.E!==''&&c.E<=0;return true;}
+function gList(){const y=ledY();return (S.gisung||[]).filter(g=>Number(g.year)===y).map(g=>({g,p:P(g.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:gCalc(x.p,x.g)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
+function sList(){const y=ledY();return (S.safety||[]).filter(s=>Number(s.year)===y).map(s=>({s,p:P(s.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:sCalc(x.s)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
+const MH=[1,2,3,4,5,6,7,8,9,10,11,12];
+function aGisung(){const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=y===Number(today().slice(0,4));
+  const tot={A:0,B:0,X:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.A+=x.c.A;tot.B+=x.c.B;tot.X+=x.c.X;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.g.m||[])[i])||0);});
+  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>수주금액 합계 (A)</span><b>${won(tot.A)}</b></div><div class="k"><span>당해년도 기성금</span><b style="color:var(--pri2)">${won(tot.X)}</b></div><div class="k"><span>이월 잔금 합계 (E)</span><b style="color:var(--warn)">${won(tot.E)}</b></div>${thisY?`<div class="k"><span>${cm}월 기성</span><b>${won(tot.m[cm-1])}</b></div>`:''}</div>
+  <div class="card"><div class="row"><h3 style="margin:0">${y}년 기성준공 관리대장</h3></div>${ledHead('g')}
+  <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>PM</th><th>허가서<br>등록</th><th>계약<br>종료</th><th>수주금액<br>(A)</th><th>보험료<br>정산</th><th>전년도<br>기성금 (B)</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>기성<br>진행률</th><th>당해년도<br>기성금</th><th>이월 잔금<br>(E)</th></tr>`;
+  if(!L.length)h+=`<tr><td colspan="24" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
+  const td=today();
+  L.forEach(x=>{const p=x.p,g=x.g,c=x.c;const over=p.contractEnd&&p.contractEnd<td&&(c.E===''||c.E>0);
+    h+=`<tr class="click" onclick="gForm('${g.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.mgrName||'')}</td><td style="text-align:center">${p.permit?'✔':'<span class="mute">–</span>'}</td><td${over?' style="color:var(--bad);font-weight:600" title="계약 종료일 지남 · 잔금 남음"':''}>${esc(p.contractEnd||'')}</td><td class="num">${won(p.amount)}</td><td style="text-align:center">${p.insSettled?'✔':'<span class="mute">–</span>'}</td><td class="num">${won(g.prev)}</td>${MH.map((_,i)=>`<td class="num">${won((g.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>=1?'style="color:var(--ok);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.X)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad)"':''}>${won(c.E)}</td></tr>`;});
+  if(L.length)h+=`<tr class="tot"><td colspan="6"><b>계</b></td><td class="num">${won(tot.A)}</td><td></td><td class="num">${won(tot.B)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td></td><td class="num"><b>${won(tot.X)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
+  return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 월별 기성금과 PM·계약 종료·허가서·보험료 정산을 고칠 수 있습니다. 진행률 = (전년도 기성금 + 당해년도 기성금) ÷ 수주금액, 이월 잔금 = 수주금액 − 누적 기성금.</p></div>`;}
+function aSafety(){const y=ledY(),L=sList();
+  const tot={D:0,C:0,S:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.D+=x.c.D;tot.C+=Number(x.s.carry)||0;tot.S+=x.c.S;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.s.m||[])[i])||0);});
+  const overN=L.filter(x=>x.c.E!==''&&x.c.E<0).length;
+  let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>계상된 안전관리비</span><b>${won(tot.D)}</b></div><div class="k"><span>사용 계 (D)</span><b style="color:var(--pri2)">${won(tot.S)}</b></div><div class="k"><span>잔액 합계 (E)</span><b>${won(tot.E)}</b></div><div class="k"><span>계상액 초과 공사</span><b style="color:var(--bad)">${overN}건</b></div></div>
+  <div class="card"><div class="row"><h3 style="margin:0">${y}년 산업안전보건관리비 관리대장</h3></div>${ledHead('s')}
+  <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>계상된<br>안전관리비</th><th>전년도<br>이월금</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>산안비<br>진행률</th><th>계 (D)</th><th>잔액 (E)</th></tr>`;
+  if(!L.length)h+=`<tr><td colspan="20" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
+  L.forEach(x=>{const p=x.p,s=x.s,c=x.c;
+    h+=`<tr class="click" onclick="sForm('${s.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b></td><td class="num">${won(s.budget)}</td><td class="num">${won(s.carry)}</td>${MH.map((_,i)=>`<td class="num">${won((s.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>1?'style="color:var(--bad);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.S)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad);font-weight:600"':''}>${won(c.E)}</td></tr>`;});
+  if(L.length)h+=`<tr class="tot"><td colspan="3"><b>계</b></td><td class="num">${won(tot.D)}</td><td class="num">${won(tot.C)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td class="num">${pctS(tot.D?tot.S/tot.D:'')}</td><td class="num"><b>${won(tot.S)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
+  return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 계상액과 월별 사용액을 고칠 수 있습니다. 계(D) = 전년도 이월금 + 1~12월 사용액, 잔액(E) = 계상된 안전관리비 − 계(D). 잔액이 빨간색이면 계상액을 넘은 것입니다.</p></div>`;}
+function mGrid(m){return `<div class="mgrid">${MH.map((mm,i)=>`<label class="f"><span>${mm}월</span><input id="lm_${i}" inputmode="numeric" value="${won((m||[])[i])}" oninput="wonInput(this)"></label>`).join('')}</div>`;}
+function gForm(id){const g=(S.gisung||[]).find(x=>x.id===id);if(!g)return;const p=P(g.projectId)||{};ui.ledEdit={kind:'g',id};
+  openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">기성 수정 · ${g.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
+  <p style="margin:6px 0 10px"><b>${esc(p.name||'')}</b><br><span class="mute">${esc(pCode(p))} · ${esc(p.plant||'')}</span></p>
+  <div class="grid3"><label class="f"><span>PM (고센이엔지 담당자)</span><input id="lg_mgr" value="${esc(p.mgrName||'')}"></label><label class="f"><span>계약 종료</span><input id="lg_end" type="date" value="${esc(p.contractEnd||'')}"></label><label class="f"><span>수주금액 (A)</span><input id="lg_amt" inputmode="numeric" value="${won(p.amount)}" oninput="wonInput(this)"></label></div>
+  <div class="row" style="gap:18px;margin-bottom:8px"><label><input type="checkbox" id="lg_permit" ${p.permit?'checked':''}> 허가서 등록</label><label><input type="checkbox" id="lg_ins" ${p.insSettled?'checked':''}> 보험료 정산</label></div>
+  <label class="f" style="max-width:240px"><span>전년도 기성금 (B)</span><input id="lg_prev" inputmode="numeric" value="${won(g.prev)}" oninput="wonInput(this)"></label>
+  <h4 style="margin:6px 0">${g.year}년 월별 기성금</h4>${mGrid(g.m)}
+  <label class="f"><span>메모</span><input id="lg_memo" value="${esc(g.memo||'')}"></label>
+  <div class="infobox" id="led_pv" style="margin:6px 0"></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn bad" onclick="ledDel('g','${g.id}')">대장에서 빼기</button><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="gSave('${g.id}')">저장</button></div></div>`);ledPreview();}
+function sForm(id){const s=(S.safety||[]).find(x=>x.id===id);if(!s)return;const p=P(s.projectId)||{};ui.ledEdit={kind:'s',id};
+  openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">안전관리비 수정 · ${s.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
+  <p style="margin:6px 0 10px"><b>${esc(p.name||'')}</b><br><span class="mute">${esc(pCode(p))} · ${esc(p.plant||'')}</span></p>
+  <div class="grid2"><label class="f"><span>계상된 안전관리비</span><input id="ls_budget" inputmode="numeric" value="${won(s.budget)}" oninput="wonInput(this)"></label><label class="f"><span>전년도 이월금 (이전 연도까지 사용액)</span><input id="ls_carry" inputmode="numeric" value="${won(s.carry)}" oninput="wonInput(this)"></label></div>
+  <h4 style="margin:6px 0">${s.year}년 월별 사용액</h4>${mGrid(s.m)}
+  <label class="f"><span>메모</span><input id="lg_memo" value="${esc(s.memo||'')}"></label>
+  <div class="infobox" id="led_pv" style="margin:6px 0"></div>
+  <div class="row" style="justify-content:flex-end"><button class="btn bad" onclick="ledDel('s','${s.id}')">대장에서 빼기</button><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="sSave('${s.id}')">저장</button></div></div>`);ledPreview();}
+function ledVal(id){const e=document.getElementById(id);return e?numIn(e.value):'';}
+function ledMs(){return MH.map((_,i)=>ledVal('lm_'+i));}
+function ledPreview(){const b=document.getElementById('led_pv');if(!b||!ui.ledEdit)return;
+  if(ui.ledEdit.kind==='g'){const c=gCalc({amount:ledVal('lg_amt')},{prev:ledVal('lg_prev'),m:ledMs()});b.innerHTML=`당해년도 기성금 <b>${won(c.X)||0}</b> · 진행률 <b>${pctS(c.rate)||'-'}</b> · 이월 잔금 <b>${won(c.E)||'-'}</b>`;}
+  else{const c=sCalc({budget:ledVal('ls_budget'),carry:ledVal('ls_carry'),m:ledMs()});b.innerHTML=`계(D) <b>${won(c.S)||0}</b> · 진행률 <b>${pctS(c.rate)||'-'}</b> · 잔액 <b${c.E!==''&&c.E<0?' style="color:var(--bad)"':''}>${won(c.E)||'-'}</b>${c.E!==''&&c.E<0?' (계상액 초과)':''}`;}}
+async function gSave(id){const g=S.gisung.find(x=>x.id===id);const memo=document.getElementById('lg_memo').value.trim();
+  await ledDo('save',{kind:'g',id,projectId:g.projectId,year:g.year,data:{prev:ledVal('lg_prev'),m:ledMs(),memo},proj:{mgrName:document.getElementById('lg_mgr').value.trim(),contractEnd:document.getElementById('lg_end').value,amount:ledVal('lg_amt'),permit:document.getElementById('lg_permit').checked,insSettled:document.getElementById('lg_ins').checked}});}
+async function sSave(id){const s=S.safety.find(x=>x.id===id);const memo=document.getElementById('lg_memo').value.trim();
+  await ledDo('save',{kind:'s',id,projectId:s.projectId,year:s.year,data:{budget:ledVal('ls_budget'),carry:ledVal('ls_carry'),m:ledMs(),memo}});}
+async function ledDel(kind,id){if(!(await confirmBox('이 공사를 이 연도 대장에서 뺄까요?\n\n입력한 월별 금액도 함께 지워집니다. (공사 자체는 그대로 남습니다)','빼기')))return;await ledDo('del',{kind,id});}
+function ledAddForm(kind){const y=ledY(),has=new Set((kind==='g'?(S.gisung||[]):(S.safety||[])).filter(r=>Number(r.year)===y).map(r=>r.projectId));
+  const ps=S.projects.filter(p=>!has.has(p.id)).sort((a,b)=>((a.plant||'').localeCompare(b.plant||'','ko'))||a.name.localeCompare(b.name,'ko'));
+  openModal(`<div class="mbox" style="max-width:560px"><div class="row"><h2 style="margin:0">${y}년 ${kind==='g'?'기성준공':'안전관리비'} 대장에 추가</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
+  ${ps.length?`<label class="f" style="margin-top:12px"><span>공사 선택</span><select id="la_p">${ps.map(p=>`<option value="${p.id}">${esc((p.plant?p.plant+' · ':'')+p.name)}${p.done?' (완료)':''}</option>`).join('')}</select></label>
+  ${kind==='s'?`<label class="f"><span>계상된 안전관리비</span><input id="ls_budget" inputmode="numeric" oninput="wonInput(this)"></label>`:''}`:`<p class="mute">추가할 공사가 없습니다. 먼저 공사(현장) 관리에서 공사를 등록하세요.</p>`}
+  <p class="mute">목록에 없는 공사는 <b>공사(현장) 관리</b>에서 먼저 등록하세요.</p>
+  <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button>${ps.length?`<button class="btn pri" onclick="ledAdd('${kind}')">추가</button>`:''}</div></div>`);}
+async function ledAdd(kind){const pid=document.getElementById('la_p').value;const data={m:[]};if(kind==='s')data.budget=ledVal('ls_budget');
+  const r=await ledDo('save',{kind,projectId:pid,year:ledY(),data});if(r!==null){const row=(kind==='g'?S.gisung:S.safety).find(x=>x.projectId===pid&&Number(x.year)===ledY());if(row)(kind==='g'?gForm:sForm)(row.id);}}
+async function ledRoll(){const y=ledY();if(!(await confirmBox(`${y}년 대장에서 ${y+1}년 대장을 만들까요?\n\n· 기성: 이월 잔금이 남은 공사만 옮기고, 지금까지의 누적 기성금을 "전년도 기성금"으로 넣습니다.\n· 안전관리비: 옮겨진 공사만, 지금까지 사용액을 "전년도 이월금"으로 넣습니다.\n· 이미 ${y+1}년에 있는 공사는 건너뜁니다.`,'만들기')))return;
+  const r=await ledDo('roll',{year:y});if(r!==null){ui.ly=y+1;render();}}
+function ledExport(kind){const y=ledY();
+  if(kind==='g'){const L=gList();ledCsv(`${y}년_기성준공_관리대장`,['발주번호','발주처','공장명','공사명','PM','허가서등록','계약종료','수주금액(A)','보험료정산','전년도기성금(B)'].concat(MH.map(m=>m+'월'),['기성진행률','당해년도기성금','이월잔금(E)','메모']),
+    L.map(x=>[x.p.code||'',x.p.client||'',x.p.plant||'',x.p.name,x.p.mgrName||'',x.p.permit?'O':'',x.p.contractEnd||'',x.p.amount,x.p.insSettled?'O':'',x.g.prev].concat(MH.map((_,i)=>(x.g.m||[])[i]),[pctS(x.c.rate),x.c.X,x.c.E,x.g.memo||''])));}
+  else{const L=sList();ledCsv(`${y}년_안전관리비_관리대장`,['발주번호','공장명','공사명','계상된안전관리비','전년도이월금'].concat(MH.map(m=>m+'월'),['산안비진행률','계(D)','잔액(E)','메모']),
+    L.map(x=>[x.p.code||'',x.p.plant||'',x.p.name,x.s.budget,x.s.carry].concat(MH.map((_,i)=>(x.s.m||[])[i]),[pctS(x.c.rate),x.c.S,x.c.E,x.s.memo||''])));}}
+/* 시제품(브라우저 저장) 동작 — 운영판에서는 서버 호출로 바뀜 */
+async function ledDo(op,p){S.gisung=S.gisung||[];S.safety=S.safety||[];const T=p.kind==='g'?S.gisung:S.safety;
+  if(op==='save'){let o=p.id?T.find(x=>x.id===p.id):T.find(x=>x.projectId===p.projectId&&Number(x.year)===Number(p.year));if(!o){o={id:uid(),projectId:p.projectId,year:Number(p.year)};T.push(o);}
+    const d=p.data||{};o.m=MH.map((_,i)=>{const v=(d.m||[])[i];return v===''||v==null?'':Number(v);});o.memo=d.memo||'';if(p.kind==='g')o.prev=d.prev===undefined?'':d.prev;else{o.budget=d.budget===undefined?'':d.budget;o.carry=d.carry===undefined?'':d.carry;}
+    if(p.proj){Object.assign(P(p.projectId),p.proj);}logG(ses.uid,p.kind==='g'?'기성 저장':'안전관리비 저장',`${p.year}년 ${P(p.projectId).name}`);save();closeModal();render();toast('저장했습니다.');return {};}
+  if(op==='del'){const i=T.findIndex(x=>x.id===p.id);if(i>=0)T.splice(i,1);save();closeModal();render();toast('대장에서 뺐습니다.');return {};}
+  if(op==='roll'){const y=Number(p.year),ny=y+1,moved={};let ng=0,ns=0;
+    S.gisung.filter(g=>Number(g.year)===y).forEach(g=>{const pj=P(g.projectId);if(!pj)return;const done=(Number(g.prev)||0)+msum(g.m),A=Number(pj.amount)||0;if(A&&done>=A)return;moved[g.projectId]=1;
+      if(S.gisung.some(x=>x.projectId===g.projectId&&Number(x.year)===ny))return;S.gisung.push({id:uid(),projectId:g.projectId,year:ny,prev:done,m:MH.map(()=>''),memo:''});ng++;});
+    S.safety.filter(s=>Number(s.year)===y&&moved[s.projectId]).forEach(s=>{if(S.safety.some(x=>x.projectId===s.projectId&&Number(x.year)===ny))return;S.safety.push({id:uid(),projectId:s.projectId,year:ny,budget:s.budget,carry:(Number(s.carry)||0)+msum(s.m),m:MH.map(()=>''),memo:''});ns++;});
+    save();render();toast(`${ny}년 대장을 만들었습니다. (기성 ${ng}건, 안전관리비 ${ns}건)`);return {};}
+  return null;}
+
 function vAdmin(me){
   const pend=S.records.filter(r=>r.status==='pending').length;
   let h=`<div class="top"><div class="brand">전자 출근부 · 관리자</div><span class="sp"></span><button class="btn sm" onclick="ui.asWorker=true;ui.wTab='today';render()">근로자 화면</button><button class="btn sm" onclick="logout()">로그아웃</button></div><div class="wrap">`;
-  h+=tabs([['dash','대시보드'],['appr','승인 관리',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['proj','공사(현장) 관리'],['qr','출근 QR'],['log','변경 이력'],['next','2단계 안내']],ui.aTab,'aTab');
-  const f={leave:aLeaveTab,dash:aDash,appr:aAppr,month:aMonth,workers:aWorkers,proj:aProjects,qr:aQr,log:aLog,next:aNext}[ui.aTab];
+  h+=tabs([['dash','대시보드'],['appr','승인 관리',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['proj','공사(현장) 관리'],['gisung','기성준공'],['safety','안전관리비'],['qr','출근 QR'],['log','변경 이력'],['next','2단계 안내']],ui.aTab,'aTab');
+  const f={leave:aLeaveTab,dash:aDash,appr:aAppr,month:aMonth,workers:aWorkers,proj:aProjects,gisung:aGisung,safety:aSafety,qr:aQr,log:aLog,next:aNext}[ui.aTab];
   return h+f()+'</div>';
 }
 function aDash(){
@@ -3528,7 +3638,7 @@ function call(op,p){
 let busyN=0;
 function busy(on){busyN+=on?1:-1;let b=document.getElementById('busy');if(!b){b=document.createElement('div');b.id='busy';b.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.55);z-index:80;display:none;align-items:center;justify-content:center';b.innerHTML='<div style="background:#fff;border:1px solid #e1e5eb;border-radius:12px;padding:16px 22px;text-align:center"><div class="spin"></div>처리 중…</div>';document.body.appendChild(b);}b.style.display=busyN>0?'flex':'none';}
 function applyState(st){
-  S.leaves=st.leaves||[];S.workers=st.workers;S.projects=st.projects;S.spots=st.spots;S.records=st.records;S.log=st.log||[];S.settings=st.settings;S.recFrom=st.recFrom;
+  S.leaves=st.leaves||[];S.gisung=st.gisung||[];S.safety=st.safety||[];S.workers=st.workers;S.projects=st.projects;S.spots=st.spots;S.records=st.records;S.log=st.log||[];S.settings=st.settings;S.recFrom=st.recFrom;
   ses.uid=st.me.id;ses.setup=null;ses.setupW=null;
 }
 function failMsg(e){
@@ -3700,6 +3810,7 @@ doSignup=async function(){const d=signupRead();if(!d)return;busy(true);
 aSignApprove=function(id){const d=signForm();run('signupApprove',{id,data:d},null,true).then(r=>{if(r)closeModal(),render();});};
 aSignRejectDo=function(id){const r=document.getElementById('sr_r').value.trim();if(!r){toast('반려 사유를 입력하세요.');return;}run('signupReject',{id,reason:r});};
 /* ----- 연차 ----- */
+ledDo=async function(op,p){const map={save:'ledgerSave',del:'ledgerDel',roll:'ledgerRollover'};const r=await run(map[op],p,null);return r;};
 lvDo=async function(op,p,okMsg){return await run('leave_'+op,p,okMsg);};
 
 /* ----- 파일 저장: 인쇄용은 새 창, CSV는 구글 드라이브에 저장 ----- */
