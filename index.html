@@ -3073,30 +3073,32 @@ function ledHead(kind){const y=ledY(),ys=ledYears();
   return `<div class="row" style="margin:8px 0;flex-wrap:wrap;gap:6px"><select style="width:auto" onchange="ui.ly=this.value;render()">${ys.map(v=>`<option value="${v}" ${v===y?'selected':''}>${v}년</option>`).join('')}</select>
   <select style="width:auto" onchange="ui.lf=this.value;render()">${[['','전체'],['open','잔액 남음'],['closed','잔액 없음(완료)']].map(([v,l])=>`<option value="${v}" ${(ui.lf||'')===v?'selected':''}>${l}</option>`).join('')}</select>
   <input style="width:200px" placeholder="공장명·공사명·발주번호 검색" value="${esc(ui.lq||'')}" onchange="ui.lq=this.value;render()">
-  <span class="sp"></span><button class="btn" onclick="ledAddForm('${kind}')">+ 대장에 공사 추가</button><button class="btn" onclick="ledExport('${kind}')">엑셀(CSV) 내려받기</button><button class="btn" onclick="ledRoll()">${y+1}년 대장 만들기</button></div>`;}
+  <span class="sp"></span><button class="btn" onclick="ledExport('${kind}')">엑셀(CSV) 내려받기</button><button class="btn" onclick="ledRoll()">${y+1}년 대장 만들기</button></div>`;}
 function ledMatch(p,c){const q=(ui.lq||'').trim();if(q&&![p.plant,p.name,p.code,p.client,p.mgrName].some(v=>String(v||'').includes(q)))return false;
   if(ui.lf==='open')return c.E===''||c.E>0;if(ui.lf==='closed')return c.E!==''&&c.E<=0;return true;}
 function gList(){const y=ledY();return (S.gisung||[]).filter(g=>Number(g.year)===y).map(g=>({g,p:P(g.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:gCalc(x.p,x.g)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
 function sList(){const y=ledY();return (S.safety||[]).filter(s=>Number(s.year)===y).map(s=>({s,p:P(s.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:sCalc(x.s)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
 const MH=[1,2,3,4,5,6,7,8,9,10,11,12];
-function aGisung(){const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=y===Number(today().slice(0,4));
+function ledEnsureDemo(){if(LIVE)return;const y=Number(today().slice(0,4));S.gisung=S.gisung||[];S.safety=S.safety||[];let n=0;S.projects.forEach(p=>{const dy=p.done&&p.doneAt?Number(String(p.doneAt).slice(0,4)):null;if(dy&&dy<y)return;if(!S.gisung.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.gisung.push({id:uid(),projectId:p.id,year:y,prev:'',m:MH.map(()=>''),memo:''});n++;}if(!S.safety.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.safety.push({id:uid(),projectId:p.id,year:y,budget:'',carry:'',m:MH.map(()=>''),memo:''});n++;}});if(n)save();}
+const LED_NOTE='<div class="infobox" style="margin:8px 0">발주번호·공장명·공사명은 <b>공사정보등록</b>의 내용이 그대로 들어옵니다. 공사를 등록하면 기성준공·안전관리비 대장에 <b>자동으로</b> 올라가고, 대장에서 빠지지 않습니다. 이름을 고치려면 공사정보등록에서 고치세요.</div>';
+function aGisung(){ledEnsureDemo();const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=y===Number(today().slice(0,4));
   const tot={A:0,B:0,X:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.A+=x.c.A;tot.B+=x.c.B;tot.X+=x.c.X;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.g.m||[])[i])||0);});
   let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>수주금액 합계 (A)</span>${kWon(tot.A)}</div><div class="k"><span>당해년도 기성금</span>${kWon(tot.X,'var(--pri2)')}</div><div class="k"><span>이월 잔금 합계 (E)</span>${kWon(tot.E,'var(--warn)')}</div>${thisY?`<div class="k"><span>${cm}월 기성</span>${kWon(tot.m[cm-1])}</div>`:''}</div>
-  <div class="card"><div class="row"><h3 style="margin:0">${y}년 기성준공 관리대장</h3></div>${ledHead('g')}
+  <div class="card"><div class="row"><h3 style="margin:0">${y}년 기성준공 관리대장</h3></div>${LED_NOTE}${ledHead('g')}
   <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>PM</th><th>허가서<br>등록</th><th>계약<br>종료</th><th>수주금액<br>(A)</th><th>보험료<br>정산</th><th>전년도<br>기성금 (B)</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>기성<br>진행률</th><th>당해년도<br>기성금</th><th>이월 잔금<br>(E)</th></tr>`;
-  if(!L.length)h+=`<tr><td colspan="24" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
+  if(!L.length)h+=`<tr><td colspan="24" class="mute">공사정보등록에 등록된 공사가 없습니다.</td></tr>`;
   const td=today();
   L.forEach(x=>{const p=x.p,g=x.g,c=x.c;const over=p.contractEnd&&p.contractEnd<td&&(c.E===''||c.E>0);
     h+=`<tr class="click" onclick="gForm('${g.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b></td><td>${esc(p.mgrName||'')}</td><td style="text-align:center">${p.permit?'✔':'<span class="mute">–</span>'}</td><td${over?' style="color:var(--bad);font-weight:600" title="계약 종료일 지남 · 잔금 남음"':''}>${esc(p.contractEnd||'')}</td><td class="num">${won(p.amount)}</td><td style="text-align:center">${p.insSettled?'✔':'<span class="mute">–</span>'}</td><td class="num">${won(g.prev)}</td>${MH.map((_,i)=>`<td class="num">${won((g.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>=1?'style="color:var(--ok);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.X)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad)"':''}>${won(c.E)}</td></tr>`;});
   if(L.length)h+=`<tr class="tot"><td colspan="6"><b>계</b></td><td class="num">${won(tot.A)}</td><td></td><td class="num">${won(tot.B)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td></td><td class="num"><b>${won(tot.X)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
   return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 월별 기성금과 PM·계약 종료·허가서·보험료 정산을 고칠 수 있습니다. 진행률 = (전년도 기성금 + 당해년도 기성금) ÷ 수주금액, 이월 잔금 = 수주금액 − 누적 기성금.</p></div>`;}
-function aSafety(){const y=ledY(),L=sList();
+function aSafety(){ledEnsureDemo();const y=ledY(),L=sList();
   const tot={D:0,C:0,S:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.D+=x.c.D;tot.C+=Number(x.s.carry)||0;tot.S+=x.c.S;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.s.m||[])[i])||0);});
   const overN=L.filter(x=>x.c.E!==''&&x.c.E<0).length;
   let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>계상된 안전관리비</span>${kWon(tot.D)}</div><div class="k"><span>사용 계 (D)</span>${kWon(tot.S,'var(--pri2)')}</div><div class="k"><span>잔액 합계 (E)</span>${kWon(tot.E)}</div><div class="k"><span>계상액 초과 공사</span><b style="color:var(--bad)">${overN}건</b></div></div>
-  <div class="card"><div class="row"><h3 style="margin:0">${y}년 산업안전보건관리비 관리대장</h3></div>${ledHead('s')}
+  <div class="card"><div class="row"><h3 style="margin:0">${y}년 산업안전보건관리비 관리대장</h3></div>${LED_NOTE}${ledHead('s')}
   <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>계상된<br>안전관리비</th><th>전년도<br>이월금</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>산안비<br>진행률</th><th>계 (D)</th><th>잔액 (E)</th></tr>`;
-  if(!L.length)h+=`<tr><td colspan="20" class="mute">대장에 올린 공사가 없습니다. "+ 대장에 공사 추가"를 누르세요.</td></tr>`;
+  if(!L.length)h+=`<tr><td colspan="20" class="mute">공사정보등록에 등록된 공사가 없습니다.</td></tr>`;
   L.forEach(x=>{const p=x.p,s=x.s,c=x.c;
     h+=`<tr class="click" onclick="sForm('${s.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b></td><td class="num">${won(s.budget)}</td><td class="num">${won(s.carry)}</td>${MH.map((_,i)=>`<td class="num">${won((s.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>1?'style="color:var(--bad);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.S)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad);font-weight:600"':''}>${won(c.E)}</td></tr>`;});
   if(L.length)h+=`<tr class="tot"><td colspan="3"><b>계</b></td><td class="num">${won(tot.D)}</td><td class="num">${won(tot.C)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td class="num">${pctS(tot.D?tot.S/tot.D:'')}</td><td class="num"><b>${won(tot.S)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
@@ -3111,7 +3113,7 @@ function gForm(id){const g=(S.gisung||[]).find(x=>x.id===id);if(!g)return;const 
   <h4 style="margin:6px 0">${g.year}년 월별 기성금</h4>${mGrid(g.m)}
   <label class="f"><span>메모</span><input id="lg_memo" value="${esc(g.memo||'')}"></label>
   <div class="infobox" id="led_pv" style="margin:6px 0"></div>
-  <div class="row" style="justify-content:flex-end"><button class="btn bad" onclick="ledDel('g','${g.id}')">대장에서 빼기</button><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="gSave('${g.id}')">저장</button></div></div>`);ledPreview();}
+  <div class="row" style="justify-content:flex-end"><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="gSave('${g.id}')">저장</button></div></div>`);ledPreview();}
 function sForm(id){const s=(S.safety||[]).find(x=>x.id===id);if(!s)return;const p=P(s.projectId)||{};ui.ledEdit={kind:'s',id};
   openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">안전관리비 수정 · ${s.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <p style="margin:6px 0 10px"><b>${esc(p.name||'')}</b><br><span class="mute">${esc(pCode(p))} · ${esc(p.plant||'')}</span></p>
@@ -3119,7 +3121,7 @@ function sForm(id){const s=(S.safety||[]).find(x=>x.id===id);if(!s)return;const 
   <h4 style="margin:6px 0">${s.year}년 월별 사용액</h4>${mGrid(s.m)}
   <label class="f"><span>메모</span><input id="lg_memo" value="${esc(s.memo||'')}"></label>
   <div class="infobox" id="led_pv" style="margin:6px 0"></div>
-  <div class="row" style="justify-content:flex-end"><button class="btn bad" onclick="ledDel('s','${s.id}')">대장에서 빼기</button><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="sSave('${s.id}')">저장</button></div></div>`);ledPreview();}
+  <div class="row" style="justify-content:flex-end"><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="sSave('${s.id}')">저장</button></div></div>`);ledPreview();}
 function ledVal(id){const e=document.getElementById(id);return e?numIn(e.value):'';}
 function ledMs(){return MH.map((_,i)=>ledVal('lm_'+i));}
 function ledPreview(){const b=document.getElementById('led_pv');if(!b||!ui.ledEdit)return;
