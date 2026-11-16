@@ -2652,7 +2652,7 @@ async function saveFile(filename,data){
    렌더링
    ========================================================= */
 /* ---------- 메뉴별 권한 ---------- */
-const MENUS=[['dash','대시보드'],['cal','회사 일정'],['appr','승인 관리'],['month','월간 출근부'],['qr','출근 QR'],['proj','공사(현장) 관리'],['workers','근로자 관리'],['leave','연차 관리'],['gisung','기성준공'],['safety','안전관리비'],['log','변경 이력']];
+const MENUS=[['dash','대시보드'],['cal','회사 일정'],['appr','승인 관리'],['month','월간 출근부'],['qr','출근 QR'],['proj','공사정보등록'],['workers','근로자 관리'],['leave','연차 관리'],['gisung','기성준공'],['safety','안전관리비'],['log','변경 이력']];
 const MENU_KEYS=MENUS.map(m=>m[0]);
 function permsOf(w){if(!w)return [];if(w.role==='admin')return MENU_KEYS.slice();if(w.role!=='manager')return [];return String(w.perms||'').split(',').filter(k=>MENU_KEYS.indexOf(k)>=0);}
 const isStaff=w=>permsOf(w).length>0;
@@ -3134,8 +3134,8 @@ function ledAddForm(kind){const y=ledY(),has=new Set((kind==='g'?(S.gisung||[]):
   const ps=S.projects.filter(p=>!has.has(p.id)).sort((a,b)=>((a.plant||'').localeCompare(b.plant||'','ko'))||a.name.localeCompare(b.name,'ko'));
   openModal(`<div class="mbox" style="max-width:560px"><div class="row"><h2 style="margin:0">${y}년 ${kind==='g'?'기성준공':'안전관리비'} 대장에 추가</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   ${ps.length?`<label class="f" style="margin-top:12px"><span>공사 선택</span><select id="la_p">${ps.map(p=>`<option value="${p.id}">${esc((p.plant?p.plant+' · ':'')+p.name)}${p.done?' (완료)':''}</option>`).join('')}</select></label>
-  ${kind==='s'?`<label class="f"><span>계상된 안전관리비</span><input id="ls_budget" inputmode="numeric" oninput="wonInput(this)"></label>`:''}`:`<p class="mute">추가할 공사가 없습니다. 먼저 공사(현장) 관리에서 공사를 등록하세요.</p>`}
-  <p class="mute">목록에 없는 공사는 <b>공사(현장) 관리</b>에서 먼저 등록하세요.</p>
+  ${kind==='s'?`<label class="f"><span>계상된 안전관리비</span><input id="ls_budget" inputmode="numeric" oninput="wonInput(this)"></label>`:''}`:`<p class="mute">추가할 공사가 없습니다. 먼저 공사정보등록에서 공사를 등록하세요.</p>`}
+  <p class="mute">목록에 없는 공사는 <b>공사정보등록</b>에서 먼저 등록하세요.</p>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button>${ps.length?`<button class="btn pri" onclick="ledAdd('${kind}')">추가</button>`:''}</div></div>`);}
 async function ledAdd(kind){const pid=document.getElementById('la_p').value;const data={m:[]};if(kind==='s')data.budget=ledVal('ls_budget');
   const r=await ledDo('save',{kind,projectId:pid,year:ledY(),data});if(r!==null){const row=(kind==='g'?S.gisung:S.safety).find(x=>x.projectId===pid&&Number(x.year)===ledY());if(row)(kind==='g'?gForm:sForm)(row.id);}}
@@ -3241,7 +3241,7 @@ async function calDo(op,p){if(op==='list'){const cals=[{id:'c1',name:'1. 현장�
 function vAdmin(me){
   const pend=S.records.filter(r=>r.status==='pending').length;
   let h=`<div class="top"><div class="brand">전자 출근부 · ${me.role==='admin'?'관리자':'메뉴 담당'}</div><span class="sp"></span><button class="btn sm" onclick="ui.asWorker=true;ui.wTab='today';render()">근로자 화면</button><button class="btn sm" onclick="logout()">로그아웃</button></div><div class="wrap">`;
-  const allT=[['dash','대시보드'],['appr','승인 관리',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['proj','공사(현장) 관리'],['gisung','기성준공'],['safety','안전관리비'],['cal','회사 일정'],['qr','출근 QR'],['log','변경 이력'],['next','2단계 안내']];
+  const allT=[['dash','대시보드'],['appr','승인 관리',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['proj','공사정보등록'],['gisung','기성준공'],['safety','안전관리비'],['cal','회사 일정'],['qr','출근 QR'],['log','변경 이력'],['next','2단계 안내']];
   const P=permsOf(me),tl=allT.filter(t=>t[0]==='next'?me.role==='admin':P.indexOf(t[0])>=0);
   if(!tl.find(t=>t[0]===ui.aTab))ui.aTab=tl[0][0];
   /* 메뉴 묶음: 큰 메뉴 → 아래 작은 탭 */
@@ -3511,9 +3511,9 @@ function aRejoin(id){const w=W(id);openModal(`<div class="mbox" style="max-width
 function aRejoinDo(id){const d=document.getElementById('rj_date').value;if(!d)return;const w=W(id);logG(ses.uid,'재입사',`${w.name} 이전 근무 ${w.join}~${w.leave}, 재입사 ${d}`);w.status='재직';w.join=d;w.leave='';save();closeModal();render();toast('재입사 처리했습니다.');}
 async function aPin(id){const w=W(id);if(!(await confirmBox(`<b>${esc(w.name)}</b>의 비밀번호를 초기화할까요?\n\n다음 로그인 때 주민등록번호로 본인 확인 후 새 비밀번호를 직접 정하게 됩니다.`,'초기화')))return;w.pw='';logG(ses.uid,'비밀번호 초기화',w.name);save();render();toast('비밀번호를 초기화했습니다.');}
 
-/* ---------- 공사(현장) 관리 ---------- */
+/* ---------- 공사정보등록 ---------- */
 function aProjects(){
-  let h=`<div class="card"><div class="row"><h3 style="margin:0">공사(현장) 목록</h3><span class="sp"></span><button class="btn pri" onclick="aProjForm('')">+ 공사 등록</button></div>
+  let h=`<div class="card"><div class="row"><h3 style="margin:0">등록된 공사 목록</h3><span class="sp"></span><button class="btn pri" onclick="aProjForm('')">+ 공사 등록</button></div>
   <div class="row" style="margin:8px 0"><select style="width:auto" onchange="ui.pf=this.value;render()">${[['','진행 중 (사용·중지)'],['done','완료'],['all','전체']].map(([v,l])=>`<option value="${v}" ${(ui.pf||'')===v?'selected':''}>${l}</option>`).join('')}</select><span class="mute">"사용"인 공사만 근로자 드롭다운에 나타납니다. <b>완료</b>하거나 사용중지한 공사는 드롭다운에서 사라지고, 기존 기록은 그대로 남습니다.</span></div><div class="tbl-wrap"><table class="nw"><tr><th>발주번호</th><th>발주처</th><th>공장명</th><th>공사명</th><th>공사금액</th><th>고센이엔지 담당자</th><th>담당자 연락처</th><th>기록</th><th>사용</th><th>관리</th></tr>`;
   const pl=S.projects.filter(p=>ui.pf==='all'?true:ui.pf==='done'?p.done:!p.done);
   if(!pl.length)h+=`<tr><td colspan="10" class="mute">해당하는 공사가 없습니다.</td></tr>`;
