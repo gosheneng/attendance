@@ -2678,7 +2678,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.16b';
+const APP_VER='2026.11.16c';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
   const demo=S.workers.slice().sort((a,b)=>(a.role==='admin'?-1:0)-(b.role==='admin'?-1:0));
@@ -4294,9 +4294,10 @@ function langSel(){const a=document.getElementById('app');if(!a)return;const old
    운영판(구글 Apps Script) 전용 — 서버와 연동하는 부분
    시제품의 같은 이름 함수를 서버 호출 방식으로 바꿉니다.
    ========================================================= */
+/* iOS 16(사파리·카카오톡) 호환: 블록 안 함수가 let 변수를 못 찾는 문제 → var 사용 */
 if(LIVE){
-let TOKEN='';
-const TK='goshen_tok';
+var TOKEN='';
+var TK='goshen_tok';
 function tokGet(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK)||'';}catch(e){return TOKEN;}}
 function tokSet(t,keep){TOKEN=t||'';try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
 function call(op,p){
@@ -4310,7 +4311,7 @@ function call(op,p){
         e=>{if(e&&e.name==='AbortError')throw new Error('서버 응답이 늦습니다. 잠시 후 다시 눌러 주세요.');throw (e&&e.message&&e.message.indexOf('서버')===0)?e:new Error('인터넷 연결을 확인해 주세요.\n('+((e&&(e.name+': '+e.message))||e)+')');});
   }
   return new Promise((res,rej)=>{google.script.run.withSuccessHandler(r=>{if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;rej(e);}else res(r||{});}).withFailureHandler(e=>rej(new Error((e&&e.message)||String(e)))).api(TOKEN,op,p||{});});}
-let busyN=0;
+var busyN=0;
 function busy(on){busyN+=on?1:-1;let b=document.getElementById('busy');if(!b){b=document.createElement('div');b.id='busy';b.style.cssText='position:fixed;inset:0;background:rgba(255,255,255,.55);z-index:80;display:none;align-items:center;justify-content:center';b.innerHTML='<div style="background:#fff;border:1px solid #e1e5eb;border-radius:12px;padding:16px 22px;text-align:center"><div class="spin"></div>처리 중…</div>';document.body.appendChild(b);}b.style.display=busyN>0?'flex':'none';}
 function applyState(st){
   S.leaves=st.leaves||[];S.leaveCal=st.leaveCal||[];S.gisung=st.gisung||[];S.safety=st.safety||[];S.workers=st.workers;S.projects=st.projects;S.spots=st.spots;S.records=st.records;S.log=st.log||[];S.settings=st.settings;S.recFrom=st.recFrom;
@@ -4397,7 +4398,7 @@ doCheck=async function(kind,dateArg){
 };
 
 /* ----- 작업 내역 · 사후 입력 (자동 저장) ----- */
-let syncT=null,syncDate=null,syncP=Promise.resolve();
+var syncT=null,syncDate=null,syncP=Promise.resolve();
 function scheduleSync(){syncDate=curDate();clearTimeout(syncT);syncT=setTimeout(flushSync,700);}
 function flushSync(){
   clearTimeout(syncT);syncT=null;const date=syncDate;if(!date)return syncP;
@@ -4408,7 +4409,7 @@ function flushSync(){
   return syncP;
 }
 ensureRec=function(wid,date,manual){let r=recOf(wid,date);if(!r){r={id:'',workerId:wid,date,checkIn:null,checkOut:null,entries:[],status:'draft',rejectReason:'',submittedAt:'',decidedBy:'',decidedAt:'',manual:!!manual,manualReason:'',history:[]};S.records.push(r);}return r;};
-const _entRerender=entRerender;
+var _entRerender=entRerender;
 entRerender=function(ns){if(ns==='a'){renderAdminModal();return;}render();scheduleSync();};
 setManual=function(kind,v){
   const r=ensureRec(ses.uid,curDate(),true);if(!editable(r))return;
@@ -4447,14 +4448,14 @@ aDelete=async function(){
   await run('deleteRecord',{id:o.id},'삭제했습니다.');ui.sel.delete(o.id);
 };
 /* 지난 기간 기록 불러오기 (월간 출근부·승인 관리) */
-const loadingFrom={};
+var loadingFrom={};
 function ensureFrom(from){
   if(!from||!S.recFrom||from>=S.recFrom||loadingFrom[from])return false;
   loadingFrom[from]=1;
   call('records',{from,to:S.recFrom}).then(r=>{const have=new Set(S.records.map(x=>x.id));r.records.forEach(x=>{if(!have.has(x.id))S.records.push(x);});S.recFrom=from;delete loadingFrom[from];render();}).catch(e=>{delete loadingFrom[from];failMsg(e);});
   return true;
 }
-const _aMonth=aMonth,_aAppr=aAppr;
+var _aMonth=aMonth,_aAppr=aAppr;
 aMonth=function(){if(ensureFrom(ui.month+'-01'))return '<div class="card"><div class="spin"></div><p class="mute" style="text-align:center">지난 기록을 불러오는 중…</p></div>';return _aMonth();};
 aAppr=function(){if(ensureFrom(ui.f.from))return '<div class="card"><div class="spin"></div><p class="mute" style="text-align:center">지난 기록을 불러오는 중…</p></div>';return _aAppr();};
 
