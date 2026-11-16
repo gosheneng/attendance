@@ -3077,9 +3077,10 @@ function ledHead(kind){const y=ledY(),ys=ledYears();
 function ledMatch(p,c){const q=(ui.lq||'').trim();if(q&&![p.plant,p.name,p.code,p.client,p.mgrName].some(v=>String(v||'').includes(q)))return false;
   if(ui.lf==='open')return c.E===''||c.E>0;if(ui.lf==='closed')return c.E!==''&&c.E<=0;return true;}
 function gList(){const y=ledY();return (S.gisung||[]).filter(g=>Number(g.year)===y).map(g=>({g,p:P(g.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:gCalc(x.p,x.g)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
-function sList(){const y=ledY();return (S.safety||[]).filter(s=>Number(s.year)===y).map(s=>({s,p:P(s.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:sCalc(x.s)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
+function sUsed(x){return x.budget!==''&&x.budget!=null||x.carry!==''&&x.carry!=null||(x.m||[]).some(v=>v!==''&&v!=null);}
+function sList(){const y=ledY();return (S.safety||[]).filter(s=>Number(s.year)===y&&!((P(s.projectId)||{}).noSafety&&!sUsed(s))).map(s=>({s,p:P(s.projectId)||{name:'(삭제된 공사)'}})).map(x=>Object.assign(x,{c:sCalc(x.s)})).filter(x=>ledMatch(x.p,x.c)).sort(ledSort);}
 const MH=[1,2,3,4,5,6,7,8,9,10,11,12];
-function ledEnsureDemo(){if(LIVE)return;const y=Number(today().slice(0,4));S.gisung=S.gisung||[];S.safety=S.safety||[];let n=0;S.projects.forEach(p=>{const dy=p.done&&p.doneAt?Number(String(p.doneAt).slice(0,4)):null;if(dy&&dy<y)return;if(!S.gisung.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.gisung.push({id:uid(),projectId:p.id,year:y,prev:'',m:MH.map(()=>''),memo:''});n++;}if(!S.safety.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.safety.push({id:uid(),projectId:p.id,year:y,budget:'',carry:'',m:MH.map(()=>''),memo:''});n++;}});if(n)save();}
+function ledEnsureDemo(){if(LIVE)return;const y=Number(today().slice(0,4));S.gisung=S.gisung||[];S.safety=S.safety||[];let n=0;S.projects.forEach(p=>{const dy=p.done&&p.doneAt?Number(String(p.doneAt).slice(0,4)):null;if(dy&&dy<y)return;if(!S.gisung.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.gisung.push({id:uid(),projectId:p.id,year:y,prev:'',m:MH.map(()=>''),memo:''});n++;}if(!p.noSafety&&!S.safety.some(r=>r.projectId===p.id&&Number(r.year)===y)){S.safety.push({id:uid(),projectId:p.id,year:y,budget:'',carry:'',m:MH.map(()=>''),memo:''});n++;}});if(n)save();}
 const LED_NOTE='<div class="infobox" style="margin:8px 0">발주번호·공장명·공사명은 <b>공사정보등록</b>의 내용이 그대로 들어옵니다. 공사를 등록하면 기성준공·안전관리비 대장에 <b>자동으로</b> 올라가고, 대장에서 빠지지 않습니다. 이름을 고치려면 공사정보등록에서 고치세요.</div>';
 function aGisung(){ledEnsureDemo();const y=ledY(),L=gList(),cm=Number(today().slice(5,7)),thisY=y===Number(today().slice(0,4));
   const tot={A:0,B:0,X:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.A+=x.c.A;tot.B+=x.c.B;tot.X+=x.c.X;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.g.m||[])[i])||0);});
@@ -3100,9 +3101,15 @@ function aSafety(){ledEnsureDemo();const y=ledY(),L=sList();
   <div class="tbl-wrap"><table class="nw led"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th>계상된<br>안전관리비</th><th>전년도<br>이월금</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>산안비<br>진행률</th><th>계 (D)</th><th>잔액 (E)</th></tr>`;
   if(!L.length)h+=`<tr><td colspan="20" class="mute">공사정보등록에 등록된 공사가 없습니다.</td></tr>`;
   L.forEach(x=>{const p=x.p,s=x.s,c=x.c;
-    h+=`<tr class="click" onclick="sForm('${s.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b></td><td class="num">${won(s.budget)}</td><td class="num">${won(s.carry)}</td>${MH.map((_,i)=>`<td class="num">${won((s.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>1?'style="color:var(--bad);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.S)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad);font-weight:600"':''}>${won(c.E)}</td></tr>`;});
+    h+=`<tr class="click" onclick="sForm('${s.id}')"><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b>${p.noSafety?' <span class="chip st-draft">대상 아님</span>':''}</td><td class="num">${won(s.budget)}</td><td class="num">${won(s.carry)}</td>${MH.map((_,i)=>`<td class="num">${won((s.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>1?'style="color:var(--bad);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.S)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad);font-weight:600"':''}>${won(c.E)}</td></tr>`;});
   if(L.length)h+=`<tr class="tot"><td colspan="3"><b>계</b></td><td class="num">${won(tot.D)}</td><td class="num">${won(tot.C)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td class="num">${pctS(tot.D?tot.S/tot.D:'')}</td><td class="num"><b>${won(tot.S)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
-  return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 계상액과 월별 사용액을 고칠 수 있습니다. 계(D) = 전년도 이월금 + 1~12월 사용액, 잔액(E) = 계상된 안전관리비 − 계(D). 잔액이 빨간색이면 계상액을 넘은 것입니다.</p></div>`;}
+  return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 계상액과 월별 사용액을 고칠 수 있습니다. 계(D) = 전년도 이월금 + 1~12월 사용액, 잔액(E) = 계상된 안전관리비 − 계(D). 잔액이 빨간색이면 계상액을 넘은 것입니다.</p></div>`+noSafeCard();}
+function noSafeCard(){const ex=S.projects.filter(p=>p.noSafety).sort((a,b)=>(a.plant||'').localeCompare(b.plant||'','ko')||a.name.localeCompare(b.name,'ko'));
+  return `<div class="card"><h3 style="margin:0 0 6px">안전관리비 대상 아닌 공사 (${ex.length}건)</h3>${ex.length?`<div class="tbl-wrap"><table class="nw"><tr><th>발주번호</th><th>공장명</th><th>공사명</th><th></th></tr>${ex.map(p=>`<tr><td>${esc(pCode(p))}</td><td>${esc(p.plant||'')}</td><td>${esc(p.name)}</td><td><button class="btn sm" onclick="noSafeSet('${p.id}',false)">대상으로 되돌리기</button></td></tr>`).join('')}</table></div>`:'<p class="mute" style="margin:0">없습니다. 안전관리비가 없는 공사는 대장의 행을 눌러 "안전관리비 대상 아님"을 체크하거나, 공사정보등록에서 체크하세요.</p>'}</div>`;}
+async function noSafeSet(pid,on){const p=P(pid);if(!p)return;
+  if(on&&!(await confirmBox(`<b>${esc(p.name)}</b>\n\n안전관리비 대상 아님으로 표시할까요?\n금액이 입력되지 않은 안전관리비 줄은 대장에서 빠집니다. (입력된 금액은 지워지지 않습니다)`,'표시'))){render();return;}
+  if(LIVE){closeModal();await noSafeLive(pid,on);return;}
+  p.noSafety=on;if(on)S.safety=S.safety.filter(x=>!(x.projectId===pid&&!sUsed(x)));else ledEnsureDemo();closeModal();save();render();toast(on?'안전관리비 대상 아님으로 표시했습니다.':'안전관리비 대상으로 바꿨습니다.');}
 function mGrid(m){return `<div class="mgrid">${MH.map((mm,i)=>`<label class="f"><span>${mm}월</span><input id="lm_${i}" inputmode="numeric" value="${won((m||[])[i])}" oninput="wonInput(this)"></label>`).join('')}</div>`;}
 function gForm(id){const g=(S.gisung||[]).find(x=>x.id===id);if(!g)return;const p=P(g.projectId)||{};ui.ledEdit={kind:'g',id};
   openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">기성 수정 · ${g.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
@@ -3118,6 +3125,7 @@ function sForm(id){const s=(S.safety||[]).find(x=>x.id===id);if(!s)return;const 
   openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">안전관리비 수정 · ${s.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <p style="margin:6px 0 10px"><b>${esc(p.name||'')}</b><br><span class="mute">${esc(pCode(p))} · ${esc(p.plant||'')}</span></p>
   <div class="grid2"><label class="f"><span>계상된 안전관리비</span><input id="ls_budget" inputmode="numeric" value="${won(s.budget)}" oninput="wonInput(this)"></label><label class="f"><span>전년도 이월금 (이전 연도까지 사용액)</span><input id="ls_carry" inputmode="numeric" value="${won(s.carry)}" oninput="wonInput(this)"></label></div>
+  <label class="row" style="gap:8px;margin-bottom:8px"><input type="checkbox" style="width:auto" ${p.noSafety?'checked':''} onchange="noSafeSet('${p.id}',this.checked)"> <b>안전관리비 대상 아님</b> <span class="mute">(체크하면 바로 대장에서 빠집니다)</span></label>
   <h4 style="margin:6px 0">${s.year}년 월별 사용액</h4>${mGrid(s.m)}
   <label class="f"><span>메모</span><input id="lg_memo" value="${esc(s.memo||'')}"></label>
   <div class="infobox" id="led_pv" style="margin:6px 0"></div>
@@ -3521,7 +3529,7 @@ function aProjects(){
   if(!pl.length)h+=`<tr><td colspan="10" class="mute">해당하는 공사가 없습니다.</td></tr>`;
   pl.forEach(p=>{const n=S.records.filter(r=>r.entries.some(e=>e.projectId===p.id)).length;
     const st=p.done?'<span class="chip st-pend">완료</span>':`<span class="chip ${p.active?'st-ok':'st-draft'}">${p.active?'사용':'중지'}</span>`;
-    h+=`<tr><td>${esc(p.code)||'-'}</td><td>${esc(p.client)||'-'}</td><td>${esc(p.plant)||'-'}</td><td><b>${esc(p.name)}</b>${p.done&&p.doneAt?` <span class="mute">(${esc(p.doneAt.slice(0,10))} 완료)</span>`:''}</td><td style="text-align:right">${rateShow(p.amount)}</td><td>${esc(p.mgrName)||'-'}</td><td>${p.mgrPhone?`<a href="tel:${esc(p.mgrPhone)}">${esc(fmtPhone(p.mgrPhone))}</a>`:'-'}</td><td>${n}건</td><td>${st}</td><td><button class="btn sm" onclick="aProjForm('${p.id}')">수정</button> ${p.done?`<button class="btn sm" onclick="aProjDone('${p.id}',false)">완료 취소</button>`:`<button class="btn sm ok" onclick="aProjDone('${p.id}',true)">완료</button> <button class="btn sm" onclick="aProjToggle('${p.id}')">${p.active?'사용중지':'다시 사용'}</button>`} <button class="btn sm bad" onclick="aProjDel('${p.id}')">삭제</button></td></tr>`;});
+    h+=`<tr><td>${esc(p.code)||'-'}</td><td>${esc(p.client)||'-'}</td><td>${esc(p.plant)||'-'}</td><td><b>${esc(p.name)}</b>${p.noSafety?' <span class="chip st-draft" title="안전관리비 대장 제외">안전관리비 제외</span>':''}${p.done&&p.doneAt?` <span class="mute">(${esc(p.doneAt.slice(0,10))} 완료)</span>`:''}</td><td style="text-align:right">${rateShow(p.amount)}</td><td>${esc(p.mgrName)||'-'}</td><td>${p.mgrPhone?`<a href="tel:${esc(p.mgrPhone)}">${esc(fmtPhone(p.mgrPhone))}</a>`:'-'}</td><td>${n}건</td><td>${st}</td><td><button class="btn sm" onclick="aProjForm('${p.id}')">수정</button> ${p.done?`<button class="btn sm" onclick="aProjDone('${p.id}',false)">완료 취소</button>`:`<button class="btn sm ok" onclick="aProjDone('${p.id}',true)">완료</button> <button class="btn sm" onclick="aProjToggle('${p.id}')">${p.active?'사용중지':'다시 사용'}</button>`} <button class="btn sm bad" onclick="aProjDel('${p.id}')">삭제</button></td></tr>`;});
   return h+'</table></div></div>';
 }
 function aProjForm(id){const p=id?P(id):{code:'',name:'',client:'',addr:'',lat:'',lng:'',radius:500,start:today(),end:'',active:true};
@@ -3530,13 +3538,14 @@ function aProjForm(id){const p=id?P(id):{code:'',name:'',client:'',addr:'',lat:'
   <div class="grid2"><label class="f"><span>공장명</span><input id="fp_plant" value="${esc(p.plant)}" placeholder="예: 당진제철소 C열연공장"></label><label class="f"><span>공사명 * (근로자 드롭다운에 표시)</span><input id="fp_name" value="${esc(p.name)}"></label></div>
   <div class="grid2"><label class="f"><span>공사금액 (원)</span><input id="fp_amount" inputmode="numeric" value="${p.amount===''||p.amount==null?'':Number(p.amount).toLocaleString('ko-KR')}" placeholder="예: 15,000,000" oninput="const d=this.value.replace(/\\D/g,'');this.value=d?Number(d).toLocaleString('ko-KR'):''"></label><span></span></div>
   <div class="grid2"><label class="f"><span>고센이엔지 담당자 이름</span><input id="fp_mgr" value="${esc(p.mgrName)}"></label><label class="f"><span>고센이엔지 담당자 연락처 (숫자만)</span><input id="fp_mgrph" inputmode="numeric" value="${esc(p.mgrPhone)}" placeholder="01012345678" oninput="this.value=this.value.replace(/\\D/g,'')"></label></div>
+  <label class="row" style="margin:4px 0 10px;gap:8px"><input type="checkbox" id="fp_nosafe" style="width:auto" ${p.noSafety?'checked':''}> <span><b>안전관리비 대상 아님</b> <span class="mute">— 체크하면 안전관리비 대장에 올라가지 않습니다 (기성준공 대장에는 그대로 올라감)</span></span></label>
   <p class="mute" style="margin-top:0">출퇴근 위치는 공사가 아니라 <b>출근 QR</b> 탭의 휴게쉼터(QR 장소)로 확인합니다.</p>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="aProjSave('${id}')">저장</button></div></div>`);}
 function aProjSave(id){const g=k=>document.getElementById(k).value.trim();
   const name=g('fp_name');
   if(!name){toast('공사명을 입력하세요.');return;}
   const amt=g('fp_amount').replace(/[,\s원]/g,'');
-  const data={code:g('fp_code'),name,client:g('fp_client'),plant:g('fp_plant'),amount:amt===''?'':Number(amt),mgrName:g('fp_mgr'),mgrPhone:g('fp_mgrph').replace(/\D/g,'')};
+  const data={code:g('fp_code'),name,client:g('fp_client'),plant:g('fp_plant'),amount:amt===''?'':Number(amt),mgrName:g('fp_mgr'),mgrPhone:g('fp_mgrph').replace(/\D/g,''),noSafety:document.getElementById('fp_nosafe').checked};
   if(id){Object.assign(P(id),data);logG(ses.uid,'공사 수정',name);}
   else{S.projects.push(Object.assign({id:uid(),active:true,done:false},data));logG(ses.uid,'공사 등록',`${data.code?data.code+' ':''}${name}`);}
   save();closeModal();render();toast('저장했습니다.');}
@@ -4429,7 +4438,7 @@ aRejoinDo=function(id){const d=document.getElementById('rj_date').value;if(!d)re
 aPin=async function(id){const w=W(id);if(!(await confirmBox(`<b>${esc(w.name)}</b>의 비밀번호를 초기화할까요?\n\n다음 로그인 때 주민등록번호로 본인 확인 후 새 비밀번호를 직접 정하게 됩니다.`,'초기화')))return;run('resetPw',{id});};
 
 /* ----- 관리자: 공사 ----- */
-aProjSave=function(id){const g=k=>document.getElementById(k).value.trim();run('saveProject',{id,data:{code:g('fp_code'),client:g('fp_client'),plant:g('fp_plant'),name:g('fp_name'),amount:g('fp_amount'),mgrName:g('fp_mgr'),mgrPhone:g('fp_mgrph')}},null,true).then(r=>{if(r)closeModal(),render();});};
+aProjSave=function(id){const g=k=>document.getElementById(k).value.trim();run('saveProject',{id,data:{code:g('fp_code'),client:g('fp_client'),plant:g('fp_plant'),name:g('fp_name'),amount:g('fp_amount'),mgrName:g('fp_mgr'),mgrPhone:g('fp_mgrph'),noSafety:document.getElementById('fp_nosafe').checked}},null,true).then(r=>{if(r)closeModal(),render();});};
 aProjToggle=function(id){run('projectToggle',{id});};
 aProjDone=async function(id,on){const p=P(id);
   if(on){const pend=S.records.filter(r=>(r.status==='pending'||r.status==='draft')&&r.entries.some(e=>e.projectId===id)).length;
@@ -4452,6 +4461,7 @@ aSignApprove=function(id){const d=signForm();run('signupApprove',{id,data:d},nul
 aSignRejectDo=function(id){const r=document.getElementById('sr_r').value.trim();if(!r){toast('반려 사유를 입력하세요.');return;}run('signupReject',{id,reason:r});};
 /* ----- 연차 ----- */
 calDo=async function(op,p){return await call({list:'calList',save:'calSave',del:'calDel'}[op],p);};
+window.noSafeLive=async function(pid,on){return await run('setNoSafety',{id:pid,on},null);};
 ledDo=async function(op,p){const map={save:'ledgerSave',del:'ledgerDel',roll:'ledgerRollover'};const r=await run(map[op],p,null);return r;};
 lvDo=async function(op,p,okMsg){return await run('leave_'+op,p,okMsg);};
 
