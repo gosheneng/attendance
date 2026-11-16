@@ -3079,7 +3079,7 @@ function pCode(p){return p.code||((p.client||'').split('\n')[0])||'-';}
 /* 대장 순서 = 공사정보등록 목록 순서, 완료된 공사는 아래 별도 구역 */
 const ledIdx=p=>{const i=S.projects.indexOf(p);return i<0?1e9:i;};
 const ledSort=(a,b)=>((a.p.done?1:0)-(b.p.done?1:0))||(ledIdx(a.p)-ledIdx(b.p));
-function ledSec(p,done,cols){return p.done&&!done.v?(done.v=1,`<tr class="sec"><td colspan="${cols}">✔ 완료된 공사 (${done.n}건) — 공사정보등록에서 완료 처리한 공사입니다</td></tr>`):'';}
+function ledSec(p,done,cols){return p.done&&!done.v?(done.v=1,`<tr class="sec"><td colspan="${cols}">✔ 완료된 공사 (${done.n}건) — 기성 완료 처리한 공사 (공사정보등록에도 완료로 표시됨)</td></tr>`):'';}
 const ledDoneChip=p=>p.done?' <span class="chip st-ok">완료</span>':'';
 function ledCsv(name,head,rows){const q=v=>{v=v==null?'':String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
   const t='﻿'+[head].concat(rows).map(r=>r.map(q).join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv;charset=utf-8'}));a.download=name+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
@@ -3136,7 +3136,19 @@ function gForm(id){const g=(S.gisung||[]).find(x=>x.id===id);if(!g)return;const 
   <h4 style="margin:6px 0">${g.year}년 월별 기성금</h4>${mGrid(g.m)}
   <label class="f"><span>메모</span><input id="lg_memo" value="${esc(g.memo||'')}"></label>
   <div class="infobox" id="led_pv" style="margin:6px 0"></div>
-  <div class="row" style="justify-content:flex-end"><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="gSave('${g.id}')">저장</button></div></div>`);ledPreview();}
+  <div class="row" style="justify-content:flex-end;flex-wrap:wrap;gap:6px">${p.id?(p.done?`<button class="btn" onclick="gDone('${p.id}',false)">↩ 완료 취소</button>`:`<button class="btn ok" style="background:#1d8a4a;color:#fff;border-color:#1d8a4a" onclick="gDone('${p.id}',true)">✔ 기성 완료 처리</button>`):''}<span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="gSave('${g.id}')">저장</button></div>
+  <p class="mute" style="margin:6px 0 0;font-size:12px">「기성 완료 처리」를 누르면 <b>공사정보등록</b>에도 같은 공사가 <b>완료</b>로 바뀝니다. (입력 중인 금액은 먼저 [저장]하세요)</p></div>`);ledPreview();}
+/* 기성준공에서 완료 처리 → 공사정보등록의 같은 공사도 완료 (한 곳에 저장) */
+async function gDone(pid,on){const p=P(pid);if(!p)return;
+  if(on){const g=(S.gisung||[]).filter(x=>x.projectId===pid).sort((a,b)=>b.year-a.year)[0];const c=g?gCalc(p,g):{E:''};
+    const pend=S.records.filter(r=>(r.status==='pending'||r.status==='draft')&&(r.entries||[]).some(e=>e.projectId===pid)).length;
+    const warn=(c.E!==''&&c.E>0?`\n\n⚠ 이월 잔금(E)이 <b>${won(c.E)}원</b> 남아 있습니다. 그래도 완료할까요?`:'')+(pend?`\n\n※ 이 공사가 포함된 미승인 출근 기록이 ${pend}건 있습니다.`:'');
+    if(!(await confirmBox(`<b>${esc(p.name)}</b>\n\n기성 완료 처리할까요?\n\n• 기성준공 대장: 아래 「완료된 공사」 구역으로 이동\n• 공사정보등록: <b>완료</b>로 바뀜 (근로자 드롭다운에서 빠짐)\n• 입력된 기성금·출근 기록은 그대로 보존${warn}`,'완료 처리')))return;}
+  else if(!(await confirmBox(`<b>${esc(p.name)}</b>\n\n완료를 취소할까요?\n공사정보등록에서도 다시 진행 중으로 바뀌고 근로자 드롭다운에 나타납니다.`,'완료 취소')))return;
+  if(LIVE){await gDoneLive(pid,on);return;}
+  if(on){p.done=true;p.doneAt=stamp();p.active=false;logG(ses.uid,'공사 완료 (기성준공)',`${p.code?p.code+' ':''}${p.name}`);}
+  else{p.done=false;p.doneAt='';p.active=true;logG(ses.uid,'공사 완료 취소 (기성준공)',`${p.code?p.code+' ':''}${p.name}`);}
+  save();closeModal();render();toast(on?'완료 처리했습니다. 공사정보등록에도 완료로 표시됩니다.':'완료를 취소했습니다.');}
 function sForm(id){const s=(S.safety||[]).find(x=>x.id===id);if(!s)return;const p=P(s.projectId)||{};ui.ledEdit={kind:'s',id};
   openModal(`<div class="mbox" style="max-width:760px"><div class="row"><h2 style="margin:0">안전관리비 수정 · ${s.year}년</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <p style="margin:6px 0 10px"><b>${esc(p.name||'')}</b><br><span class="mute">${esc(pCode(p))} · ${esc(p.plant||'')}</span></p>
@@ -4479,6 +4491,7 @@ aSignApprove=function(id){const d=signForm();run('signupApprove',{id,data:d},nul
 aSignRejectDo=function(id){const r=document.getElementById('sr_r').value.trim();if(!r){toast('반려 사유를 입력하세요.');return;}run('signupReject',{id,reason:r});};
 /* ----- 연차 ----- */
 calDo=async function(op,p){return await call({list:'calList',save:'calSave',del:'calDel'}[op],p);};
+window.gDoneLive=async function(pid,on){return await run('projectDone',{id:pid,on},null);};
 window.noSafeLive=async function(pid,on){return await run('setNoSafety',{id:pid,on},null);};
 ledDo=async function(op,p){const map={save:'ledgerSave',del:'ledgerDel',roll:'ledgerRollover'};const r=await run(map[op],p,null);return r;};
 lvDo=async function(op,p,okMsg){return await run('leave_'+op,p,okMsg);};
