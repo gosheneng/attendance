@@ -89,6 +89,7 @@ table.led th{text-align:center;line-height:1.25}
 @media(max-width:640px){.mgrid{grid-template-columns:repeat(3,1fr)}}
 .mgrbox{margin:-4px 0 10px;padding:8px 10px;background:#eef5ff;border:1px solid #cfe0f7;border-radius:8px;font-size:14px}
 .kpi .k b small{font-size:.62em;font-weight:600;margin-left:1px;color:inherit;opacity:.8}.kpi .kfull{font-size:11px;color:var(--mute,#6b7280);margin-top:2px;font-variant-numeric:tabular-nums}
+#langSel{width:auto;padding:4px 6px;font-size:13px;border-radius:16px;background:#fff;color:#1f2937;border:1px solid #d6dbe3;margin-right:6px}.lang-row{display:flex;justify-content:flex-end;margin:10px 0 -6px}
 </style>
 </head>
 <body>
@@ -2640,7 +2641,7 @@ async function saveFile(filename,data){
    렌더링
    ========================================================= */
 function render(){
-  const app=document.getElementById('app');
+  const app=document.getElementById('app');document.body.classList.remove('adminView');
   let h=LIVE?'':`<div class="demo-banner"><b>시제품(데모)</b> · 데이터는 이 브라우저에만 임시 저장됩니다 · <button class="linkbtn" onclick="resetDemo()">데모 데이터 초기화</button></div>`;
   if(qr&&qr.bad){app.innerHTML=h+`<div class="wrap narrow"><div class="card" style="margin-top:20px"><h2>사용할 수 없는 QR 코드입니다</h2><div class="badbox">재발급되었거나 사용 중지된 QR 코드입니다. 휴게쉼터에 새로 붙은 QR을 촬영하거나 관리자에게 문의하세요.</div><button class="btn" onclick="qr=null;history.replaceState(null,'',location.pathname+location.search);render()">처음 화면으로</button></div></div>`;return;}
   if(!ses.uid&&ses.signup){app.innerHTML=h+vSignup();return;}
@@ -2650,7 +2651,8 @@ function render(){
   if(!me.privacy){app.innerHTML=h+vPrivacy(me);return;}
   if(!me.consent){app.innerHTML=h+vConsent(me);return;}
   if(qr&&qr.spot){app.innerHTML=h+vQR(me);return;}
-  app.innerHTML=h+((me.role==='admin'&&!ui.asWorker)?vAdmin(me):vWorker(me));
+  const av=me.role==='admin'&&!ui.asWorker;document.body.classList.toggle('adminView',av);
+  app.innerHTML=h+(av?vAdmin(me):vWorker(me));
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
@@ -2815,7 +2817,7 @@ function vWorker(me){
   return h+'</div>';
 }
 function checkLine(label,c,r){
-  return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px"><div class="row"><b style="width:36px">${label}</b><span style="font-size:22px;font-weight:700">${c.time}</span>${c.date!==r.date?'<span class="chip">익일</span>':''}<span class="sp"></span>${locChip(c)}</div><div class="mute">${esc(locText(c))}</div></div>`;
+  return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px"><div class="row"><b style="min-width:36px;margin-right:4px">${label}</b><span style="font-size:22px;font-weight:700">${c.time}</span>${c.date!==r.date?'<span class="chip">익일</span>':''}<span class="sp"></span>${locChip(c)}</div><div class="mute">${esc(locText(c))}</div></div>`;
 }
 function vDay(isToday){
   const date=curDate();const r=recOf(ses.uid,date);
@@ -3509,7 +3511,7 @@ function vMyLeave(me){
   <p class="mute" style="margin-top:-6px">연차 기간 ${L.start} ~ ${ymdAdd(L.end,0,0,-1)} · ${L.n===0?'입사 1년 미만 (1개월 개근마다 1일 발생, 최대 11일)':'근속 '+L.n+'년차'}${L.adj?` · 조정 ${L.adj>0?'+':''}${fmtD(L.adj)}일 포함`:''}</p>`;
   const t=today();
   h+=`<div class="card"><h3>연차 사용 신청</h3>
-  <div class="grid2"><label class="f"><span>사용 구분</span><select id="lv_kind" onchange="lvCalc()">${LV_KINDS.map(k=>`<option>${k}</option>`).join('')}</select></label>
+  <div class="grid2"><label class="f"><span>사용 구분</span><select id="lv_kind" onchange="lvCalc()">${LV_KINDS.map(k=>`<option value="${k}">${k}</option>`).join('')}</select></label>
   <label class="f"><span>사용일수 (자동 계산, 수정 가능)</span><input id="lv_days" inputmode="decimal" value="${weekdays(t,t)}"></label>
   <label class="f"><span>사용 시작일</span><input id="lv_s" type="date" value="${t}" onchange="lvCalc()"></label>
   <label class="f" id="lv_ew"><span>사용 종료일</span><input id="lv_e" type="date" value="${t}" onchange="lvCalc()"></label></div>
@@ -3625,6 +3627,381 @@ setInterval(()=>{const c=document.getElementById('clock');if(c)c.textContent=hm(
 if(!LIVE){readQrHash();
 window.addEventListener('hashchange',()=>{if(readQrHash())render();});
 save();render();}
+</script>
+<script>
+/* =========================================================
+   다국어 (근로자 화면) — 휴대폰 언어 설정을 따라 자동 번역
+   한국어 화면을 그린 뒤 글자만 바꿔 끼우는 방식 (관리자 화면은 한국어 유지)
+   ========================================================= */
+const LANGS={ko:'한국어',vi:'Tiếng Việt',en:'English'};
+const LANG_KEY='goshen_lang';
+function langDetect(){try{const s=localStorage.getItem(LANG_KEY);if(s&&LANGS[s])return s;}catch(e){}
+  const ls=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||'ko']).map(x=>String(x).toLowerCase());
+  for(const l of ls){if(l.indexOf('ko')===0)return 'ko';if(l.indexOf('vi')===0)return 'vi';if(l.indexOf('en')===0)return 'en';}
+  return 'en';}
+let LANG=langDetect();
+/* [한국어, 베트남어, 영어] */
+const I18=[
+['전자 출근부','Chấm công điện tử','E-Attendance'],
+['주식회사 고센이엔지 · 전자 출근부','Goshen E&G · Chấm công điện tử','Goshen E&G · E-Attendance'],
+['연락처 (휴대폰 번호 = 아이디, 숫자만)','Số điện thoại (= ID đăng nhập, chỉ nhập số)','Phone number (= login ID, digits only)'],
+['비밀번호','Mật khẩu','Password'],
+['처음 로그인이면 비워 두고 로그인을 누르세요','Lần đầu đăng nhập: để trống và bấm Đăng nhập','First login? Leave blank and tap Log in'],
+['이 휴대폰에서 로그인 유지 (QR 촬영 시 바로 출퇴근)','Giữ đăng nhập trên điện thoại này (quét QR là chấm công ngay)','Stay logged in on this phone (scan QR to clock in/out directly)'],
+['로그인','Đăng nhập','Log in'],
+['로그아웃','Đăng xuất','Log out'],
+['처음 사용하시나요?','Lần đầu sử dụng?','First time here?'],
+['가입 신청','Đăng ký tài khoản','Sign up'],
+['QR로 접속했습니다.','đã quét mã QR.','QR code scanned.'],
+['로그인하면 바로 출퇴근 화면으로 이동합니다. ("로그인 유지"를 체크하면 다음부터는 QR 촬영만으로 바로 열립니다.)','Sau khi đăng nhập sẽ chuyển ngay đến màn hình chấm công. (Nếu chọn "Giữ đăng nhập", lần sau chỉ cần quét QR.)','After logging in you go straight to the clock-in screen. (Tick "Stay logged in" so that next time scanning the QR is enough.)'],
+['입력한 정보로 관리자에게 가입을 신청합니다. 관리자가 승인하면 연락처와 비밀번호로 로그인할 수 있습니다.','Thông tin bạn nhập sẽ được gửi cho quản lý. Sau khi quản lý duyệt, bạn có thể đăng nhập bằng số điện thoại và mật khẩu.','Your details are sent to the administrator. Once approved, you can log in with your phone number and password.'],
+['① 개인정보 동의','① Đồng ý về thông tin cá nhân','① Personal data consent'],
+['② 가입 정보','② Thông tin đăng ký','② Sign-up details'],
+['② 본인 확인 및 비밀번호 설정','② Xác minh danh tính và đặt mật khẩu','② Identity check and password'],
+['전체 동의','Đồng ý tất cả','Agree to all'],
+['[필수] 개인정보 수집·이용 동의','[Bắt buộc] Đồng ý thu thập và sử dụng thông tin cá nhân','[Required] Consent to collection and use of personal data'],
+['수집 항목','Mục thu thập','Items collected'],
+['수집 목적','Mục đích','Purpose'],
+['보유 기간','Thời gian lưu giữ','Retention period'],
+['거부 권리','Quyền từ chối','Right to refuse'],
+['성명, 연락처, 주민등록번호, 소속, 근로형태, 입사·퇴사일, 임금 정보(1공수 단가 등), 출퇴근 시각·작업 기록','Họ tên, số điện thoại, số đăng ký cư trú (số đăng ký người nước ngoài), đơn vị, hình thức lao động, ngày vào/nghỉ việc, thông tin tiền lương (đơn giá 1 công…), giờ vào/tan ca và nhật ký công việc','Name, phone, resident/alien registration number, affiliation, employment type, hire/leave dates, wage info (daily rate etc.), clock-in/out times and work records'],
+['근로계약 체결·이행, 출퇴근 및 근무시간 관리, 급여 계산·지급, 4대보험 신고 및 소득세 원천징수','Ký kết và thực hiện hợp đồng lao động, quản lý giờ làm, tính và trả lương, khai báo 4 loại bảo hiểm và khấu trừ thuế thu nhập','Employment contract, attendance and working-hours management, payroll, social insurance reporting and income tax withholding'],
+['근로관계 종료 후 관계 법령에서 정한 보존 기간까지 (회사 방침 확정 필요)','Đến hết thời hạn lưu giữ theo luật sau khi chấm dứt quan hệ lao động (công ty sẽ xác định cụ thể)','Until the legal retention period ends after employment terminates (to be finalised by the company)'],
+['동의를 거부할 수 있습니다. 다만 필수 항목에 동의하지 않으면 전자 출근부를 이용할 수 없으며, 서면 등 다른 방법으로 처리합니다.','Bạn có thể từ chối. Khi đó bạn không dùng được chấm công điện tử và sẽ được xử lý bằng cách khác (giấy tờ…).','You may refuse. Without the required consents you cannot use e-attendance, and other methods (paper etc.) will be used.'],
+['위 개인정보 수집·이용에 동의합니다. (필수)','Tôi đồng ý thu thập và sử dụng thông tin cá nhân nêu trên. (Bắt buộc)','I agree to the collection and use of personal data above. (Required)'],
+['[필수] 주민등록번호 처리 안내','[Bắt buộc] Thông báo xử lý số đăng ký cư trú','[Required] Notice on registration number processing'],
+['주민등록번호는 동의가 아니라 법령에 근거하여 처리합니다. 회사는 소득세 원천징수 및 4대보험(국민연금·건강보험·고용보험·산재보험) 신고 등 법령상 의무 이행에 필요한 범위에서만 주민등록번호를 처리하며, 암호화하여 보관하고 관리자만 열람할 수 있도록 제한합니다.','Số đăng ký cư trú (số đăng ký người nước ngoài) được xử lý theo quy định pháp luật, không dựa trên sự đồng ý. Công ty chỉ dùng trong phạm vi cần thiết để khấu trừ thuế thu nhập và khai báo 4 loại bảo hiểm (hưu trí, y tế, việc làm, tai nạn lao động); số này được mã hóa và chỉ quản lý mới xem được.','The registration number is processed under law, not consent. The company uses it only as needed for income tax withholding and the four social insurances (pension, health, employment, industrial accident); it is stored encrypted and only administrators can view it.'],
+['위 주민등록번호 처리 안내를 확인했습니다. (필수)','Tôi đã đọc thông báo xử lý số đăng ký nêu trên. (Bắt buộc)','I have read the registration number notice above. (Required)'],
+['위 필수 항목에 동의해야 입력할 수 있습니다.','Cần đồng ý các mục bắt buộc ở trên trước khi nhập.','Agree to the required items above to continue.'],
+['이름 *','Họ tên *','Name *'],
+['연락처 * (아이디, 숫자만)','Số điện thoại * (ID, chỉ số)','Phone * (ID, digits only)'],
+['주민등록번호 *','Số đăng ký cư trú / người nước ngoài *','Resident / alien registration no. *'],
+['앞 6자리','6 số đầu','First 6 digits'],
+['뒤 7자리','7 số sau','Last 7 digits'],
+['비밀번호 * (4~20자)','Mật khẩu * (4–20 ký tự)','Password * (4–20 chars)'],
+['비밀번호 확인 *','Nhập lại mật khẩu *','Confirm password *'],
+['취소','Hủy','Cancel'],
+['확인','OK','OK'],
+['닫기','Đóng','Close'],
+['최초 로그인 — 본인 확인 및 비밀번호 설정','Đăng nhập lần đầu — xác minh và đặt mật khẩu','First login — verify identity and set password'],
+['연락처 (아이디)','Số điện thoại (ID)','Phone (ID)'],
+['확인하고 시작','Xác nhận và bắt đầu','Confirm and start'],
+['개인정보 수집·이용 동의','Đồng ý thu thập và sử dụng thông tin cá nhân','Personal data consent'],
+['동의하지 않음','Không đồng ý','Disagree'],
+['동의하고 계속','Đồng ý và tiếp tục','Agree and continue'],
+['위치정보 수집·이용 동의','Đồng ý thu thập thông tin vị trí','Location data consent'],
+['출근·퇴근 사실 및 근무 현장 확인','Xác nhận việc vào/tan ca và nơi làm việc','Confirm clock-in/out and work site'],
+['출근·퇴근 버튼을 누르는 시점의 위치(위도·경도·정확도), 시각','Vị trí (vĩ độ, kinh độ, độ chính xác) và thời gian lúc bấm nút vào/tan ca','Location (lat/long, accuracy) and time when you press clock-in/out'],
+['근무 중 계속 추적하지 않습니다.','Không theo dõi liên tục trong giờ làm.','You are not tracked during work.'],
+['근로관계 종료 후 ○년 (회사 방침 확정 필요)','○ năm sau khi chấm dứt lao động (công ty sẽ xác định)','○ years after employment ends (to be finalised by the company)'],
+['동의를 거부할 수 있으며, 거부 시 관리자를 통한 수기 기록 등 다른 방법으로 출퇴근을 확인합니다.','Bạn có thể từ chối; khi đó việc vào/tan ca sẽ được xác nhận bằng cách khác như quản lý ghi tay.','You may refuse; attendance will then be confirmed another way, e.g. recorded by an administrator.'],
+['위 내용을 확인했으며 위치정보 수집·이용에 동의합니다.','Tôi đã đọc và đồng ý thu thập, sử dụng thông tin vị trí.','I have read the above and agree to location data use.'],
+['동의하고 시작','Đồng ý và bắt đầu','Agree and start'],
+['※ 예시 문안입니다. 실제 운영 전 노무사·법률 검토로 확정해야 합니다.','※ Bản dịch chỉ để tham khảo; bản tiếng Hàn là bản chính thức.','※ Translation for reference; the Korean text is authoritative.'],
+['오늘 출퇴근','Chấm công hôm nay','Today'],
+['지난 날짜 신청','Bổ sung ngày trước','Past dates'],
+['내 근무기록','Lịch sử làm việc','My records'],
+['연차','Nghỉ phép năm','Annual leave'],
+['계약서·명세서','Hợp đồng · Bảng lương','Contract · Payslip'],
+['현재','Bây giờ','Now'],
+['지난 날짜','Ngày trước','Past date'],
+['📷 휴게쉼터에 붙은 QR 코드를 휴대폰 카메라로 촬영하면 출근 화면이 열립니다.','📷 Dùng camera điện thoại quét mã QR dán ở khu nghỉ ngơi để mở màn hình vào ca.','📷 Scan the QR code at the rest area with your phone camera to open the clock-in screen.'],
+['📷 휴게쉼터에 붙은 QR 코드를 휴대폰 카메라로 촬영하면 퇴근 화면이 열립니다.','📷 Dùng camera điện thoại quét mã QR dán ở khu nghỉ ngơi để mở màn hình tan ca.','📷 Scan the QR code at the rest area with your phone camera to open the clock-out screen.'],
+['퇴근 전에도 아래 작업 내역을 미리 작성할 수 있습니다.','Bạn có thể ghi nội dung công việc bên dưới trước khi tan ca.','You can fill in your work log below before clocking out.'],
+['출근하기','Vào ca','Clock in'],
+['퇴근하기','Tan ca','Clock out'],
+['오늘 출근하기','Vào ca hôm nay','Clock in today'],
+['어제 근무 퇴근하기','Tan ca cho ngày hôm qua','Clock out for yesterday'],
+['어제 기록 수정하기','Sửa bản ghi hôm qua','Edit yesterday'],
+['쉼터 QR을 촬영하면 "어제 근무 퇴근하기" 버튼이 나옵니다.','Quét QR ở khu nghỉ sẽ hiện nút "Tan ca cho ngày hôm qua".','Scan the rest-area QR to show the "Clock out for yesterday" button.'],
+['출근','Vào ca','In'],
+['퇴근','Tan ca','Out'],
+['익일','Hôm sau','Next day'],
+['📍 QR 촬영 장소','📍 Nơi quét QR','📍 QR location'],
+['버튼을 누르면 QR 장소와 휴대폰 GPS 위치가 함께 기록됩니다.','Khi bấm nút, nơi quét QR và vị trí GPS của điện thoại sẽ được ghi lại.','Pressing the button records the QR location and your phone GPS position.'],
+['출근 후에는 화면이 작업 내역 작성으로 이어집니다. 퇴근할 때 QR을 다시 촬영하세요.','Sau khi vào ca, bạn sẽ chuyển sang phần ghi công việc. Khi tan ca hãy quét QR lại.','After clocking in you continue to the work log. Scan the QR again when you clock out.'],
+['작업 내역 확인·작성','Xem / ghi nội dung công việc','View / write work log'],
+['작업 내역','Nội dung công việc','Work log'],
+['작성중','Đang soạn','Draft'],
+['승인대기','Chờ duyệt','Pending'],
+['승인','Đã duyệt','Approved'],
+['반려','Bị trả lại','Returned'],
+['공사 선택','Chọn công trình','Select project'],
+['— 공사를 선택하세요 —','— Chọn công trình —','— Select a project —'],
+['시작','Bắt đầu','Start'],
+['종료','Kết thúc','End'],
+['작업내용','Nội dung công việc','Work description'],
+['예: 열연 2호기 롤 레벨 측정','VD: Đo cân bằng trục cán máy số 2','e.g. Roll level measurement, line 2'],
+['삭제','Xóa','Delete'],
+['+ 작업 추가 (다른 공사·시간대)','+ Thêm công việc (công trình / khung giờ khác)','+ Add task (other project / time)'],
+['임시저장','Lưu tạm','Save draft'],
+['임시저장했습니다','Đã lưu tạm','Draft saved'],
+['승인 요청','Gửi duyệt','Submit'],
+['다시 승인 요청','Gửi duyệt lại','Resubmit'],
+['반려 사유:','Lý do trả lại:','Reason returned:'],
+['수정한 뒤 다시 승인 요청해 주세요.','Hãy sửa rồi gửi duyệt lại.','Please correct it and submit again.'],
+['관리자 승인 대기 중입니다. 수정이 필요하면 관리자에게 반려를 요청하세요.','Đang chờ quản lý duyệt. Nếu cần sửa, hãy nhờ quản lý trả lại.','Waiting for approval. To edit, ask the administrator to return it.'],
+['등록된 작업이 없습니다.','Chưa có công việc nào.','No tasks recorded.'],
+['출근·퇴근 시각을 입력하면 작업 내역을 작성할 수 있습니다.','Nhập giờ vào/tan ca để ghi nội dung công việc.','Enter clock-in/out times to write the work log.'],
+['신청할 날짜 (최근 14일)','Ngày cần bổ sung (14 ngày gần nhất)','Date to submit (last 14 days)'],
+['출퇴근 버튼을 누르지 못했거나, 퇴근을 누르지 못한 날을 선택하세요. 반려된 기록 수정도 여기서 합니다.','Chọn ngày bạn quên chấm công vào hoặc tan ca. Sửa bản ghi bị trả lại cũng làm ở đây.','Pick a day you missed clocking in or out. Returned records are also fixed here.'],
+['버튼으로 기록하지 못한 시각을 직접 입력합니다. 위치정보 없이 저장되며 관리자 확인 후 승인됩니다.','Nhập tay giờ chưa được ghi. Sẽ lưu không kèm vị trí và cần quản lý duyệt.','Enter the missed times manually. Saved without location and approved by the administrator.'],
+['출근 시각','Giờ vào ca','Clock-in time'],
+['퇴근 시각','Giờ tan ca','Clock-out time'],
+['사후 입력 사유 (필수)','Lý do nhập bổ sung (bắt buộc)','Reason for late entry (required)'],
+['예: 휴대폰 배터리 방전으로 퇴근 버튼 누락','VD: Điện thoại hết pin nên không bấm tan ca','e.g. Phone battery died, missed clock-out'],
+['이번 달 승인 근무','Giờ đã duyệt tháng này','Approved hours this month'],
+['승인 대기','Chờ duyệt','Pending'],
+['이번 달 근무일','Số ngày làm tháng này','Work days this month'],
+['일자','Ngày','Date'],
+['공사','Công trình','Project'],
+['시간','Giờ','Hours'],
+['상태','Trạng thái','Status'],
+['보기','Xem','View'],
+['수정','Sửa','Edit'],
+['기록이 없습니다.','Chưa có bản ghi.','No records.'],
+['소계','Tạm tính','Subtotal'],
+['잔여 연차','Phép năm còn lại','Leave remaining'],
+['발생','Phát sinh','Accrued'],
+['사용','Đã dùng','Used'],
+['연차 사용 신청','Xin nghỉ phép','Request leave'],
+['사용 구분','Loại nghỉ','Leave type'],
+['반차','Nghỉ nửa ngày','Half day'],
+['병가','Nghỉ ốm','Sick leave'],
+['기타','Khác','Other'],
+['기존사용(이관)','Đã dùng trước (chuyển sổ)','Previously used (migrated)'],
+['발생조정','Điều chỉnh','Adjustment'],
+['사용일수 (자동 계산, 수정 가능)','Số ngày (tự tính, có thể sửa)','Days (auto, editable)'],
+['사용 시작일','Ngày bắt đầu','Start date'],
+['사용 종료일','Ngày kết thúc','End date'],
+['휴가 사유 (선택)','Lý do (không bắt buộc)','Reason (optional)'],
+['사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 병가·기타도 연차에서 차감됩니다.','Số ngày không tính thứ Bảy, Chủ nhật. Nếu có ngày lễ hãy tự sửa. Nghỉ nửa ngày = 0,5 ngày; nghỉ ốm và loại khác cũng trừ vào phép năm.','Weekends are excluded. Adjust manually for public holidays. Half day = 0.5; sick and other leave are also deducted from annual leave.'],
+['신청하기','Gửi đơn','Submit request'],
+['신청','Gửi','Submit'],
+['내 연차 신청 내역','Đơn nghỉ phép của tôi','My leave requests'],
+['사용일','Ngày nghỉ','Dates'],
+['구분','Loại','Type'],
+['일수','Số ngày','Days'],
+['신청 내역이 없습니다.','Chưa có đơn nào.','No requests.'],
+['이 연차 신청을 취소할까요?','Hủy đơn nghỉ phép này?','Cancel this leave request?'],
+['신청 취소','Hủy đơn','Cancel request'],
+['입사일이 등록되지 않아 연차를 계산할 수 없습니다. 관리자에게 문의하세요.','Chưa có ngày vào làm nên không tính được phép năm. Hãy liên hệ quản lý.','Your hire date is missing, so leave cannot be calculated. Please contact the administrator.'],
+['근로계약서 · 급여명세서','Hợp đồng lao động · Bảng lương','Employment contract · Payslip'],
+['2단계에서 제공될 예정입니다.','Sẽ có ở giai đoạn 2.','Coming in phase 2.'],
+['내 근로계약서 조회 및 휴대폰 화면 서명','Xem hợp đồng lao động và ký trên điện thoại','View your contract and sign on your phone'],
+['월별 급여명세서 조회 및 PDF 저장','Xem bảng lương hằng tháng và lưu PDF','Monthly payslips with PDF download'],
+['새 문서가 올라오면 앱 안에 알림 표시','Thông báo khi có tài liệu mới','Notification when new documents arrive'],
+['상용직','Nhân viên chính thức','Regular'],
+['일용직','Lao động thời vụ','Daily worker'],
+['협력업체','Công ty đối tác','Subcontractor'],
+['미기록','Chưa ghi','Not recorded'],
+['관리자 입력','Quản lý nhập','Entered by admin'],
+['수기(위치없음)','Nhập tay (không vị trí)','Manual (no location)'],
+['수기 입력(위치정보 없음)','Nhập tay (không có vị trí)','Manual entry (no location)'],
+['QR · GPS없음','QR · không GPS','QR · no GPS'],
+['처리 중…','Đang xử lý…','Processing…'],
+['위치 확인 중…','Đang xác định vị trí…','Getting location…'],
+['지난 기록을 불러오는 중…','Đang tải bản ghi cũ…','Loading past records…'],
+['QR 코드로 출퇴근하세요','Hãy chấm công bằng mã QR','Please clock in/out with the QR code'],
+['휴게쉼터에 붙어 있는 QR 코드를 휴대폰 카메라로 촬영하면 출퇴근 화면이 열립니다.','Quét mã QR ở khu nghỉ ngơi bằng camera điện thoại để mở màn hình chấm công.','Scan the QR code at the rest area with your phone camera to open the clock-in/out screen.'],
+['쉼터에 와서 다시 시도하세요. 이 시도는 관리자에게 기록됩니다.','Hãy đến khu nghỉ ngơi và thử lại. Lần thử này được ghi lại cho quản lý.','Go to the rest area and try again. This attempt is logged for the administrator.'],
+['휴대폰 위치(GPS)를 확인하지 못했습니다.','Không xác định được vị trí (GPS) của điện thoại.','Could not get your phone location (GPS).'],
+['휴대폰 설정에서 위치를 켜고, 브라우저의 위치 권한을 "허용"으로 바꾼 뒤 QR을 다시 촬영하세요.','Hãy bật vị trí trong cài đặt điện thoại, cho phép trình duyệt truy cập vị trí rồi quét QR lại.','Turn on location in phone settings, allow location for the browser, then scan the QR again.'],
+['QR 촬영은 기록되었으나 휴대폰 위치를 확인하지 못했습니다.','Đã ghi lần quét QR nhưng không xác định được vị trí điện thoại.','QR scan recorded, but your phone location could not be confirmed.'],
+['관리자 화면에 표시됩니다.','Sẽ hiển thị cho quản lý.','This is shown to the administrator.'],
+['승인 요청 전에 확인해 주세요','Hãy kiểm tra trước khi gửi duyệt','Please check before submitting'],
+['확인이 필요한 사항','Cần kiểm tra','Please check'],
+['그래도 승인 요청할까요?','Vẫn gửi duyệt?','Submit anyway?'],
+['작업 내역을 1건 이상 입력하세요.','Hãy nhập ít nhất 1 công việc.','Enter at least one task.'],
+['공사를 선택하세요.','Hãy chọn công trình.','Select a project.'],
+['시작·종료 시각을 입력하세요.','Hãy nhập giờ bắt đầu và kết thúc.','Enter start and end times.'],
+['작업내용을 입력하세요.','Hãy nhập nội dung công việc.','Enter the work description.'],
+['한 작업이 16시간을 넘습니다. 시각을 확인하세요.','Một công việc dài hơn 16 giờ. Hãy kiểm tra giờ.','A task exceeds 16 hours. Check the times.'],
+['출근 기록이 없습니다.','Chưa có giờ vào ca.','No clock-in record.'],
+['퇴근 기록 후 승인 요청할 수 있습니다.','Cần có giờ tan ca mới gửi duyệt được.','Clock out before submitting.'],
+['출퇴근 기록 시간을 30분 이상 벗어난 작업이 있습니다.','Có công việc lệch hơn 30 phút so với giờ vào/tan ca.','A task is more than 30 minutes outside your clock-in/out times.'],
+['등록한 근무시간이 출퇴근 체류시간보다 깁니다.','Tổng giờ làm dài hơn thời gian có mặt.','Logged hours exceed your time on site.'],
+['QR은 촬영했으나 GPS 위치가 QR 장소와 다릅니다 (QR 사진 악용 여부 확인).','Đã quét QR nhưng vị trí GPS khác nơi đặt QR.','QR scanned, but GPS position differs from the QR location.'],
+['출근 위치가 등록된 현장 반경 밖입니다.','Vị trí vào ca nằm ngoài phạm vi công trường.','Clock-in position is outside the site radius.'],
+['QR 출근 시 GPS 위치를 확인하지 못했습니다.','Không xác định được GPS khi vào ca bằng QR.','GPS could not be confirmed at QR clock-in.'],
+['사후 신청 사유를 입력하세요.','Hãy nhập lý do bổ sung.','Enter the reason for the late entry.'],
+['승인 요청했습니다. 관리자 확인 후 확정됩니다.','Đã gửi duyệt. Sẽ được xác nhận sau khi quản lý kiểm tra.','Submitted. It will be confirmed after the administrator checks it.'],
+['처리하지 못했습니다','Không thể xử lý','Could not complete'],
+['다시 로그인해 주세요.','Hãy đăng nhập lại.','Please log in again.'],
+['로그인이 만료되었습니다. 다시 로그인해 주세요.','Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.','Your session expired. Please log in again.'],
+['연락처를 입력하세요.','Hãy nhập số điện thoại.','Enter your phone number.'],
+['연락처를 숫자만 정확히 입력하세요.','Hãy nhập đúng số điện thoại (chỉ số).','Enter your phone number correctly (digits only).'],
+['이름을 입력하세요.','Hãy nhập họ tên.','Enter your name.'],
+['개인정보 필수 항목에 먼저 동의해 주세요.','Hãy đồng ý các mục thông tin cá nhân bắt buộc trước.','Please agree to the required personal data items first.'],
+['필수 항목에 동의해 주세요.','Hãy đồng ý các mục bắt buộc.','Please agree to the required items.'],
+['동의 체크 후 진행할 수 있습니다.','Hãy đánh dấu đồng ý để tiếp tục.','Tick the consent box to continue.'],
+['주민등록번호 앞 6자리와 뒤 7자리를 정확히 입력하세요.','Hãy nhập đúng 6 số đầu và 7 số sau của số đăng ký.','Enter the first 6 and last 7 digits of your registration number correctly.'],
+['주민등록번호 13자리를 정확히 입력하세요.','Hãy nhập đúng 13 số của số đăng ký.','Enter all 13 digits of your registration number.'],
+['비밀번호는 4~20자로 정해 주세요.','Mật khẩu phải từ 4 đến 20 ký tự.','Password must be 4–20 characters.'],
+['비밀번호 확인이 일치하지 않습니다.','Mật khẩu nhập lại không khớp.','Passwords do not match.'],
+['비밀번호가 일치하지 않습니다.','Sai mật khẩu.','Incorrect password.'],
+['등록이 완료되었습니다.','Đăng ký hoàn tất.','Registration complete.'],
+['본인 확인에 실패했습니다','Xác minh danh tính thất bại','Identity check failed'],
+['입력한 주민등록번호가 회사에 등록된 정보와 다릅니다.','Số đăng ký bạn nhập không khớp với thông tin của công ty.','The registration number does not match company records.'],
+['입력한 주민등록번호가 회사에 등록된 정보와 다릅니다. 관리자에게 문의하세요.','Số đăng ký bạn nhập không khớp với thông tin của công ty. Hãy liên hệ quản lý.','The registration number does not match company records. Please contact the administrator.'],
+['다시 확인하시거나 관리자에게 문의하세요.','Hãy kiểm tra lại hoặc liên hệ quản lý.','Please check again or contact the administrator.'],
+['등록되지 않은 연락처입니다. 처음이면 [가입 신청]을 눌러 주세요.','Số điện thoại chưa đăng ký. Nếu là lần đầu, hãy bấm [Đăng ký tài khoản].','This number is not registered. If you are new, tap [Sign up].'],
+['등록되지 않은 연락처입니다. 처음이면 아래 [가입 신청]을 눌러 주세요.','Số điện thoại chưa đăng ký. Nếu là lần đầu, hãy bấm [Đăng ký tài khoản] bên dưới.','This number is not registered. If you are new, tap [Sign up] below.'],
+['등록되지 않았거나 퇴사 처리된 연락처입니다.','Số điện thoại chưa đăng ký hoặc đã nghỉ việc.','This number is not registered or the account has left the company.'],
+['가입 승인 대기 중입니다','Đang chờ duyệt đăng ký','Sign-up pending approval'],
+['가입 승인 대기 중입니다.','Đang chờ duyệt đăng ký.','Sign-up pending approval.'],
+['가입 승인 대기 중입니다. 관리자가 승인하면 로그인할 수 있습니다.','Đang chờ duyệt đăng ký. Sau khi quản lý duyệt, bạn có thể đăng nhập.','Your sign-up is pending. You can log in once the administrator approves it.'],
+['관리자가 승인하면 로그인할 수 있습니다.','Sau khi quản lý duyệt, bạn có thể đăng nhập.','You can log in once the administrator approves.'],
+['가입 신청이 반려되었습니다','Đơn đăng ký bị từ chối','Sign-up was declined'],
+['가입 신청이 반려되었습니다.','Đơn đăng ký bị từ chối.','Sign-up was declined.'],
+['정보를 고쳐 다시 신청하려면 [가입 신청]을 눌러 주세요.','Để sửa thông tin và đăng ký lại, hãy bấm [Đăng ký tài khoản].','To correct your details and apply again, tap [Sign up].'],
+['관리자에게 문의하세요.','Hãy liên hệ quản lý.','Please contact the administrator.'],
+['퇴사 처리된 계정입니다','Tài khoản đã nghỉ việc','Account closed (left company)'],
+['퇴사 처리된 계정입니다. 관리자에게 문의하세요.','Tài khoản đã nghỉ việc. Hãy liên hệ quản lý.','This account has left the company. Please contact the administrator.'],
+['로그인할 수 없습니다. 과거 기록은 회사에 보존되어 있으며, 확인이 필요하면 관리자에게 문의하세요.','Không thể đăng nhập. Hồ sơ cũ được công ty lưu giữ; nếu cần hãy liên hệ quản lý.','You cannot log in. Past records are kept by the company; contact the administrator if needed.'],
+['가입 신청이 접수되었습니다','Đã nhận đơn đăng ký','Sign-up received'],
+['관리자가 승인하면 연락처와 비밀번호로 로그인할 수 있습니다.','Sau khi quản lý duyệt, bạn có thể đăng nhập bằng số điện thoại và mật khẩu.','Once approved, you can log in with your phone number and password.'],
+['이미 등록된 연락처입니다','Số điện thoại đã được đăng ký','This number is already registered'],
+['로그인 화면에서 로그인해 주세요. (처음이면 비밀번호 칸을 비우고 로그인)','Hãy đăng nhập ở màn hình đăng nhập. (Lần đầu: để trống mật khẩu)','Please log in on the login screen. (First time: leave the password blank)'],
+['이미 등록된 연락처입니다. 로그인 화면에서 로그인해 주세요. (처음이면 비밀번호 칸을 비우고 로그인)','Số điện thoại đã được đăng ký. Hãy đăng nhập ở màn hình đăng nhập. (Lần đầu: để trống mật khẩu)','This number is already registered. Please log in. (First time: leave the password blank)'],
+['이미 가입 신청되어 승인 대기 중입니다.','Đã đăng ký và đang chờ duyệt.','Already applied and waiting for approval.'],
+['가입 신청이 너무 많습니다. 잠시 후 다시 시도하세요.','Có quá nhiều đơn đăng ký. Hãy thử lại sau.','Too many sign-up attempts. Please try again later.'],
+['처리되지 않은 가입 신청이 너무 많습니다. 관리자에게 문의하세요.','Có quá nhiều đơn đăng ký chưa xử lý. Hãy liên hệ quản lý.','Too many pending sign-ups. Please contact the administrator.'],
+['비밀번호를 여러 번 틀렸습니다. 10분 뒤에 다시 시도하세요.','Bạn đã nhập sai mật khẩu nhiều lần. Hãy thử lại sau 10 phút.','Too many wrong passwords. Try again in 10 minutes.'],
+['여러 번 실패했습니다. 10분 뒤에 다시 시도하세요.','Đã thất bại nhiều lần. Hãy thử lại sau 10 phút.','Too many failed attempts. Try again in 10 minutes.'],
+['이미 비밀번호가 설정되어 있습니다. 로그인해 주세요.','Mật khẩu đã được đặt. Hãy đăng nhập.','A password is already set. Please log in.'],
+['사용할 수 없는 QR 코드입니다','Mã QR không dùng được','This QR code cannot be used'],
+['사용할 수 없는 QR 코드입니다. 쉼터에 붙은 새 QR을 촬영하세요.','Mã QR không dùng được. Hãy quét mã QR mới ở khu nghỉ ngơi.','This QR code cannot be used. Scan the new QR at the rest area.'],
+['재발급되었거나 사용 중지된 QR 코드입니다. 휴게쉼터에 새로 붙은 QR을 촬영하거나 관리자에게 문의하세요.','Mã QR này đã được cấp lại hoặc ngừng dùng. Hãy quét mã QR mới ở khu nghỉ ngơi hoặc liên hệ quản lý.','This QR code was reissued or disabled. Scan the new QR at the rest area or contact the administrator.'],
+['처음 화면으로','Về màn hình đầu','Back to start'],
+['위치정보 동의 후 이용할 수 있습니다.','Cần đồng ý thông tin vị trí để sử dụng.','Location consent is required.'],
+['오늘 출근 기록이 이미 있습니다.','Hôm nay đã có giờ vào ca.','You have already clocked in today.'],
+['퇴근 기록이 이미 있습니다.','Đã có giờ tan ca.','You have already clocked out.'],
+['출근 기록이 없습니다. 먼저 출근하세요.','Chưa có giờ vào ca. Hãy vào ca trước.','No clock-in yet. Please clock in first.'],
+['휴대폰 위치(GPS)를 확인하지 못했습니다. 위치를 켜고 다시 시도하세요.','Không xác định được vị trí GPS. Hãy bật vị trí và thử lại.','Could not get GPS location. Turn on location and try again.'],
+['오늘 기록은 QR 출근 후 작성할 수 있습니다.','Bản ghi hôm nay chỉ viết được sau khi vào ca bằng QR.','Today\'s record can be written after clocking in with the QR.'],
+['최근 14일 이내 날짜만 작성할 수 있습니다.','Chỉ được ghi cho 14 ngày gần nhất.','Only the last 14 days can be entered.'],
+['30일 이전 날짜는 관리자에게 등록을 요청하세요.','Ngày cách đây hơn 30 ngày, hãy nhờ quản lý nhập.','For dates older than 30 days, ask the administrator.'],
+['승인 요청했거나 승인된 기록은 수정할 수 없습니다.','Bản ghi đã gửi duyệt hoặc đã duyệt thì không sửa được.','Submitted or approved records cannot be edited.'],
+['이미 승인 요청된 기록입니다.','Bản ghi này đã được gửi duyệt.','This record was already submitted.'],
+['기록을 찾을 수 없습니다.','Không tìm thấy bản ghi.','Record not found.'],
+['승인 대기 중인 신청만 취소할 수 있습니다.','Chỉ hủy được đơn đang chờ duyệt.','Only pending requests can be cancelled.'],
+['사용 구분을 선택하세요.','Hãy chọn loại nghỉ.','Select the leave type.'],
+['사용 시작일을 입력하세요.','Hãy nhập ngày bắt đầu.','Enter the start date.'],
+['종료일이 시작일보다 빠릅니다.','Ngày kết thúc sớm hơn ngày bắt đầu.','End date is before start date.'],
+['사용일수는 0.5일 단위 숫자로 입력하세요.','Số ngày phải theo đơn vị 0,5.','Days must be in steps of 0.5.'],
+['사용일수를 확인하세요.','Hãy kiểm tra số ngày.','Check the number of days.'],
+['연차를 신청했습니다. 관리자 승인 후 확정됩니다.','Đã gửi đơn nghỉ phép. Sẽ được xác nhận sau khi quản lý duyệt.','Leave requested. It will be confirmed after approval.'],
+['취소했습니다.','Đã hủy.','Cancelled.'],
+['인터넷 연결을 확인해 주세요.','Hãy kiểm tra kết nối Internet.','Please check your internet connection.'],
+['서버 응답을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.','Không đọc được phản hồi máy chủ. Hãy thử lại sau.','Could not read the server response. Please try again shortly.'],
+['사용자가 많아 잠시 후 다시 시도해 주세요.','Đang có nhiều người dùng, hãy thử lại sau.','Busy — please try again shortly.'],
+['저장했습니다.','Đã lưu.','Saved.'],
+['관리자 화면','Màn hình quản lý','Admin screen'],
+['출근하기 전입니다','Chưa vào ca','Not clocked in yet'],
+['승인요청','Gửi duyệt','Submitted'],
+['재승인요청','Gửi duyệt lại','Resubmitted'],
+['사후입력','Nhập bổ sung','Late entry'],
+['관리자 수정','Quản lý sửa','Edited by admin'],
+['연차 신청','Xin nghỉ phép','Leave request'],
+['연차 취소','Hủy nghỉ phép','Leave cancelled']
+];
+/* 문장 일부 바꾸기 (이름·공사명 등 사용자 자료는 건드리지 않도록 화면 문구만) */
+const I18P=[
+['고센이엔지 담당자','Phụ trách Goshen','Goshen contact'],
+['협력업체 · ','Công ty đối tác · ','Subcontractor · '],
+[' · 상용직',' · Nhân viên chính thức',' · Regular'],
+[' · 일용직',' · Lao động thời vụ',' · Daily worker'],
+['위치일치','đúng vị trí','location OK'],
+['위치불일치','sai vị trí','location mismatch'],
+['GPS 확인 불가','không có GPS','GPS unavailable'],
+['GPS 일치','GPS khớp','GPS match'],
+['QR 촬영:','Quét QR:','QR scan:'],
+['담당 ','Phụ trách ','Contact '],
+['사유: ','Lý do: ','Reason: ']
+];
+const WK={vi:{'일':'CN','월':'T2','화':'T3','수':'T4','목':'T5','금':'T6','토':'T7'},en:{'일':'Sun','월':'Mon','화':'Tue','수':'Wed','목':'Thu','금':'Fri','토':'Sat'}};
+const L2=(vi,en)=>LANG==='vi'?vi:en;
+const IO=k=>k==='출근'?L2('vào ca','clock in'):L2('tan ca','clock out');
+const I18R=[
+[/^(\d{4})년 (\d{1,2})월 (\d{1,2})일 \((.)\)$/,(m)=>LANG==='vi'?`${WK.vi[m[4]]}, ${m[3]}/${m[2]}/${m[1]}`:`${WK.en[m[4]]}, ${m[2]}/${m[3]}/${m[1]}`],
+[/^(\d{1,2})\/(\d{1,2}) \((.)\)$/,(m)=>LANG==='vi'?`${m[2]}/${m[1]} (${WK.vi[m[3]]})`:`${m[1]}/${m[2]} (${WK.en[m[3]]})`],
+[/^(-?[\d.]+)일$/,(m)=>L2(`${m[1].replace('.',',')} ngày`,`${m[1]} day${m[1]==='1'?'':'s'}`)],
+[/^(출근|퇴근) (\d\d:\d\d) 기록됨$/,(m)=>L2(`Đã ${IO(m[1])} lúc ${m[2]}`,`${m[1]==='출근'?'Clocked in':'Clocked out'} at ${m[2]}`)],
+[/^오늘 출근 (\d\d:\d\d) · 퇴근 (\d\d:\d\d) 기록이 완료되었습니다\.$/,(m)=>L2(`Hôm nay đã ghi: vào ca ${m[1]} · tan ca ${m[2]}.`,`Today recorded: in ${m[1]} · out ${m[2]}.`)],
+[/^(.+) 님, 계속 이용하려면 아래 내용을 확인하고 동의해 주세요\.$/,(m)=>L2(`${m[1]}, hãy đọc và đồng ý nội dung dưới đây để tiếp tục.`,`${m[1]}, please read and agree below to continue.`)],
+[/^(.+) 님, 처음 사용 시 아래 내용에 동의해야 출퇴근 기록을 할 수 있습니다\.$/,(m)=>L2(`${m[1]}, cần đồng ý nội dung dưới đây để chấm công.`,`${m[1]}, you need to agree below before recording attendance.`)],
+[/^(.+) 님, 처음 접속하셨습니다\. 주민등록번호 전체를 입력해 본인 확인을 하고, 앞으로 사용할 비밀번호를 정해 주세요\.$/,(m)=>L2(`${m[1]}, đây là lần đầu bạn đăng nhập. Hãy nhập đầy đủ số đăng ký để xác minh và đặt mật khẩu.`,`${m[1]}, this is your first login. Enter your full registration number to verify and set a password.`)],
+[/^(.+?) 님 · (.+)$/,(m)=>`${m[1]} · ${trPhr(m[2])}`],
+[/^연차 기간 (\S+) ~ (\S+) · (.+)$/,(m)=>{let t=m[3].replace(/^입사 1년 미만 \(1개월 개근마다 1일 발생, 최대 11일\)/,L2('Dưới 1 năm (mỗi tháng đủ công được 1 ngày, tối đa 11)','Under 1 year (1 day per full month, max 11)')).replace(/^근속 (\d+)년차/,(x,n)=>L2(`Năm làm việc thứ ${n}`,`Year ${n} of service`)).replace(/ · 조정 ([+-]?[\d.]+)일 포함/,(x,n)=>L2(` · gồm điều chỉnh ${n} ngày`,` · incl. ${n} day adjustment`));return L2(`Kỳ phép ${m[1]} ~ ${m[2]} · ${t}`,`Leave year ${m[1]} ~ ${m[2]} · ${t}`);}],
+[/^등록 근무시간 합계 (\S+)$/,(m)=>L2(`Tổng giờ làm đã ghi ${m[1]}`,`Total logged hours ${m[1]}`)],
+[/^출퇴근 체류 (\S+) \(차이 (\S+) — 휴게·이동 등\)$/,(m)=>L2(`Có mặt ${m[1]} (chênh ${m[2]} — nghỉ, di chuyển…)`,`On site ${m[1]} (diff ${m[2]} — breaks, travel etc.)`)],
+[/^(출근|퇴근)할 수 없습니다$/,(m)=>L2(`Không thể ${IO(m[1])}`,`Cannot ${IO(m[1])}`)],
+[/^지금 위치가 QR 장소\((.+)\)에서 (\S+) 떨어져 있습니다\.$/,(m)=>L2(`Vị trí hiện tại cách nơi đặt QR (${m[1]}) ${m[2]}.`,`You are ${m[2]} away from the QR location (${m[1]}).`)],
+[/^QR 장소 반경 (\d+)m 안에서만 (출근|퇴근)할 수 있습니다\.$/,(m)=>L2(`Chỉ được ${IO(m[2])} trong bán kính ${m[1]}m quanh nơi đặt QR.`,`You can only ${IO(m[2])} within ${m[1]}m of the QR location.`)],
+[/^(출근|퇴근) (\d\d:\d\d) 기록 완료 — (.+)$/,(m)=>{const r={'GPS 확인 불가':L2('không có GPS','GPS unavailable'),'위치 확인 필요':L2('cần kiểm tra vị trí','location check needed'),'위치 불일치':L2('sai vị trí','location mismatch'),'현장 반경 밖':L2('ngoài phạm vi','outside radius')}[m[3]]||m[3];return L2(`Đã ${IO(m[1])} lúc ${m[2]} — ${r}`,`${m[1]==='출근'?'Clocked in':'Clocked out'} at ${m[2]} — ${r}`);}],
+[/^(출근|퇴근) (\d\d:\d\d) 기록 완료 · ?(.*)$/,(m)=>L2(`Đã ${IO(m[1])} lúc ${m[2]}${m[3]?' · '+m[3]:''}`,`${m[1]==='출근'?'Clocked in':'Clocked out'} at ${m[2]}${m[3]?' · '+m[3]:''}`)],
+[/^(QR 장소|가장 가까운 현장)에서 (\S+) 떨어진 위치입니다\.$/,(m)=>L2(`Cách ${m[1]==='QR 장소'?'nơi đặt QR':'công trường gần nhất'} ${m[2]}.`,`${m[2]} away from the ${m[1]==='QR 장소'?'QR location':'nearest site'}.`)],
+[/^작업 (\d+)$/,(m)=>L2(`Công việc ${m[1]}`,`Task ${m[1]}`)],
+[/^작업 (\d+): 자정을 넘기는 작업\(익일 (\S+) 종료\)으로 계산됩니다\.$/,(m)=>L2(`Công việc ${m[1]}: tính qua nửa đêm (kết thúc ${m[2]} hôm sau).`,`Task ${m[1]}: counted as past midnight (ends ${m[2]} next day).`)],
+[/^작업 (\d+): (.+)$/,(m)=>`${L2('Công việc','Task')} ${m[1]}: ${trCore(m[2])}`],
+[/^작업 (\d+)과 작업 (\d+)의 시간이 겹칩니다\.$/,(m)=>L2(`Giờ của công việc ${m[1]} và ${m[2]} bị trùng.`,`Tasks ${m[1]} and ${m[2]} overlap.`)],
+[/^이미 신청된 휴가와 날짜가 겹칩니다 \((.+)\)\.$/,(m)=>L2(`Trùng ngày với đơn nghỉ đã gửi (${trCore(m[1])}).`,`Overlaps an existing leave request (${trCore(m[1])}).`)],
+[/^사용일수가 기간\(달력 (\d+)일\)보다 많습니다\.$/,(m)=>L2(`Số ngày nhiều hơn khoảng thời gian (${m[1]} ngày lịch).`,`Days exceed the period (${m[1]} calendar days).`)],
+[/^신청 일수\((\S+)일\)가 남은 연차\((\S+)일, 승인 대기 제외\)보다 많습니다\.$/,(m)=>L2(`Số ngày xin (${m[1]}) nhiều hơn số phép còn lại (${m[2]}, không tính đơn chờ duyệt).`,`Requested days (${m[1]}) exceed remaining leave (${m[2]}, excluding pending).`)],
+[/^그래도 신청할까요\?$/,()=>L2('Vẫn gửi đơn?','Submit anyway?')],
+[/^휴게쉼터의 QR 코드를 휴대폰 카메라로 촬영해서 (출근|퇴근)하세요\.$/,(m)=>L2(`Hãy quét mã QR ở khu nghỉ ngơi bằng camera điện thoại để ${IO(m[1])}.`,`Scan the rest-area QR code with your phone camera to ${IO(m[1])}.`)],
+[/^가입 신청이 반려되었습니다\. 사유: (.*)$/,(m)=>L2(`Đơn đăng ký bị từ chối. Lý do: ${m[1]}`,`Sign-up was declined. Reason: ${m[1]}`)],
+[/^사유: (.*)$/,(m)=>L2(`Lý do: ${m[1]}`,`Reason: ${m[1]}`)],
+[/^승인된 기록입니다 \((.+)\)\.$/,(m)=>L2(`Bản ghi đã được duyệt (${m[1]}).`,`Approved record (${m[1]}).`)],
+[/^QR · (위치일치|위치불일치) (\S+)$/,(m)=>`QR · ${m[1]==='위치일치'?L2('đúng vị trí','location OK'):L2('sai vị trí','mismatch')} ${m[2]}`],
+[/^현장 (내|밖) (\S+)$/,(m)=>`${m[1]==='내'?L2('Trong công trường','On site'):L2('Ngoài công trường','Off site')} ${m[2]}`],
+[/^QR 촬영: (.+) · GPS 불일치 \(QR 장소에서 (\S+) 떨어짐\)(.*)$/,(m)=>L2(`Quét QR: ${m[1]} · GPS sai vị trí (cách QR ${m[2]})`,`QR scan: ${m[1]} · GPS mismatch (${m[2]} from QR)`)+m[3].replace(' [데모 위치]',' [demo]')],
+[/^QR 촬영: (.+) · GPS 일치 \((\S+)\)(.*)$/,(m)=>L2(`Quét QR: ${m[1]} · GPS khớp (${m[2]})`,`QR scan: ${m[1]} · GPS match (${m[2]})`)+m[3].replace(' [데모 위치]',' [demo]')],
+[/^QR 촬영: (.+) · GPS 확인 불가$/,(m)=>L2(`Quét QR: ${m[1]} · không có GPS`,`QR scan: ${m[1]} · GPS unavailable`)],
+[/^처리 이력 (\d+)건$/,(m)=>L2(`Lịch sử xử lý (${m[1]})`,`History (${m[1]})`)],
+[/^(\S+) \(반차\)$/,(m)=>`${m[1]} (${L2('nửa ngày','half day')})`],
+[/^어제\((.+)\) 출근 기록에 퇴근이 없습니다\. (.+)$/,(m)=>L2(`Hôm qua (${trCore(m[1])}) có giờ vào ca nhưng chưa tan ca. `,`Yesterday (${trCore(m[1])}) has a clock-in but no clock-out. `)+(m[2].indexOf('아래 버튼')>=0?L2('Nếu làm ca đêm, hãy dùng nút bên dưới để tan ca cho hôm qua.','If you worked a night shift, use the button below to clock out for yesterday.'):L2('Nếu đang kết thúc ca đêm, hãy bấm "Tan ca cho ngày hôm qua".','If you are finishing a night shift, tap "Clock out for yesterday".'))],
+[/^※ 예시 문안입니다.*$/,()=>L2('※ Bản dịch chỉ để tham khảo; bản tiếng Hàn là bản chính thức.','※ Translation for reference; the Korean text is authoritative.')],
+[/^근무 (\S+)$/,(m)=>L2(`Giờ làm ${m[1]}`,`Worked ${m[1]}`)],
+[/^고센이엔지 담당자 (.*)$/,(m)=>L2(`Phụ trách Goshen ${m[1]}`,`Goshen contact ${m[1]}`)]
+];
+const I18M={};I18.forEach(([k,vi,en])=>{I18M[k]={vi,en};});
+const I18PS=I18P.slice().sort((a,b)=>b[0].length-a[0].length);
+function trPhr(s){let o=s;I18PS.forEach(([k,vi,en])=>{if(o.indexOf(k)>=0)o=o.split(k).join(LANG==='vi'?vi:en);});const ex=I18M[o.trim()];return ex?ex[LANG]:o;}
+function trCore(c){if(!c||!/[가-힣]/.test(c))return c;const ex=I18M[c];if(ex)return ex[LANG];
+  for(const [re,fn] of I18R){const m=re.exec(c);if(m)return fn(m);}
+  return trPhr(c);}
+function trLine(s){if(!/[가-힣]/.test(s))return s;const lead=s.match(/^\s*/)[0],tail=s.match(/\s*$/)[0];let core=s.trim();
+  const b=/^(·|•|-)\s+/.exec(core);const pre=b?b[0]:'';if(pre)core=core.slice(pre.length);
+  return lead+pre+trCore(core.replace(/\s+/g,' '))+tail;}
+function trText(s){if(!/[가-힣]/.test(s))return s;if(s.indexOf('\n')<0)return trLine(s);return s.split('\n').map(trLine).join('\n');}
+/* 화면 바꿔 끼우기 */
+let i18nBusy=false;
+const I18_BLOCK='.infobox,.warnbox,.badbox,p,li,div.mute,label.row,td,h2,h3,summary,.mgrbox';
+function i18nOff(){return LANG==='ko'||document.body.classList.contains('adminView');}
+function i18nApply(root){if(i18nOff()||!root)return;i18nBusy=true;try{
+  /* 굵은 글씨가 섞인 한 문장 → 통째로 */
+  root.querySelectorAll(I18_BLOCK).forEach(el=>{if(el.closest('textarea,[data-noi18n]'))return;if([...el.children].some(c=>!/^(B|BR|SMALL|SPAN)$/.test(c.tagName)))return;
+    const t=el.textContent.replace(/\s+/g,' ').trim();if(!/[가-힣]/.test(t))return;const ex=I18M[t];if(ex&&el.children.length){el.textContent=ex[LANG];}});
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);const ns=[];let n;while(n=w.nextNode())ns.push(n);
+  ns.forEach(n=>{const p=n.parentElement;if(!p||p.closest('script,style,textarea,[data-noi18n]'))return;const v=n.nodeValue;if(!/[가-힣]/.test(v))return;const t=trText(v);if(t!==v)n.nodeValue=t;});
+  root.querySelectorAll('[placeholder],[title]').forEach(e=>{['placeholder','title'].forEach(a=>{const v=e.getAttribute(a);if(v&&/[가-힣]/.test(v)){const t=trText(v);if(t!==v)e.setAttribute(a,t);}});});
+}finally{i18nBusy=false;}}
+function langSet(l){LANG=l;try{localStorage.setItem(LANG_KEY,l);}catch(e){}document.documentElement.lang=l;render();}
+function langSel(){const a=document.getElementById('app');if(!a)return;const old=document.getElementById('langSel');
+  if(document.body.classList.contains('adminView')){if(old)old.remove();return;}if(old&&a.contains(old))return;
+  const sel=document.createElement('select');sel.id='langSel';sel.setAttribute('aria-label','Language');sel.setAttribute('data-noi18n','');
+  sel.innerHTML=Object.keys(LANGS).map(k=>`<option value="${k}" ${k===LANG?'selected':''}>🌐 ${LANGS[k]}</option>`).join('');sel.onchange=()=>langSet(sel.value);
+  const top=a.querySelector('.top');if(top){const btns=top.querySelectorAll('button');top.insertBefore(sel,btns.length?btns[btns.length-1]:null);sel.className='lang-top';return;}
+  const wrap=a.querySelector('.wrap');if(wrap){const d=document.createElement('div');d.className='lang-row';d.appendChild(sel);wrap.insertBefore(d,wrap.firstChild);}}
+(function(){document.documentElement.lang=LANG;
+  const run=()=>{if(i18nBusy)return;i18nBusy=true;try{langSel();}finally{i18nBusy=false;}['app','modal','toast','busy'].forEach(id=>i18nApply(document.getElementById(id)));};
+  let q=false;const mo=new MutationObserver(()=>{if(i18nBusy||q)return;q=true;Promise.resolve().then(()=>{q=false;run();});});
+  const start=()=>{mo.observe(document.body,{childList:true,subtree:true,characterData:true});run();};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+
 </script>
 <script>
 /* =========================================================
