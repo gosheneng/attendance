@@ -91,6 +91,7 @@ table.led th{text-align:center;line-height:1.25}
 .kpi .k b small{font-size:.62em;font-weight:600;margin-left:1px;color:inherit;opacity:.8}.kpi .kfull{font-size:11px;color:var(--mute,#6b7280);margin-top:2px;font-variant-numeric:tabular-nums}
 #langSel{width:auto;padding:4px 6px;font-size:13px;border-radius:16px;background:#fff;color:#1f2937;border:1px solid #d6dbe3;margin-right:6px}.lang-row{display:flex;justify-content:flex-end;margin:10px 0 -6px}
 .scanbox{position:relative;margin:10px auto 0;width:100%;max-width:400px;aspect-ratio:1/1;background:#111;border-radius:12px;overflow:hidden}.scanbox video{width:100%;height:100%;object-fit:cover}.scanframe{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.9);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.workday{margin:10px auto 0;display:inline-block;padding:6px 14px;border-radius:20px;background:#eef5ff;border:1px solid #cfe0f7;font-size:15px}.workday b{font-size:17px}.seg{display:flex;gap:6px;justify-content:center}.seg button{flex:1;padding:10px;border:1px solid #cfd6e0;border-radius:10px;background:#fff;font-size:15px}.seg button.on{background:#1f4e8c;color:#fff;border-color:#1f4e8c;font-weight:700}
 </style>
 </head>
 <body>
@@ -2552,7 +2553,7 @@ function span(e){const s=toMin(e.start),en=toMin(e.end);if(s==null||en==null)ret
 const crosses=e=>{const s=toMin(e.start),en=toMin(e.end);return s!=null&&en!=null&&en<=s;};
 const entryMin=e=>{const sp=span(e);return sp?sp[1]-sp[0]:0;};
 const totalMin=r=>(r.entries||[]).reduce((a,e)=>a+entryMin(e),0);
-function absMin(r,c){if(!c||!c.time)return null;return toMin(c.time)+(c.date&&c.date!==r.date?1440:0);}
+function absMin(r,c){if(!c||!c.time)return null;const dd=c.date&&c.date!==r.date?Math.max(1,Math.round((Date.parse(c.date+'T12:00:00Z')-Date.parse(r.date+'T12:00:00Z'))/864e5)):0;return toMin(c.time)+1440*dd;}
 function stayMin(r){const a=absMin(r,r.checkIn),b=absMin(r,r.checkOut);return(a!=null&&b!=null)?b-a:null;}
 function nearest(lat,lng){let best=null;S.projects.filter(p=>p.active&&p.lat>33&&p.lng>124).forEach(p=>{const d=haversine(lat,lng,p.lat,p.lng);if(!best||d<best.d)best={p,d};});return best;}
 function locChip(c){
@@ -2695,15 +2696,28 @@ function logout(){closeModal();ses.uid=null;ses.setup=null;keepSet('');render();
 function qrDemoBtns(){const ss=S.spots.filter(s=>s.active);if(!ss.length)return '<p class="mute">등록된 QR 장소가 없습니다.</p>';
   return ss.map(s=>`<button class="btn" style="width:100%;margin-bottom:6px;text-align:left" onclick="qrScan('${s.id}')">📷 ${esc(s.name)} QR 촬영</button>`).join('');}
 function qrScan(id){qr={spot:SP(id)};render();window.scrollTo(0,0);}
+function openRecs(wid){const from=daysAgo(2);return S.records.filter(r=>r.workerId===wid&&r.date>=from&&r.checkIn&&!r.checkOut&&editable(r)).sort((a,b)=>b.date.localeCompare(a.date));}
+const wdBox=(d,lb)=>`<div class="workday">${lb||'근무일'} <b>${fmtDay(d)}</b></div>`;
 function vQR(me){
-  const s=qr.spot,td=today(),r=recOf(me.id,td),y=daysAgo(1),yr=recOf(me.id,y);
-  const yOpen=(!r||!r.checkIn)&&yr&&yr.checkIn&&!yr.checkOut&&editable(yr);
-  let h=`<div class="top"><div class="brand">전자 출근부</div><span class="sp"></span><button class="btn sm" onclick="qr=null;render()">닫기</button></div><div class="wrap narrow">
+  const s=qr.spot,td=today(),y=daysAgo(1),r=recOf(me.id,td),opens=openRecs(me.id);
+  if(ui.qrOut&&!opens.find(o=>o.date===ui.qrOut))ui.qrOut=null;
+  const outDate=ui.qrOut||(r&&r.checkIn&&!r.checkOut?td:null);
+  let h=`<div class="top"><div class="brand">전자 출근부</div><span class="sp"></span><button class="btn sm" onclick="qr=null;ui.qrOut=null;render()">닫기</button></div><div class="wrap narrow">
   <div class="card" style="margin-top:6px;text-align:center"><div class="mute">📍 QR 촬영 장소</div><h2 style="margin:4px 0">${esc(s.name)}</h2>
   <div class="mute">${esc(me.name)} 님 · ${esc(affLabel(me))}</div><div style="font-size:34px;font-weight:700;margin:10px 0" id="clock">${hm(new Date())}</div><div class="mute">${fmtDay(td)}</div>`;
-  if(yOpen)h+=`<div class="warnbox" style="text-align:left">어제(${fmtDayS(y)}) 출근 기록에 퇴근이 없습니다. 야간 근무를 마치는 중이면 "어제 근무 퇴근"을 누르세요.</div><button class="btn ok big" style="margin-top:6px" onclick="doCheck('out','${y}')">어제 근무 퇴근하기</button><button class="btn pri big" style="margin-top:10px" onclick="doCheck('in')">오늘 출근하기</button>`;
-  else if(!r||!r.checkIn)h+=`<button class="btn pri big" style="margin-top:14px" onclick="doCheck('in')">출근하기</button>`;
-  else if(!r.checkOut)h+=`<div class="mute" style="margin-top:8px">출근 ${r.checkIn.time} 기록됨</div></div><div class="card" style="text-align:left"><h3 style="margin:0 0 8px">① 오늘 작업 내역 작성</h3>${entriesEditor(r.entries,'w',editable(r))}${summaryLine(r)}<p class="mute" style="margin:8px 0 0">마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.</p></div><div class="card" style="text-align:center"><h3 style="margin:0 0 8px">② 퇴근</h3><button class="btn ok big" onclick="doCheck('out')">작업 내역 확인 후 퇴근하기</button><p class="mute" style="margin:8px 0 0">퇴근하면 작업 내역이 관리자에게 바로 승인 요청됩니다.</p>`;
+  if(outDate){
+    const or=recOf(me.id,outDate);
+    if(opens.length>1)h+=`<div class="row" style="justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap">${opens.map(o=>`<button class="btn sm ${o.date===outDate?'pri':''}" onclick="ui.qrOut='${o.date}';render()">${fmtDayS(o.date)} 근무</button>`).join('')}</div>`;
+    h+=wdBox(outDate,'퇴근할 근무일')+`<div class="mute" style="margin-top:4px">출근 ${or.checkIn.time}${or.checkIn.date!==outDate?' ('+fmtDayS(or.checkIn.date)+')':''} 기록됨</div></div>
+    <div class="card" style="text-align:left"><h3 style="margin:0 0 8px">① ${outDate===td?'오늘':fmtDayS(outDate)} 작업 내역 작성</h3>${entriesEditor(or.entries,'w',editable(or))}${summaryLine(or)}<p class="mute" style="margin:8px 0 0">마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.</p></div>
+    <div class="card" style="text-align:center"><h3 style="margin:0 0 8px">② 퇴근</h3><button class="btn ok big" onclick="doCheck('out','${outDate}')">작업 내역 확인 후 퇴근하기</button><p class="mute" style="margin:8px 0 0">퇴근하면 작업 내역이 관리자에게 바로 승인 요청됩니다.</p>`;
+    if(outDate!==td&&!(r&&r.checkIn))h+=`<button class="btn" style="width:100%;margin-top:10px" onclick="ui.qrOut='-';render()">퇴근 말고 오늘 출근하기</button>`;
+  }else if(!r||!r.checkIn){
+    if(opens.length&&ui.qrOut!=='-')h+=`<div class="warnbox" style="text-align:left">퇴근하지 않은 근무가 있습니다. 야간·연속 근무를 마치는 중이면 퇴근할 근무일을 고르세요.<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">${opens.map(o=>`<button class="btn ok sm" onclick="ui.qrOut='${o.date}';render()">${fmtDayS(o.date)} 근무 퇴근하기</button>`).join('')}</div></div>`;
+    const yr=recOf(me.id,y),canY=!(yr&&yr.checkIn);const inD=ui.qrIn===y&&canY?y:td;
+    h+=`<div style="margin-top:10px"><div class="mute" style="margin-bottom:4px">어느 날 근무로 출근할까요?</div><div class="seg"><button class="${inD===td?'on':''}" onclick="ui.qrIn='${td}';render()">오늘 ${fmtDayS(td)}</button>${canY?`<button class="${inD===y?'on':''}" onclick="ui.qrIn='${y}';render()">어제 ${fmtDayS(y)}</button>`:''}</div>${inD===y?'<div class="mute" style="margin-top:4px">자정을 넘겨 출근했지만 어제 근무로 기록할 때만 고르세요.</div>':''}</div>
+    ${wdBox(inD,'출근할 근무일')}<button class="btn pri big" style="margin-top:10px" onclick="doCheck('in','${inD}')">출근하기</button>`;
+  }
   else h+=`<div class="infobox">오늘 출근 ${r.checkIn.time} · 퇴근 ${r.checkOut.time} 기록이 완료되었습니다.</div><button class="btn pri" style="width:100%;padding:12px" onclick="qr=null;ui.wTab='today';render()">작업 내역 확인·작성</button>`;
   h+=`<p class="mute" style="margin-bottom:0">버튼을 누르면 QR 장소와 휴대폰 GPS 위치가 함께 기록됩니다.</p></div>
   ${isStaff(me)?'':`<div class="card"><p class="mute" style="margin:0">출근 후에는 화면이 작업 내역 작성으로 이어집니다. 퇴근할 때 QR을 다시 촬영하세요.</p></div>`}</div>`;
@@ -2805,7 +2819,7 @@ function doConsent(){if(!document.getElementById('cs_ok').checked){toast('동의
 /* =========================================================
    근로자 화면
    ========================================================= */
-function curDate(){return(ui.wTab==='past'&&ui.pastDate)?ui.pastDate:today();}
+function curDate(){if(qr&&qr.spot&&ui.qrOut&&ui.qrOut!=='-')return ui.qrOut;return(ui.wTab==='past'&&ui.pastDate)?ui.pastDate:today();}
 function myRec(){return recOf(ses.uid,curDate());}
 function ensureRec(wid,date,manual){let r=recOf(wid,date);if(!r){r={id:uid(),workerId:wid,date,checkIn:null,checkOut:null,entries:[],status:'draft',rejectReason:'',submittedAt:'',decidedBy:'',decidedAt:'',manual:!!manual,manualReason:'',history:[]};S.records.push(r);}return r;}
 const editable=r=>!r||r.status==='draft'||r.status==='rejected';
@@ -2814,11 +2828,11 @@ function vWorker(me){
   let h=`<div class="top"><div class="brand">전자 출근부</div><span class="sp"></span>${isStaff(me)?'<button class="btn sm" onclick="ui.asWorker=false;render()">관리자 화면</button>':''}<button class="btn sm" onclick="logout()">로그아웃</button></div><div class="wrap narrow">
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
-  h+=tabs([['today','오늘 출퇴근'],['past','지난 날짜 신청'],['hist','내 근무기록',rej||''],['leave','연차'],['docs','계약서·명세서']],ui.wTab,'wTab');
+  h+=tabs([['today','오늘 출퇴근'],['past','다른 날짜·출장 신청'],['hist','내 근무기록',rej||''],['leave','연차'],['docs','계약서·명세서']],ui.wTab,'wTab');
   if(ui.wTab==='today')h+=vDay(true);
   else if(ui.wTab==='past'){
-    h+=`<div class="card"><label class="f"><span>신청할 날짜 (최근 14일)</span><input type="date" min="${daysAgo(14)}" max="${daysAgo(1)}" value="${ui.pastDate}" onchange="ui.pastDate=this.value;render()"></label><p class="mute" style="margin:0">출퇴근 버튼을 누르지 못했거나, 퇴근을 누르지 못한 날을 선택하세요. 반려된 기록 수정도 여기서 합니다.</p></div>`;
-    if(ui.pastDate)h+=vDay(false);
+    h+=`<div class="card"><label class="f"><span>신청할 날짜 (오늘 포함 최근 14일)</span><input type="date" min="${daysAgo(14)}" max="${today()}" value="${ui.pastDate}" onchange="ui.pastDate=this.value;render()"></label><p class="mute" style="margin:0">출장·외부 현장처럼 쉼터 QR이 없는 곳에서 일한 날, 출퇴근을 누르지 못한 날을 선택하세요. 반려된 기록 수정도 여기서 합니다.</p></div>`;
+    if(ui.pastDate){const tr=recOf(ses.uid,ui.pastDate);if(ui.pastDate===today()&&tr&&tr.checkIn&&tr.checkIn.lat!=null)h+=`<div class="card"><div class="infobox">오늘은 이미 QR로 출근했습니다. "오늘 출퇴근" 탭에서 이어서 작성하세요.</div></div>`;else h+=vDay(false);}
   }
   else if(ui.wTab==='hist')h+=vMyHist(me);
   else if(ui.wTab==='leave')h+=vMyLeave(me);
@@ -2836,7 +2850,7 @@ function vDay(isToday){
     if((!r||!r.checkIn)&&yr&&yr.checkIn&&!yr.checkOut&&editable(yr))
       h+=`<div class="warnbox">어제(${fmtDayS(y)}) 출근 기록에 퇴근이 없습니다. 야간 근무 중이었다면 아래 버튼으로 어제 근무를 퇴근 처리하세요.<div style="margin-top:8px">${S.settings.qrOnly?'<div class="mute" style="margin-bottom:6px">쉼터 QR을 촬영하면 "어제 근무 퇴근하기" 버튼이 나옵니다.</div>':`<button class="btn ok" onclick="doCheck('out','${y}')">어제 근무 퇴근하기</button> `}<button class="btn" onclick="ui.wTab='past';ui.pastDate='${y}';render()">어제 기록 수정하기</button></div></div>`;
   }
-  h+=`<div class="card"><div class="row"><h2 style="margin:0">${fmtDay(date)}</h2><span class="sp"></span>${isToday?`<span class="mute">현재 <b id="clock">${hm(new Date())}</b></span>`:'<span class="chip st-draft">지난 날짜</span>'}</div>`;
+  h+=`<div class="card"><div class="row"><h2 style="margin:0">${fmtDay(date)}</h2><span class="sp"></span>${isToday?`<span class="mute">현재 <b id="clock">${hm(new Date())}</b></span>`:'<span class="chip st-draft">수기 신청</span>'}</div>`;
   if(isToday){
     const qo=S.settings.qrOnly;
     const qrGuide=(!r||!r.checkIn?scanBtn('in'):`<div class="infobox" style="margin-top:12px"><b>퇴근 순서</b> ① 아래 작업 내역을 먼저 작성 → ② QR 촬영 → ③ 퇴근 (승인 요청까지 자동)</div>`+scanBtn('out'))+`${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
@@ -2853,7 +2867,8 @@ function vDay(isToday){
       h+=`<div class="warnbox">버튼으로 기록하지 못한 시각을 직접 입력합니다. 위치정보 없이 저장되며 관리자 확인 후 승인됩니다.</div><div class="grid2 g2fixed">`;
       if(!inGps)h+=`<label class="f"><span>출근 시각</span><input type="time" value="${r&&r.checkIn?r.checkIn.time:''}" ${ed?'':'disabled'} onchange="setManual('in',this.value)"></label>`;
       if(!outGps)h+=`<label class="f"><span>퇴근 시각</span><input type="time" value="${r&&r.checkOut?r.checkOut.time:''}" ${ed?'':'disabled'} onchange="setManual('out',this.value)"></label>`;
-      h+=`</div><label class="f"><span>사후 입력 사유 (필수)</span><input value="${esc(r?r.manualReason:'')}" ${ed?'':'disabled'} placeholder="예: 휴대폰 배터리 방전으로 퇴근 버튼 누락" onchange="setManual('reason',this.value)"></label>`;
+      const mr=/^\[(.+?)\] ?([\s\S]*)$/.exec(r&&r.manualReason||'')||[null,'',r?r.manualReason||'':''];
+      h+=`</div><div class="grid2"><label class="f"><span>신청 구분 (필수)</span><select ${ed?'':'disabled'} id="mr_cat" onchange="setManualReason()"><option value="">— 선택 —</option>${MR_CATS.map(c=>`<option value="${c}" ${mr[1]===c?'selected':''}>${c}</option>`).join('')}</select></label><label class="f"><span>상세 사유 (필수)</span><input id="mr_txt" value="${esc(mr[2])}" ${ed?'':'disabled'} placeholder="예: 현대제철 포항 출장 / 휴대폰 배터리 방전" onchange="setManualReason()"></label></div>`;
     }
   }
   h+='</div>';
@@ -2861,6 +2876,8 @@ function vDay(isToday){
   else if(!isToday)h+=`<div class="card"><p class="mute" style="margin:0">출근·퇴근 시각을 입력하면 작업 내역을 작성할 수 있습니다.</p></div>`;
   return h;
 }
+const MR_CATS=['출장·외부 현장','출퇴근 버튼 누락','야간·연속 근무','기타'];
+function setManualReason(){const c=document.getElementById('mr_cat').value,t=document.getElementById('mr_txt').value.trim();setManual('reason',c||t?(c?'['+c+'] ':'')+t:'');}
 function setManual(kind,v){
   const r=ensureRec(ses.uid,curDate(),true);if(!editable(r))return;
   if(kind==='reason'){r.manualReason=v;r.manual=true;}
@@ -2937,7 +2954,7 @@ async function doCheck(kind,dateArg){
     const near=nearest(pos.lat,pos.lng);
     c={date:ymd(now),time:hm(now),lat:+pos.lat.toFixed(6),lng:+pos.lng.toFixed(6),acc:pos.acc,via:'button',nearId:near?near.p.id:'',dist:near?Math.round(near.d):null,inside:near?near.d<=near.p.radius:false,method:pos.method};
   }
-  qr=null;try{if(/^#qr-/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  qr=null;ui.qrOut=null;ui.qrIn=null;try{if(/^#qr-/.test(location.hash))history.replaceState(null,'',location.pathname+location.search);}catch(e){}
   ui.wTab='today';
   const r=ensureRec(ses.uid,date,false);
   if(kind==='in'){r.checkIn=c;r.history.push({at:stamp(),by:ses.uid,action:'출근',detail:locText(c)});}
@@ -3993,6 +4010,27 @@ const I18=[
 ['작업 내역을 저장하면 다시 퇴근할 수 있습니다. 마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.','Ghi xong công việc thì bấm tan ca lại. Giờ kết thúc của công việc cuối sẽ tự đặt bằng giờ tan ca.','After writing the work log, clock out again. The last task\'s end time is set to your clock-out time.'],
 ['그래도 퇴근하고 승인 요청할까요?','Vẫn tan ca và gửi duyệt?','Clock out and submit anyway?'],
 ['퇴근은 기록되었습니다','Đã ghi giờ tan ca','Clock-out recorded'],
+['근무일','Ngày làm việc','Work date'],
+['수기 신청','Nhập tay','Manual entry'],
+['퇴근할 근무일','Ngày làm cần tan ca','Work date to clock out'],
+['출근할 근무일','Ngày làm khi vào ca','Work date for clock-in'],
+['신청 근무일','Ngày làm cần bổ sung','Work date requested'],
+['어느 날 근무로 출근할까요?','Vào ca cho ngày làm nào?','Which work date is this clock-in for?'],
+['자정을 넘겨 출근했지만 어제 근무로 기록할 때만 고르세요.','Chỉ chọn khi vào ca sau nửa đêm nhưng tính cho ngày hôm qua.','Choose only if you started after midnight but it counts as yesterday\'s shift.'],
+['퇴근 말고 오늘 출근하기','Không tan ca, vào ca hôm nay','Clock in for today instead'],
+['퇴근하지 않은 근무가 있습니다. 야간·연속 근무를 마치는 중이면 퇴근할 근무일을 고르세요.','Có ca làm chưa tan ca. Nếu đang kết thúc ca đêm/ca liên tục, hãy chọn ngày làm cần tan ca.','You have a shift without clock-out. If finishing a night/continuous shift, pick the work date to clock out.'],
+['다른 날짜·출장 신청','Ngày khác · Công tác','Other date · Trip'],
+['신청할 날짜 (오늘 포함 최근 14일)','Ngày cần bổ sung (14 ngày gần nhất, gồm hôm nay)','Date (last 14 days incl. today)'],
+['출장·외부 현장처럼 쉼터 QR이 없는 곳에서 일한 날, 출퇴근을 누르지 못한 날을 선택하세요. 반려된 기록 수정도 여기서 합니다.','Chọn ngày làm ở nơi không có mã QR (công tác, công trường bên ngoài) hoặc ngày quên chấm công. Sửa bản ghi bị trả lại cũng ở đây.','Choose a day worked where there was no QR (business trip, outside site) or a day you missed clocking. Returned records are fixed here too.'],
+['오늘은 이미 QR로 출근했습니다. "오늘 출퇴근" 탭에서 이어서 작성하세요.','Hôm nay bạn đã vào ca bằng QR. Hãy tiếp tục ở tab "Chấm công hôm nay".','You already clocked in by QR today. Continue in the "Today" tab.'],
+['신청 구분 (필수)','Loại đơn (bắt buộc)','Request type (required)'],
+['— 선택 —','— Chọn —','— Select —'],
+['상세 사유 (필수)','Lý do chi tiết (bắt buộc)','Details (required)'],
+['예: 현대제철 포항 출장 / 휴대폰 배터리 방전','VD: Công tác Pohang / Điện thoại hết pin','e.g. Business trip to Pohang / Phone battery died'],
+['출장·외부 현장','Công tác / công trường ngoài','Business trip / outside site'],
+['출퇴근 버튼 누락','Quên chấm công','Missed clock-in/out'],
+['야간·연속 근무','Ca đêm / liên tục','Night / continuous shift'],
+['그날 출근 기록이 이미 있습니다.','Ngày đó đã có giờ vào ca.','That day already has a clock-in.'],
 ['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 "승인 요청"을 눌러 주세요.','Chưa gửi duyệt được. Hãy sửa các mục dưới đây rồi bấm "Gửi duyệt".','Not submitted yet. Fix the items below, then tap "Submit".'],
 ['승인요청','Gửi duyệt','Submitted'],
 ['재승인요청','Gửi duyệt lại','Resubmitted'],
@@ -4022,6 +4060,11 @@ const I18R=[
 [/^(\d{4})년 (\d{1,2})월 (\d{1,2})일 \((.)\)$/,(m)=>LANG==='vi'?`${WK.vi[m[4]]}, ${m[3]}/${m[2]}/${m[1]}`:`${WK.en[m[4]]}, ${m[2]}/${m[3]}/${m[1]}`],
 [/^(\d{1,2})\/(\d{1,2}) \((.)\)$/,(m)=>LANG==='vi'?`${m[2]}/${m[1]} (${WK.vi[m[3]]})`:`${m[1]}/${m[2]} (${WK.en[m[3]]})`],
 [/^(-?[\d.]+)일$/,(m)=>L2(`${m[1].replace('.',',')} ngày`,`${m[1]} day${m[1]==='1'?'':'s'}`)],
+[/^출근 (\d\d:\d\d) \((.+)\) 기록됨$/,(m)=>L2(`Đã vào ca lúc ${m[1]} (${trCore(m[2])})`,`Clocked in at ${m[1]} (${trCore(m[2])})`)],
+[/^(오늘|어제) (\d{1,2}\/\d{1,2} \(.\))$/,(m)=>`${m[1]==='오늘'?L2('Hôm nay','Today'):L2('Hôm qua','Yesterday')} ${trCore(m[2])}`],
+[/^(\d{1,2}\/\d{1,2} \(.\)) 근무 퇴근하기$/,(m)=>L2(`Tan ca cho ngày ${trCore(m[1])}`,`Clock out for ${trCore(m[1])}`)],
+[/^(\d{1,2}\/\d{1,2} \(.\)) 근무$/,(m)=>L2(`Ca ${trCore(m[1])}`,`Shift ${trCore(m[1])}`)],
+[/^① (\d{1,2}\/\d{1,2} \(.\)) 작업 내역 작성$/,(m)=>L2(`① Ghi công việc ${trCore(m[1])}`,`① Work log for ${trCore(m[1])}`)],
 [/^(출근|퇴근) (\d\d:\d\d) 기록됨$/,(m)=>L2(`Đã ${IO(m[1])} lúc ${m[2]}`,`${m[1]==='출근'?'Clocked in':'Clocked out'} at ${m[2]}`)],
 [/^오늘 출근 (\d\d:\d\d) · 퇴근 (\d\d:\d\d) 기록이 완료되었습니다\.$/,(m)=>L2(`Hôm nay đã ghi: vào ca ${m[1]} · tan ca ${m[2]}.`,`Today recorded: in ${m[1]} · out ${m[2]}.`)],
 [/^(.+) 님, 계속 이용하려면 아래 내용을 확인하고 동의해 주세요\.$/,(m)=>L2(`${m[1]}, hãy đọc và đồng ý nội dung dưới đây để tiếp tục.`,`${m[1]}, please read and agree below to continue.`)],
@@ -4196,7 +4239,7 @@ doCheck=async function(kind,dateArg){
   busy(false);
   const lb=kind==='in'?'출근':'퇴근';
   if(r.refused){render();alertBox(`${lb}할 수 없습니다`,r.hasG?[`지금 위치가 QR 장소(${r.spotName})에서 ${fmtDist(r.dist)} 떨어져 있습니다.`,`QR 장소 반경 ${r.radius}m 안에서만 ${lb}할 수 있습니다.`,'쉼터에 와서 다시 시도하세요. 이 시도는 관리자에게 기록됩니다.']:['휴대폰 위치(GPS)를 확인하지 못했습니다.','휴대폰 설정에서 위치를 켜고, 브라우저의 위치 권한을 "허용"으로 바꾼 뒤 QR을 다시 촬영하세요.']);return;}
-  applyState(r.state);qr=null;ui.wTab='today';render();
+  applyState(r.state);qr=null;ui.qrOut=null;ui.qrIn=null;ui.wTab='today';render();
   const c=r.result.c;
   if(c.via==='qr'&&c.lat==null)alertBox(`${lb} ${c.time} 기록 완료 — GPS 확인 불가`,['QR 촬영은 기록되었으나 휴대폰 위치를 확인하지 못했습니다.']);
   else if(!c.inside)alertBox(`${lb} ${c.time} 기록 완료 — 위치 확인 필요`,[`${c.via==='qr'?'QR 장소':'가장 가까운 현장'}에서 ${fmtDist(c.dist)} 떨어진 위치입니다.`,'관리자 화면에 표시됩니다.']);
@@ -4211,7 +4254,7 @@ function flushSync(){
   clearTimeout(syncT);syncT=null;const date=syncDate;if(!date)return syncP;
   const r=recOf(ses.uid,date);if(!r)return syncP;
   const p={date,entries:r.entries};
-  if(date<today()){p.manualIn=r.checkIn&&r.checkIn.lat!=null?undefined:(r.checkIn?r.checkIn.time:'');p.manualOut=r.checkOut&&r.checkOut.lat!=null?undefined:(r.checkOut?r.checkOut.time:'');p.manualReason=r.manualReason||'';}
+  if(date<today()||r.manual){p.manualIn=r.checkIn&&r.checkIn.lat!=null?undefined:(r.checkIn?r.checkIn.time:'');p.manualOut=r.checkOut&&r.checkOut.lat!=null?undefined:(r.checkOut?r.checkOut.time:'');p.manualReason=r.manualReason||'';}
   syncP=syncP.then(()=>call('saveDraft',p).then(x=>{const i=S.records.findIndex(y=>y.workerId===ses.uid&&y.date===date);if(i>=0&&x.record){S.records[i].id=x.record.id;}}).catch(e=>failMsg(e)));
   return syncP;
 }
