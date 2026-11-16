@@ -108,8 +108,9 @@ table.led th{text-align:center;line-height:1.25}
 <div id="app"><div id="boot-msg" style="max-width:420px;margin:60px auto;text-align:center;color:#55606e;font-size:15px"><div class="spin"></div>전자 출근부를 불러오는 중…</div></div>
 <script>
 /* 화면 오류가 나면 백지 대신 오류 내용을 보여 줌 (원인 확인용) */
-window.__showErr=function(msg){var a=document.getElementById('app');if(!a)return;var d=document.createElement('div');d.style.cssText='max-width:520px;margin:20px auto;padding:14px;border:1px solid #f0b8b8;background:#fdeeee;color:#8a2020;border-radius:10px;font-size:14px;word-break:break-all';d.textContent='화면 오류: '+msg+' — 이 화면을 캡처해서 관리자에게 보내 주세요.';a.insertBefore(d,a.firstChild);};
+window.__showErr=function(msg){var d=document.getElementById('errbar');if(!d){d=document.createElement('div');d.id='errbar';d.style.cssText='position:fixed;left:8px;right:8px;top:8px;z-index:200;padding:12px 14px;border:1px solid #f0b8b8;background:#fdeeee;color:#8a2020;border-radius:10px;font-size:13px;word-break:break-all;box-shadow:0 4px 14px rgba(0,0,0,.15)';d.onclick=function(){d.remove();};(document.body||document.documentElement).appendChild(d);}d.textContent='화면 오류: '+msg+' — 이 화면을 캡처해서 관리자에게 보내 주세요. (누르면 닫힘) ['+(navigator.userAgent.match(/OS [\d_]+|Android [\d.]+|KAKAOTALK|NAVER/g)||[]).join(' ')+']';};
 window.addEventListener('error',function(e){window.__showErr((e.message||'알 수 없는 오류')+(e.lineno?' (줄 '+e.lineno+')':''));});
+window.addEventListener('unhandledrejection',function(e){var r=e.reason;window.__showErr('처리 오류: '+((r&&r.message)||String(r)));});
 setTimeout(function(){if(document.getElementById('boot-msg'))window.__showErr('화면을 불러오지 못했습니다. 새로고침해 보시고, 계속되면 Index 파일 붙여넣기가 끝까지 되었는지 확인하세요.');},12000);
 </script>
 <div id="modal" class="modal hidden"></div>
@@ -2677,19 +2678,26 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
+const APP_VER='2026.11.16b';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
   const demo=S.workers.slice().sort((a,b)=>(a.role==='admin'?-1:0)-(b.role==='admin'?-1:0));
   return `<div class="wrap narrow">${qr&&qr.spot?`<div class="infobox" style="margin-top:16px">📍 <b>${esc(qr.spot.name)}</b> QR로 접속했습니다.<br>로그인하면 바로 출퇴근 화면으로 이동합니다. ("로그인 유지"를 체크하면 다음부터는 QR 촬영만으로 바로 열립니다.)</div>`:''}<div class="card" style="margin-top:${qr&&qr.spot?'8':'20'}px"><h2>주식회사 고센이엔지 · 전자 출근부</h2>
-  <label class="f"><span>연락처 (휴대폰 번호 = 아이디, 숫자만)</span><input id="lg_phone" type="tel" inputmode="numeric" placeholder="01012345678" oninput="this.value=this.value.replace(/\D/g,'')"></label>
+  <label class="f"><span>연락처 (휴대폰 번호 = 아이디, 숫자만)</span><input id="lg_phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="01012345678" oninput="this.value=this.value.replace(/\\D/g,'')"></label>
   <label class="f"><span>비밀번호</span><input id="lg_pw" type="password" maxlength="20" placeholder="처음 로그인이면 비워 두고 로그인을 누르세요" onkeydown="if(event.key==='Enter')doLogin()"></label>
   <label class="row" style="margin-bottom:12px"><input type="checkbox" id="lg_keep" checked> 이 휴대폰에서 로그인 유지 (QR 촬영 시 바로 출퇴근)</label>
-  <button class="btn pri" style="width:100%;padding:12px" onclick="doLogin()">로그인</button>
-  <div class="row" style="margin-top:12px;justify-content:center"><span class="mute">처음 사용하시나요?</span><button class="btn" onclick="ses.signup=true;render()">가입 신청</button></div></div>
+  <button type="button" class="btn pri" style="width:100%;padding:12px;touch-action:manipulation" onclick="doLogin()">로그인</button>
+  <div class="row" style="margin-top:12px;justify-content:center"><span class="mute">처음 사용하시나요?</span><button class="btn" onclick="ses.signup=true;render()">가입 신청</button></div></div>${inAppBox()}
   ${qr||LIVE?'':`<div class="card"><h3>📷 QR 촬영 체험 (데모)</h3><p class="mute">실제로는 휴게쉼터의 QR을 휴대폰 카메라로 촬영하면 이 화면이 열립니다. 아래에서 촬영할 QR 장소를 고르세요.</p>${qrDemoBtns()}</div>`}
   ${LIVE?'':`<div class="card"><h3>데모 계정으로 바로 들어가기</h3><p class="mute">누르면 해당 계정으로 로그인합니다. (관리자 비밀번호 0000 / 근로자 1234 · <b>최정훈</b>은 최초 로그인 체험용)</p>
   <div class="demo-acc">${demo.map(w=>`<button onclick="quickLogin('${w.id}')"><b>${esc(w.name)}</b> ${w.role==='admin'?'<span class="chip st-pend">관리자</span>':''}${w.status==='퇴사'?'<span class="chip st-bad">퇴사</span>':''}${!w.pw?'<span class="chip c-out">첫 로그인 전</span>':(!w.consent?'<span class="chip">동의 전</span>':'')}<small>${esc(affLabel(w))} · ${w.type} · ${w.phone}</small></button>`).join('')}</div></div>`}</div>`;
 }
+/* 카카오톡·네이버 등 앱 안 브라우저: 문제 시 기본 브라우저로 열기 */
+function inAppName(){const u=navigator.userAgent||'';return /KAKAOTALK/i.test(u)?'카카오톡':/NAVER\(inapp/i.test(u)?'네이버':/Instagram|FBAN|FBAV|Line\//i.test(u)?'앱':'';}
+function inAppBox(){const n=inAppName();const ver=`<p class="mute" style="text-align:center;font-size:11px;margin:6px 0 0">화면 버전 ${APP_VER}</p>`;if(!n)return ver;
+  const u=location.href,k='kakaotalk://web/openExternal?url='+encodeURIComponent(u);
+  return `<div class="infobox" style="margin-top:10px">ℹ️ <b>${n} 안의 브라우저</b>로 열려 있습니다. 로그인 버튼이 반응하지 않으면 <b>기본 브라우저(사파리·크롬)</b>로 열어 주세요.<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">${n==='카카오톡'?`<a class="btn pri" href="${k}">기본 브라우저로 열기</a>`:''}<button type="button" class="btn" onclick="copyUrl()">주소 복사</button></div></div>`+ver;}
+function copyUrl(){const u=location.href;try{navigator.clipboard.writeText(u).then(()=>toast('주소를 복사했습니다. 사파리에 붙여넣으세요.'),()=>prompt('주소를 복사하세요',u));}catch(e){prompt('주소를 복사하세요',u);}}
 function quickLogin(id){const w=W(id);document.getElementById('lg_phone').value=w.phone.replace(/\D/g,'');document.getElementById('lg_pw').value=w.pw||'';doLogin();}
 function doLogin(){
   const ph=(document.getElementById('lg_phone').value||'').replace(/\D/g,''),pw=document.getElementById('lg_pw').value||'';
@@ -4281,11 +4289,13 @@ function tokGet(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK
 function tokSet(t,keep){TOKEN=t||'';try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
 function call(op,p){
   if(BOOT.api){ /* 외부 호스팅 화면: 구글 로그인 쿠키 없이 서버 호출 (계정 여러 개·브라우저 무관) */
-    return fetch(BOOT.api,{method:'POST',credentials:'omit',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({t:TOKEN,op:op,p:p||{}})})
+    const ac=(typeof AbortController!=='undefined')?new AbortController():null;const tm=setTimeout(()=>{if(ac)ac.abort();},op==='calList'?60000:30000);
+    return fetch(BOOT.api,{method:'POST',credentials:'omit',redirect:'follow',cache:'no-store',signal:ac?ac.signal:undefined,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({t:TOKEN,op:op,p:p||{}})})
+      .finally(()=>clearTimeout(tm))
       .then(r=>{if(!r.ok)throw new Error('서버 연결 오류 ('+r.status+')');return r.text();})
       .then(tx=>{let r;try{r=JSON.parse(tx);}catch(e){throw new Error('서버 응답을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.');}
         if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;throw e;}return r||{};},
-        e=>{throw (e&&e.message&&e.message.indexOf('서버')===0)?e:new Error('인터넷 연결을 확인해 주세요.');});
+        e=>{if(e&&e.name==='AbortError')throw new Error('서버 응답이 늦습니다. 잠시 후 다시 눌러 주세요.');throw (e&&e.message&&e.message.indexOf('서버')===0)?e:new Error('인터넷 연결을 확인해 주세요.\n('+((e&&(e.name+': '+e.message))||e)+')');});
   }
   return new Promise((res,rej)=>{google.script.run.withSuccessHandler(r=>{if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;rej(e);}else res(r||{});}).withFailureHandler(e=>rej(new Error((e&&e.message)||String(e)))).api(TOKEN,op,p||{});});}
 let busyN=0;
