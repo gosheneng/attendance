@@ -90,6 +90,7 @@ table.led th{text-align:center;line-height:1.25}
 .mgrbox{margin:-4px 0 10px;padding:8px 10px;background:#eef5ff;border:1px solid #cfe0f7;border-radius:8px;font-size:14px}
 .kpi .k b small{font-size:.62em;font-weight:600;margin-left:1px;color:inherit;opacity:.8}.kpi .kfull{font-size:11px;color:var(--mute,#6b7280);margin-top:2px;font-variant-numeric:tabular-nums}
 #langSel{width:auto;padding:4px 6px;font-size:13px;border-radius:16px;background:#fff;color:#1f2937;border:1px solid #d6dbe3;margin-right:6px}.lang-row{display:flex;justify-content:flex-end;margin:10px 0 -6px}
+.scanbox{position:relative;margin:10px auto 0;width:100%;max-width:400px;aspect-ratio:1/1;background:#111;border-radius:12px;overflow:hidden}.scanbox video{width:100%;height:100%;object-fit:cover}.scanframe{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.9);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
 </style>
 </head>
 <body>
@@ -2597,7 +2598,7 @@ function validate(r,isAdmin){
 
 /* ---------- 공통 UI ---------- */
 function openModal(h){const m=document.getElementById('modal');m.innerHTML=h;m.classList.remove('hidden');}
-function closeModal(){const m=document.getElementById('modal');m.classList.add('hidden');m.innerHTML='';}
+function closeModal(){if(typeof scanStop==='function')scanStop();const m=document.getElementById('modal');m.classList.add('hidden');m.innerHTML='';}
 function confirmBox(msg,okLabel){return new Promise(res=>{modalResolve=res;openModal(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${msg}</div><div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="mRes(false)">취소</button><button class="btn pri" onclick="mRes(true)">${okLabel||'확인'}</button></div></div>`);});}
 function mRes(v){const f=modalResolve;modalResolve=null;closeModal();f&&f(v);}
 function alertBox(title,lines){openModal(`<div class="mbox" style="max-width:480px"><h3>${title}</h3>${lines&&lines.length?'<ul>'+lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul>':''}<div class="row" style="justify-content:flex-end"><button class="btn pri" onclick="closeModal()">확인</button></div></div>`);}
@@ -2702,7 +2703,7 @@ function vQR(me){
   <div class="mute">${esc(me.name)} 님 · ${esc(affLabel(me))}</div><div style="font-size:34px;font-weight:700;margin:10px 0" id="clock">${hm(new Date())}</div><div class="mute">${fmtDay(td)}</div>`;
   if(yOpen)h+=`<div class="warnbox" style="text-align:left">어제(${fmtDayS(y)}) 출근 기록에 퇴근이 없습니다. 야간 근무를 마치는 중이면 "어제 근무 퇴근"을 누르세요.</div><button class="btn ok big" style="margin-top:6px" onclick="doCheck('out','${y}')">어제 근무 퇴근하기</button><button class="btn pri big" style="margin-top:10px" onclick="doCheck('in')">오늘 출근하기</button>`;
   else if(!r||!r.checkIn)h+=`<button class="btn pri big" style="margin-top:14px" onclick="doCheck('in')">출근하기</button>`;
-  else if(!r.checkOut)h+=`<div class="mute" style="margin-top:8px">출근 ${r.checkIn.time} 기록됨</div><button class="btn ok big" style="margin-top:10px" onclick="doCheck('out')">퇴근하기</button>`;
+  else if(!r.checkOut)h+=`<div class="mute" style="margin-top:8px">출근 ${r.checkIn.time} 기록됨</div></div><div class="card" style="text-align:left"><h3 style="margin:0 0 8px">① 오늘 작업 내역 작성</h3>${entriesEditor(r.entries,'w',editable(r))}${summaryLine(r)}<p class="mute" style="margin:8px 0 0">마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.</p></div><div class="card" style="text-align:center"><h3 style="margin:0 0 8px">② 퇴근</h3><button class="btn ok big" onclick="doCheck('out')">작업 내역 확인 후 퇴근하기</button><p class="mute" style="margin:8px 0 0">퇴근하면 작업 내역이 관리자에게 바로 승인 요청됩니다.</p>`;
   else h+=`<div class="infobox">오늘 출근 ${r.checkIn.time} · 퇴근 ${r.checkOut.time} 기록이 완료되었습니다.</div><button class="btn pri" style="width:100%;padding:12px" onclick="qr=null;ui.wTab='today';render()">작업 내역 확인·작성</button>`;
   h+=`<p class="mute" style="margin-bottom:0">버튼을 누르면 QR 장소와 휴대폰 GPS 위치가 함께 기록됩니다.</p></div>
   ${isStaff(me)?'':`<div class="card"><p class="mute" style="margin:0">출근 후에는 화면이 작업 내역 작성으로 이어집니다. 퇴근할 때 QR을 다시 촬영하세요.</p></div>`}</div>`;
@@ -2838,10 +2839,10 @@ function vDay(isToday){
   h+=`<div class="card"><div class="row"><h2 style="margin:0">${fmtDay(date)}</h2><span class="sp"></span>${isToday?`<span class="mute">현재 <b id="clock">${hm(new Date())}</b></span>`:'<span class="chip st-draft">지난 날짜</span>'}</div>`;
   if(isToday){
     const qo=S.settings.qrOnly;
-    const qrGuide=`<div class="infobox" style="margin-top:12px">📷 휴게쉼터에 붙은 <b>QR 코드를 휴대폰 카메라로 촬영</b>하면 ${!r||!r.checkIn?'출근':'퇴근'} 화면이 열립니다.</div>${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
+    const qrGuide=(!r||!r.checkIn?scanBtn('in'):`<div class="infobox" style="margin-top:12px"><b>퇴근 순서</b> ① 아래 작업 내역을 먼저 작성 → ② QR 촬영 → ③ 퇴근 (승인 요청까지 자동)</div>`+scanBtn('out'))+`${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
     if(!r||!r.checkIn)h+=qo?qrGuide:`<button class="btn pri big" style="margin-top:14px" onclick="doCheck('in')">출근하기</button><p class="mute" style="margin-bottom:0">버튼을 누르면 현재 위치(GPS)와 시각이 기록됩니다. 휴게쉼터 QR 촬영으로도 출근할 수 있습니다.</p>${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
     else{h+=checkLine('출근',r.checkIn,r);
-      if(!r.checkOut)h+=(qo?qrGuide:`<button class="btn ok big" style="margin-top:12px" onclick="doCheck('out')">퇴근하기</button>`)+`<p class="mute" style="margin-bottom:0">퇴근 전에도 아래 작업 내역을 미리 작성할 수 있습니다.</p>`;
+      if(!r.checkOut)h+=(qo?qrGuide:`<button class="btn ok big" style="margin-top:12px" onclick="doCheck('out')">퇴근하기</button>`)+'';
       else h+=checkLine('퇴근',r.checkOut,r);}
   }else{
     const ed=editable(r);
@@ -2870,8 +2871,54 @@ function setManual(kind,v){
   save();render();
 }
 function fixOutDate(r){if(r.checkIn&&r.checkOut&&r.checkOut.lat==null){r.checkOut.date=(toMin(r.checkOut.time)<=toMin(r.checkIn.time))?nextDay(r.date):r.date;}}
+/* ---------- 앱 안에서 QR 촬영 (카메라 자동 열기) ---------- */
+let scanStream=null,scanTimer=null,scanDet=null,scanBusy=false;
+function loadJsQR(){return window.jsQR?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='jsQR.js';s.onload=()=>res();s.onerror=()=>rej(new Error('QR 판독기를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'));document.head.appendChild(s);});}
+function qrParse(t){t=String(t||'').trim();let m=/[?&#]qr[=-]([A-Za-z0-9]+-[a-z0-9]+)/.exec(t);if(m)return m[1];m=/^([A-Za-z0-9]+-[a-z0-9]+)$/.exec(t);return m?m[1]:'';}
+function scanStop(){clearInterval(scanTimer);scanTimer=null;if(scanStream){scanStream.getTracks().forEach(t=>{try{t.stop();}catch(e){}});scanStream=null;}}
+function scanMsg(t,bad){const e=document.getElementById('scan_msg');if(e){e.textContent=t;e.style.color=bad?'var(--bad)':'';}}
+async function scanOpen(){
+  openModal(`<div class="mbox" style="max-width:440px;text-align:center"><div class="row"><h3 style="margin:0">📷 QR 촬영</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기</button></div>
+  <div class="scanbox"><video id="scan_v" playsinline muted autoplay></video><div class="scanframe"></div></div>
+  <p id="scan_msg" class="mute" style="margin:8px 0">휴게쉼터의 QR 코드를 네모 안에 비춰 주세요.</p>
+  <label class="btn" style="display:inline-block;cursor:pointer">사진으로 찍어서 읽기<input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanFile(this)"></label></div>`);
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('nocam');
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    const v=document.getElementById('scan_v');if(!v){scanStop();return;}v.srcObject=scanStream;await v.play().catch(()=>{});
+    if('BarcodeDetector' in window){try{const f=await BarcodeDetector.getSupportedFormats();if(f.indexOf('qr_code')>=0)scanDet=new BarcodeDetector({formats:['qr_code']});}catch(e){scanDet=null;}}
+    if(!scanDet)await loadJsQR();
+    const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+    scanTimer=setInterval(async()=>{if(scanBusy)return;const v2=document.getElementById('scan_v');if(!v2||!v2.videoWidth)return;scanBusy=true;
+      try{let txt='';
+        if(scanDet){const r=await scanDet.detect(v2);if(r&&r.length)txt=r[0].rawValue;}
+        else{const w=Math.min(640,v2.videoWidth),h=Math.round(v2.videoHeight*w/v2.videoWidth);cv.width=w;cv.height=h;cx.drawImage(v2,0,0,w,h);const d=cx.getImageData(0,0,w,h);const r=jsQR(d.data,w,h,{inversionAttempts:'dontInvert'});if(r)txt=r.data;}
+        if(txt)scanFound(txt);
+      }catch(e){}finally{scanBusy=false;}},250);
+  }catch(e){scanStop();scanMsg('카메라를 열 수 없습니다. 아래 "사진으로 찍어서 읽기"를 누르거나, 휴대폰 기본 카메라로 QR을 촬영하세요.',true);}
+}
+async function scanFile(inp){const f=inp.files&&inp.files[0];if(!f)return;scanMsg('사진을 읽는 중…');
+  try{await loadJsQR();const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(f);});
+    const w=Math.min(1200,img.naturalWidth),h=Math.round(img.naturalHeight*w/img.naturalWidth);const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.drawImage(img,0,0,w,h);
+    const r=jsQR(cx.getImageData(0,0,w,h).data,w,h);if(r)scanFound(r.data);else scanMsg('사진에서 QR 코드를 찾지 못했습니다. QR이 크게, 선명하게 나오도록 다시 찍어 주세요.',true);
+  }catch(e){scanMsg('사진을 읽지 못했습니다. 다시 시도해 주세요.',true);}}
+async function scanFound(txt){const raw=qrParse(txt);if(!raw){scanMsg('전자 출근부 QR 코드가 아닙니다. 휴게쉼터에 붙은 QR을 촬영하세요.',true);return;}
+  scanStop();closeModal();await qrUse(raw);}
+async function qrUse(raw){const [c,k]=raw.split('-');const sp=S.spots.find(x=>x.code===c&&x.key===k&&x.active);
+  if(!sp){qr={bad:true};render();return;}qr={spot:sp,raw};ui.wTab='today';render();window.scrollTo(0,0);}
+function scanBtn(kind){return `<button class="btn ${kind==='out'?'ok':'pri'} big" style="margin-top:12px" onclick="scanOpen()">📷 QR 촬영하고 ${kind==='out'?'퇴근하기':'출근하기'}</button><p class="mute" style="margin:6px 0 0">카메라가 열리면 휴게쉼터 QR을 비추세요. 휴대폰 기본 카메라로 찍어도 됩니다.</p>`;}
+
+/* ---------- 퇴근 전에 작업 내역 확인 (퇴근하면 자동 승인 요청) ---------- */
+function autoEnd(es,time){const a=(es||[]).map(e=>Object.assign({},e));if(!a.length||!time)return a;let li=0;a.forEach((e,i)=>{if((e.start||'')>=(a[li].start||''))li=i;});a[li].end=time;return a;}
+async function outPrecheck(date){const r=recOf(ses.uid,date);const now=hm(new Date());
+  const tmp=Object.assign({entries:[]},r||{},{checkOut:{date:date,time:now,lat:null},entries:autoEnd(r?r.entries:[],now)});
+  const v=validate(tmp,false);
+  if(v.errors.length){alertBox('퇴근 전에 작업 내역을 먼저 작성해 주세요',v.errors.concat(['작업 내역을 저장하면 다시 퇴근할 수 있습니다. 마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.']));return false;}
+  if(v.warns.length&&!(await confirmBox('<b>확인이 필요한 사항</b>\n· '+v.warns.map(esc).join('\n· ')+'\n\n그래도 퇴근하고 승인 요청할까요?','퇴근')))return false;
+  return true;}
 async function doCheck(kind,dateArg){
   const date=dateArg||today();const spot=qr&&qr.spot?qr.spot:null;
+  if(kind==='out'&&!(await outPrecheck(date)))return;
   if(!spot&&S.settings.qrOnly){alertBox('QR 코드로 출퇴근하세요',['휴게쉼터에 붙어 있는 QR 코드를 휴대폰 카메라로 촬영하면 출퇴근 화면이 열립니다.']);return;}
   openModal(`<div class="mbox" style="max-width:320px;text-align:center"><div class="spin"></div>위치 확인 중…</div>`);
   const pos=await getPos(spot);closeModal();if(!pos)return;
@@ -2895,7 +2942,9 @@ async function doCheck(kind,dateArg){
   const r=ensureRec(ses.uid,date,false);
   if(kind==='in'){r.checkIn=c;r.history.push({at:stamp(),by:ses.uid,action:'출근',detail:locText(c)});}
   else{r.checkOut=c;r.history.push({at:stamp(),by:ses.uid,action:'퇴근',detail:locText(c)});
-    if(!r.entries.length)r.entries.push({id:uid(),projectId:(r.checkIn&&r.checkIn.via!=='qr'&&r.checkIn.inside)?r.checkIn.nearId:'',start:r.checkIn?r.checkIn.time:'',end:c.time,desc:''});}
+    if(!r.entries.length)r.entries.push({id:uid(),projectId:(r.checkIn&&r.checkIn.via!=='qr'&&r.checkIn.inside)?r.checkIn.nearId:'',start:r.checkIn?r.checkIn.time:'',end:c.time,desc:''});
+    r.entries=autoEnd(r.entries,c.time);const v=validate(r,false);
+    if(!v.errors.length){const again=r.status==='rejected';r.status='pending';r.submittedAt=stamp();r.history.push({at:stamp(),by:ses.uid,action:again?'재승인요청':'승인요청',detail:`근무 ${fmtH(totalMin(r))} (퇴근 시 자동)`});}}
   save();render();
   const lb=kind==='in'?'출근':'퇴근';
   if(c.via==='qr'){
@@ -2915,7 +2964,7 @@ function entriesCard(r){
   if(r.status==='approved')h+=`<div class="infobox">승인된 기록입니다 (${esc(r.decidedAt)}).</div>`;
   h+=entriesEditor(r.entries,'w',ed);
   h+=summaryLine(r);
-  if(ed)h+=`<div class="row" style="margin-top:12px"><button class="btn" onclick="save();toast('임시저장했습니다')">임시저장</button><span class="sp"></span><button class="btn pri" onclick="submitRec()">${r.status==='rejected'?'다시 승인 요청':'승인 요청'}</button></div>`;
+  if(ed)h+=(r.checkIn&&!r.checkOut&&r.checkIn.lat!=null)?`<div class="row" style="margin-top:12px"><button class="btn" onclick="save();toast('임시저장했습니다')">임시저장</button><span class="sp"></span><span class="mute">퇴근하면 자동으로 승인 요청됩니다.</span></div>`:`<div class="row" style="margin-top:12px"><button class="btn" onclick="save();toast('임시저장했습니다')">임시저장</button><span class="sp"></span><button class="btn pri" onclick="submitRec()">${r.status==='rejected'?'다시 승인 요청':'승인 요청'}</button></div>`;
   return h+'</div>';
 }
 function summaryLine(r){
@@ -3921,6 +3970,30 @@ const I18=[
 ['저장했습니다.','Đã lưu.','Saved.'],
 ['관리자 화면','Màn hình quản lý','Admin screen'],
 ['출근하기 전입니다','Chưa vào ca','Not clocked in yet'],
+['📷 QR 촬영하고 출근하기','📷 Quét QR để vào ca','📷 Scan QR to clock in'],
+['📷 QR 촬영하고 퇴근하기','📷 Quét QR để tan ca','📷 Scan QR to clock out'],
+['카메라가 열리면 휴게쉼터 QR을 비추세요. 휴대폰 기본 카메라로 찍어도 됩니다.','Khi camera mở, hãy hướng vào mã QR ở khu nghỉ ngơi. Cũng có thể dùng camera mặc định của điện thoại.','When the camera opens, point it at the rest-area QR. You can also use your phone\'s normal camera.'],
+['📷 QR 촬영','📷 Quét QR','📷 Scan QR'],
+['휴게쉼터의 QR 코드를 네모 안에 비춰 주세요.','Đưa mã QR ở khu nghỉ ngơi vào trong khung vuông.','Fit the rest-area QR code inside the square.'],
+['사진으로 찍어서 읽기','Chụp ảnh để đọc mã','Take a photo instead'],
+['카메라를 열 수 없습니다. 아래 "사진으로 찍어서 읽기"를 누르거나, 휴대폰 기본 카메라로 QR을 촬영하세요.','Không mở được camera. Hãy bấm "Chụp ảnh để đọc mã" hoặc dùng camera mặc định để quét QR.','Cannot open the camera. Tap "Take a photo instead" or scan the QR with your phone\'s camera app.'],
+['사진을 읽는 중…','Đang đọc ảnh…','Reading photo…'],
+['사진에서 QR 코드를 찾지 못했습니다. QR이 크게, 선명하게 나오도록 다시 찍어 주세요.','Không tìm thấy mã QR trong ảnh. Hãy chụp lại sao cho mã QR to và rõ.','No QR code found. Retake the photo with the QR large and sharp.'],
+['사진을 읽지 못했습니다. 다시 시도해 주세요.','Không đọc được ảnh. Hãy thử lại.','Could not read the photo. Please try again.'],
+['전자 출근부 QR 코드가 아닙니다. 휴게쉼터에 붙은 QR을 촬영하세요.','Đây không phải mã QR chấm công. Hãy quét mã QR ở khu nghỉ ngơi.','This is not an attendance QR code. Scan the QR at the rest area.'],
+['QR 판독기를 불러오지 못했습니다. 인터넷 연결을 확인하세요.','Không tải được trình đọc QR. Hãy kiểm tra kết nối Internet.','Could not load the QR reader. Check your internet connection.'],
+['퇴근 순서 ① 아래 작업 내역을 먼저 작성 → ② QR 촬영 → ③ 퇴근 (승인 요청까지 자동)','Cách tan ca: ① ghi nội dung công việc bên dưới → ② quét QR → ③ tan ca (tự động gửi duyệt)','To clock out: ① write your work log below → ② scan the QR → ③ clock out (submitted automatically)'],
+['퇴근하면 자동으로 승인 요청됩니다.','Khi tan ca sẽ tự động gửi duyệt.','Submitted automatically when you clock out.'],
+['① 오늘 작업 내역 작성','① Ghi công việc hôm nay','① Today\'s work log'],
+['② 퇴근','② Tan ca','② Clock out'],
+['마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.','Giờ kết thúc của công việc cuối sẽ tự đặt bằng giờ tan ca.','The last task\'s end time is set to your clock-out time automatically.'],
+['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
+['퇴근하면 작업 내역이 관리자에게 바로 승인 요청됩니다.','Khi tan ca, nội dung công việc sẽ được gửi duyệt ngay.','Clocking out submits your work log for approval right away.'],
+['퇴근 전에 작업 내역을 먼저 작성해 주세요','Hãy ghi nội dung công việc trước khi tan ca','Please write your work log before clocking out'],
+['작업 내역을 저장하면 다시 퇴근할 수 있습니다. 마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.','Ghi xong công việc thì bấm tan ca lại. Giờ kết thúc của công việc cuối sẽ tự đặt bằng giờ tan ca.','After writing the work log, clock out again. The last task\'s end time is set to your clock-out time.'],
+['그래도 퇴근하고 승인 요청할까요?','Vẫn tan ca và gửi duyệt?','Clock out and submit anyway?'],
+['퇴근은 기록되었습니다','Đã ghi giờ tan ca','Clock-out recorded'],
+['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 "승인 요청"을 눌러 주세요.','Chưa gửi duyệt được. Hãy sửa các mục dưới đây rồi bấm "Gửi duyệt".','Not submitted yet. Fix the items below, then tap "Submit".'],
 ['승인요청','Gửi duyệt','Submitted'],
 ['재승인요청','Gửi duyệt lại','Resubmitted'],
 ['사후입력','Nhập bổ sung','Late entry'],
@@ -3985,7 +4058,8 @@ const I18R=[
 [/^(\S+) \(반차\)$/,(m)=>`${m[1]} (${L2('nửa ngày','half day')})`],
 [/^어제\((.+)\) 출근 기록에 퇴근이 없습니다\. (.+)$/,(m)=>L2(`Hôm qua (${trCore(m[1])}) có giờ vào ca nhưng chưa tan ca. `,`Yesterday (${trCore(m[1])}) has a clock-in but no clock-out. `)+(m[2].indexOf('아래 버튼')>=0?L2('Nếu làm ca đêm, hãy dùng nút bên dưới để tan ca cho hôm qua.','If you worked a night shift, use the button below to clock out for yesterday.'):L2('Nếu đang kết thúc ca đêm, hãy bấm "Tan ca cho ngày hôm qua".','If you are finishing a night shift, tap "Clock out for yesterday".'))],
 [/^※ 예시 문안입니다.*$/,()=>L2('※ Bản dịch chỉ để tham khảo; bản tiếng Hàn là bản chính thức.','※ Translation for reference; the Korean text is authoritative.')],
-[/^근무 (\S+)$/,(m)=>L2(`Giờ làm ${m[1]}`,`Worked ${m[1]}`)],
+[/^근무 (\S+)( \(퇴근 시 자동\))?$/,(m)=>L2(`Giờ làm ${m[1]}${m[2]?' (tự động khi tan ca)':''}`,`Worked ${m[1]}${m[2]?' (auto at clock-out)':''}`)],
+[/^퇴근 (\d\d:\d\d) 기록 · 승인 요청 완료$/,(m)=>L2(`Đã tan ca ${m[1]} · đã gửi duyệt`,`Clocked out ${m[1]} · submitted`)],
 [/^고센이엔지 담당자 (.*)$/,(m)=>L2(`Phụ trách Goshen ${m[1]}`,`Goshen contact ${m[1]}`)]
 ];
 const I18M={};I18.forEach(([k,vi,en])=>{I18M[k]={vi,en};});
@@ -4108,13 +4182,16 @@ getPos=function(){return new Promise(res=>{
 });};
 
 /* ----- 출근 / 퇴근 (서버가 시각·QR·반경 판정) ----- */
+qrUse=async function(raw){busy(true);try{const r=await call('qrInfo',{qr:raw});qr=r.bad?{bad:true}:{spot:r.spot,raw};}catch(e){busy(false);failMsg(e);return;}busy(false);ui.wTab='today';render();window.scrollTo(0,0);};
 doCheck=async function(kind,dateArg){
   const raw=qr&&qr.raw?qr.raw:'';
+  if(kind==='out'&&!(await outPrecheck(dateArg||today())))return;
   if(!raw&&S.settings.qrOnly){alertBox('QR 코드로 출퇴근하세요',['휴게쉼터에 붙어 있는 QR 코드를 휴대폰 카메라로 촬영하면 출퇴근 화면이 열립니다.']);return;}
   openModal(`<div class="mbox" style="max-width:320px;text-align:center"><div class="spin"></div>위치 확인 중…</div>`);
   const pos=await getPos();closeModal();
   busy(true);let r;
-  try{r=await call('check',{kind,date:dateArg||'',qr:raw,lat:pos.lat,lng:pos.lng,acc:pos.acc});}
+  const rec=recOf(ses.uid,dateArg||today());if(kind==='out'){clearTimeout(syncT);syncT=null;await syncP;}
+  try{r=await call('check',{kind,date:dateArg||'',qr:raw,lat:pos.lat,lng:pos.lng,acc:pos.acc,entries:kind==='out'&&rec?rec.entries:undefined,autoEnd:kind==='out',submit:kind==='out'});}
   catch(e){busy(false);failMsg(e);return;}
   busy(false);
   const lb=kind==='in'?'출근':'퇴근';
@@ -4124,6 +4201,7 @@ doCheck=async function(kind,dateArg){
   if(c.via==='qr'&&c.lat==null)alertBox(`${lb} ${c.time} 기록 완료 — GPS 확인 불가`,['QR 촬영은 기록되었으나 휴대폰 위치를 확인하지 못했습니다.']);
   else if(!c.inside)alertBox(`${lb} ${c.time} 기록 완료 — 위치 확인 필요`,[`${c.via==='qr'?'QR 장소':'가장 가까운 현장'}에서 ${fmtDist(c.dist)} 떨어진 위치입니다.`,'관리자 화면에 표시됩니다.']);
   else toast(`${lb} ${c.time} 기록 완료 · ${r.result.spotName||r.result.nearName||''}`);
+  if(kind==='out'){if(r.result.submitted)setTimeout(()=>toast(`퇴근 ${c.time} 기록 · 승인 요청 완료`),c.inside?0:300);else if(r.result.submitErr)alertBox('퇴근은 기록되었습니다',['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 "승인 요청"을 눌러 주세요.'].concat(r.result.submitErr));}
 };
 
 /* ----- 작업 내역 · 사후 입력 (자동 저장) ----- */
