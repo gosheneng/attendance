@@ -2678,7 +2678,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.16c';
+const APP_VER='2026.11.16d';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
   const demo=S.workers.slice().sort((a,b)=>(a.role==='admin'?-1:0)-(b.role==='admin'?-1:0));
@@ -2727,7 +2727,7 @@ function vQR(me){
   if(outDate){
     const or=recOf(me.id,outDate);
     if(opens.length>1)h+=`<div class="row" style="justify-content:center;gap:6px;margin-top:8px;flex-wrap:wrap">${opens.map(o=>`<button class="btn sm ${o.date===outDate?'pri':''}" onclick="ui.qrOut='${o.date}';render()">${fmtDayS(o.date)} 근무</button>`).join('')}</div>`;
-    h+=wdBox(outDate,'퇴근할 근무일')+`<div class="mute" style="margin-top:4px">출근 ${or.checkIn.time}${or.checkIn.date!==outDate?' ('+fmtDayS(or.checkIn.date)+')':''} 기록됨</div></div>
+    h+=wdBox(outDate,'퇴근할 근무일')+`<div class="mute" style="margin-top:4px">출근 ${or.checkIn.time}${or.checkIn.date!==outDate?' ('+fmtDayS(or.checkIn.date)+')':''} 기록됨${or.checkIn.real&&or.checkIn.real!==or.checkIn.time?` (QR 촬영 ${or.checkIn.real})`:''}<br><span style="font-size:12px">출근 시각은 작업 내역의 첫 작업 시작 시각으로 맞춰집니다.</span></div></div>
     <div class="card" style="text-align:left"><h3 style="margin:0 0 8px">① ${outDate===td?'오늘':fmtDayS(outDate)} 작업 내역 작성</h3>${entriesEditor(or.entries,'w',editable(or))}${summaryLine(or)}<p class="mute" style="margin:8px 0 0">마지막 작업의 종료 시각은 퇴근 시각으로 자동 맞춰집니다.</p></div>
     <div class="card" style="text-align:center"><h3 style="margin:0 0 8px">② 퇴근</h3><button class="btn ok big" onclick="doCheck('out','${outDate}')">작업 내역 확인 후 퇴근하기</button><p class="mute" style="margin:8px 0 0">퇴근하면 작업 내역이 관리자에게 바로 승인 요청됩니다.</p>`;
     if(outDate!==td&&!(r&&r.checkIn))h+=`<button class="btn" style="width:100%;margin-top:10px" onclick="ui.qrOut='-';render()">퇴근 말고 오늘 출근하기</button>`;
@@ -2858,8 +2858,13 @@ function vWorker(me){
   else h+=`<div class="card"><h3>근로계약서 · 급여명세서</h3><div class="infobox">2단계에서 제공될 예정입니다.</div><ul class="plan"><li>내 근로계약서 조회 및 휴대폰 화면 서명</li><li>월별 급여명세서 조회 및 PDF 저장</li><li>새 문서가 올라오면 앱 안에 알림 표시</li></ul></div>`;
   return h+'</div>';
 }
+/* 출근 시각 = 작업내역 첫 작업 시작 (실제 QR·버튼 시각은 real 에 보관) — 서버 startFromEntries 와 같은 규칙 */
+function startFromEntries(r){const c=r&&r.checkIn;if(!c||c.edited||c.method==='manual'||c.method==='admin')return;if(!(c.via==='qr'||c.via==='button'))return;
+  if(!c.real)c.real=c.time;const tm=t=>{const a=t.split(':');return +a[0]*60+ +a[1];};const base=tm(c.real);let best=null;
+  (r.entries||[]).forEach(e=>{if(!/^\d{2}:\d{2}$/.test(e.start||''))return;const d=((tm(e.start)-base+720+1440)%1440)-720;if(best===null||d<best.d)best={d,t:e.start};});c.time=best?best.t:c.real;}
+const realTag=c=>c&&c.real&&c.real!==c.time?`<span class="chip" title="QR·버튼을 실제로 누른 시각">실제 ${c.real}</span>`:'';
 function checkLine(label,c,r){
-  return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px"><div class="row"><b style="min-width:36px;margin-right:4px">${label}</b><span style="font-size:22px;font-weight:700">${c.time}</span>${c.date!==r.date?'<span class="chip">익일</span>':''}<span class="sp"></span>${locChip(c)}</div><div class="mute">${esc(locText(c))}</div></div>`;
+  return `<div style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:10px"><div class="row"><b style="min-width:36px;margin-right:4px">${label}</b><span style="font-size:22px;font-weight:700">${c.time}</span>${c.date!==r.date?'<span class="chip">익일</span>':''}${realTag(c)}<span class="sp"></span>${locChip(c)}</div><div class="mute">${esc(locText(c))}</div></div>`;
 }
 function vDay(isToday){
   const date=curDate();const r=recOf(ses.uid,date);
@@ -3027,7 +3032,7 @@ function entriesEditor(es,ns,ed){
   return h+`<button class="btn" onclick="entAdd('${ns}')">+ 작업 추가 (다른 공사·시간대)</button>`;
 }
 function entTarget(ns){if(ns==='a')return draft;return ensureRec(ses.uid,curDate(),curDate()!==today());}
-function entRerender(ns){if(ns==='a')renderAdminModal();else{save();render();}}
+function entRerender(ns){if(ns==='a')renderAdminModal();else{startFromEntries(entTarget(ns));save();render();}}
 function entSet(ns,i,k,v){const r=entTarget(ns);if(ns!=='a'&&!editable(r))return;r.entries[i][k]=v;entRerender(ns);}
 function entDel(ns,i){const r=entTarget(ns);if(ns!=='a'&&!editable(r))return;r.entries.splice(i,1);entRerender(ns);}
 function entAdd(ns){const r=entTarget(ns);if(ns!=='a'&&!editable(r))return;const last=r.entries[r.entries.length-1];
@@ -3367,7 +3372,7 @@ function renderAdminModal(){
   let h=`<div class="mbox"><div class="row"><h2 style="margin:0">${isNew?'출근 기록 직접 추가':'출근 기록 상세 · 수정'}</h2><span class="sp"></span>${isNew?'':statusChip(r.status)}<button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:12px"><label class="f"><span>근로자</span>${isNew?`<select onchange="draft.workerId=this.value;renderAdminModal()"><option value="">— 선택 —</option>${S.workers.filter(x=>x.status==='재직').map(x=>`<option value="${x.id}" ${x.id===r.workerId?'selected':''}>${esc(x.name)} (${esc(affLabel(x))} · ${x.type})</option>`).join('')}</select>`:`<input disabled value="${esc(w.name)} (${esc(affLabel(w))} · ${w.type})">`}</label>
   <label class="f"><span>근무일</span><input type="date" value="${r.date}" onchange="aSetDate(this.value)"></label></div>
-  <div class="grid2 g2fixed"><label class="f"><span>출근 시각 ${locChip(r.checkIn)}</span><input type="time" value="${r.checkIn?r.checkIn.time:''}" onchange="aSetTime('in',this.value)"></label>
+  <div class="grid2 g2fixed"><label class="f"><span>출근 시각 ${locChip(r.checkIn)}${realTag(r.checkIn)}</span><input type="time" value="${r.checkIn?r.checkIn.time:''}" onchange="aSetTime('in',this.value)"></label>
   <label class="f"><span>퇴근 시각 ${r.checkOut?locChip(r.checkOut):''}${r.checkOut&&r.checkOut.date!==r.date?' (익일)':''}</span><input type="time" value="${r.checkOut?r.checkOut.time:''}" onchange="aSetTime('out',this.value)"></label></div>
   <div class="mute">${r.checkIn&&r.checkIn.lat!=null?`출근 좌표 ${r.checkIn.lat}, ${r.checkIn.lng} (±${r.checkIn.acc}m) — ${esc(locText(r.checkIn))}${mapA(r.checkIn)}${r.checkIn.edited?' · <b>시각 수정됨</b>':''}<br>`:''}${r.checkOut&&r.checkOut.lat!=null?`퇴근 좌표 ${r.checkOut.lat}, ${r.checkOut.lng} (±${r.checkOut.acc}m) — ${esc(locText(r.checkOut))}${mapA(r.checkOut)}${r.checkOut.edited?' · <b>시각 수정됨</b>':''}<br>`:''}${r.manual&&r.manualReason?`사후/수기 사유: ${esc(r.manualReason)}`:''}</div>
   <h3 style="margin-top:14px">작업 내역</h3>${entriesEditor(r.entries,'a',true)}${summaryLine(r)}`;
@@ -4405,12 +4410,12 @@ function flushSync(){
   const r=recOf(ses.uid,date);if(!r)return syncP;
   const p={date,entries:r.entries};
   if(date<today()||r.manual){p.manualIn=r.checkIn&&r.checkIn.lat!=null?undefined:(r.checkIn?r.checkIn.time:'');p.manualOut=r.checkOut&&r.checkOut.lat!=null?undefined:(r.checkOut?r.checkOut.time:'');p.manualReason=r.manualReason||'';}
-  syncP=syncP.then(()=>call('saveDraft',p).then(x=>{const i=S.records.findIndex(y=>y.workerId===ses.uid&&y.date===date);if(i>=0&&x.record){S.records[i].id=x.record.id;}}).catch(e=>failMsg(e)));
+  syncP=syncP.then(()=>call('saveDraft',p).then(x=>{const i=S.records.findIndex(y=>y.workerId===ses.uid&&y.date===date);if(i>=0&&x.record){S.records[i].id=x.record.id;if(x.record.checkIn)S.records[i].checkIn=x.record.checkIn;}}).catch(e=>failMsg(e)));
   return syncP;
 }
 ensureRec=function(wid,date,manual){let r=recOf(wid,date);if(!r){r={id:'',workerId:wid,date,checkIn:null,checkOut:null,entries:[],status:'draft',rejectReason:'',submittedAt:'',decidedBy:'',decidedAt:'',manual:!!manual,manualReason:'',history:[]};S.records.push(r);}return r;};
 var _entRerender=entRerender;
-entRerender=function(ns){if(ns==='a'){renderAdminModal();return;}render();scheduleSync();};
+entRerender=function(ns){if(ns==='a'){renderAdminModal();return;}startFromEntries(entTarget(ns));render();scheduleSync();};
 setManual=function(kind,v){
   const r=ensureRec(ses.uid,curDate(),true);if(!editable(r))return;
   if(kind==='reason'){r.manualReason=v;r.manual=true;}
