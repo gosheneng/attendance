@@ -2541,7 +2541,7 @@ function keepGet(){try{return localStorage.getItem(KEEP)||'';}catch(e){return ''
 function keepSet(v){try{v?localStorage.setItem(KEEP,v):localStorage.removeItem(KEEP);}catch(e){}}
 function save(){if(LIVE)return;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 let S=load();
-if(!LIVE)Object.defineProperty(S,'leaveCal',{get(){return (S.leaves||[]).filter(l=>(l.status==='approved'||l.status==='pending')&&['연차','반차','병가','기타'].indexOf(l.kind)>=0).map(l=>({w:l.workerId,name:(S.workers.find(w=>w.id===l.workerId)||{}).name||'',kind:l.kind,start:l.start,end:l.end||l.start,st:l.status}));},configurable:true});
+if(!LIVE)Object.defineProperty(S,'leaveCal',{get(){return (S.leaves||[]).filter(l=>(l.status==='approved'||l.status==='pending')&&['연차','반차','병가','기타'].indexOf(l.kind)>=0).map(l=>({w:l.workerId,name:(S.workers.find(w=>w.id===l.workerId)||{}).name||'',kind:l.kind,start:l.start,end:l.end||l.start,st:l.status,half:l.half||'',hTime:l.hTime||''}));},configurable:true});
 const ses={uid:null};
 if(!LIVE){const k=keepGet();const w=k&&S.workers.find(x=>x.id===k);if(w&&w.status==='재직')ses.uid=k;}
 let qr=null; /* QR로 접속한 장소 {spot} 또는 {bad:true} */
@@ -2560,6 +2560,9 @@ let draft=null,draftOrig=null,modalResolve=null;
 const W=id=>S.workers.find(w=>w.id===id)||{name:'(삭제됨)',aff:'',type:''};
 const P=id=>S.projects.find(p=>p.id===id);
 const pname=id=>(P(id)||{name:id?'(삭제된 공사)':'(미선택)'}).name;
+/* 근로자용 공사 표시: 발주처 · 공장명 · 공사명 */
+const pFull=p=>p?[p.client,p.plant].filter(Boolean).map(String).concat([p.name]).join(' · '):'';
+const pnameFull=id=>P(id)?pFull(P(id)):pname(id);
 const recOf=(wid,date)=>S.records.find(r=>r.workerId===wid&&r.date===date);
 const rrnShow=v=>!v?'-':(v.length>=14?esc(v):esc(v)+'****** <span class="chip" title="근로자 첫 로그인 전">미등록</span>');
 const fmtPhone=v=>{const d=String(v||'').replace(/\D/g,'');return d.length===11?d.replace(/^(\d{3})(\d{4})(\d{4})$/,'$1-$2-$3'):d.length===10?d.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/,'$1-$2-$3'):d;};
@@ -2685,7 +2688,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.16g';
+const APP_VER='2026.11.17a';
 const LOGO_B64='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';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
@@ -3032,13 +3035,13 @@ function mgrLine(pid,small){const p=pid&&P(pid);if(!p||(!p.mgrName&&!p.mgrPhone)
 function entriesEditor(es,ns,ed){
   if(!ed){
     if(!es.length)return '<p class="mute">등록된 작업이 없습니다.</p>';
-    return `<div class="tbl-wrap"><table><tr><th>공사</th><th>시간</th><th>작업내용</th><th>소계</th></tr>${es.map(e=>`<tr><td>${esc(pname(e.projectId))}${mgrLine(e.projectId,true)}</td><td style="white-space:nowrap">${e.start}~${e.end}${crosses(e)?' (익일)':''}</td><td>${esc(e.desc)}</td><td>${fmtH(entryMin(e))}</td></tr>`).join('')}</table></div>`;
+    return `<div class="tbl-wrap"><table><tr><th>공사</th><th>시간</th><th>작업내용</th><th>소계</th></tr>${es.map(e=>`<tr><td>${esc(pnameFull(e.projectId))}${mgrLine(e.projectId,true)}</td><td style="white-space:nowrap">${e.start}~${e.end}${crosses(e)?' (익일)':''}</td><td>${esc(e.desc)}</td><td>${fmtH(entryMin(e))}</td></tr>`).join('')}</table></div>`;
   }
-  const act=S.projects.filter(p=>p.active);let h='';
+  const act=S.projects.filter(p=>p.active).sort((a,b)=>(a.client||'').localeCompare(b.client||'','ko')||(a.plant||'').localeCompare(b.plant||'','ko')||a.name.localeCompare(b.name,'ko'));let h='';
   es.forEach((e,i)=>{
     const opts=act.slice();if(e.projectId&&!act.find(p=>p.id===e.projectId)&&P(e.projectId))opts.push(P(e.projectId));
     h+=`<div class="entry"><div class="row"><b>작업 ${i+1}</b><span class="mute">${fmtH(entryMin(e))}</span><span class="sp"></span><button class="btn sm bad" onclick="entDel('${ns}',${i})">삭제</button></div>
-    <label class="f" style="margin-top:6px"><span>공사 선택</span><select onchange="entSet('${ns}',${i},'projectId',this.value)"><option value="">— 공사를 선택하세요 —</option>${opts.map(p=>`<option value="${p.id}" ${p.id===e.projectId?'selected':''}>${esc(p.name)}${p.active?'':' (사용중지)'}</option>`).join('')}</select></label>${mgrLine(e.projectId)}
+    <label class="f" style="margin-top:6px"><span>공사 선택</span><select onchange="entSet('${ns}',${i},'projectId',this.value)"><option value="">— 공사를 선택하세요 —</option>${opts.map(p=>`<option value="${p.id}" ${p.id===e.projectId?'selected':''}>${esc(pFull(p))}${p.active?'':' (사용중지)'}</option>`).join('')}</select></label>${e.projectId&&P(e.projectId)?`<div class="mute" style="font-size:12px;margin:-6px 0 6px">발주처 <b>${esc(P(e.projectId).client||'-')}</b> · 공장 <b>${esc(P(e.projectId).plant||'-')}</b></div>`:''}${mgrLine(e.projectId)}
     <div class="grid2 g2fixed"><label class="f"><span>시작</span><input type="time" value="${e.start||''}" onchange="entSet('${ns}',${i},'start',this.value)"></label><label class="f"><span>종료${crosses(e)?' (익일)':''}</span><input type="time" value="${e.end||''}" onchange="entSet('${ns}',${i},'end',this.value)"></label></div>
     <label class="f" style="margin-bottom:0"><span>작업내용</span><textarea rows="2" placeholder="예: 열연 2호기 롤 레벨 측정" onchange="entSet('${ns}',${i},'desc',this.value)">${esc(e.desc)}</textarea></label></div>`;
   });
@@ -3228,11 +3231,11 @@ function calNav(y,m,fn){return `<div class="row" style="gap:6px"><button class="
 /* ---------- 연차 캘린더 (근로자·관리자 함께 봄) ---------- */
 function lcMove(d){if(d===0){ui.lcY=+today().slice(0,4);ui.lcM=+today().slice(5,7);}else{[ui.lcY,ui.lcM]=ymAdd(ui.lcY||+today().slice(0,4),ui.lcM||+today().slice(5,7),d);}render();}
 function leaveCalCard(){const y=ui.lcY||+today().slice(0,4),m=ui.lcM||+today().slice(5,7),L=S.leaveCal||[];
-  const items=d=>{const ls=L.filter(l=>l.start<=d&&l.end>=d&&dow(d)%6!==0);if(!ls.length)return '';const sh=ls.slice(0,3).map(l=>`<div class="lvi ${l.st==='pending'?'pend':''} ${l.w===ses.uid?'mine':''}" title="${esc(l.name)} ${esc(l.kind)}">${esc(l.name)}${l.kind==='반차'?' ½':''}</div>`).join('');return sh+(ls.length>3?`<div class="lvi more">+${ls.length-3}</div>`:'');};
+  const items=d=>{const ls=L.filter(l=>l.start<=d&&l.end>=d&&dow(d)%6!==0);if(!ls.length)return '';const sh=ls.slice(0,3).map(l=>`<div class="lvi ${l.st==='pending'?'pend':''} ${l.w===ses.uid?'mine':''}" title="${esc(l.name)} ${esc(l.kind==='반차'?halfTxt(l):l.kind)}">${esc(l.name)}${l.kind==='반차'?(HALF_KO[l.half]?' '+HALF_KO[l.half]:' ½'):''}</div>`).join('');return sh+(ls.length>3?`<div class="lvi more">+${ls.length-3}</div>`:'');};
   return `<div class="card"><div class="row" style="flex-wrap:wrap;gap:8px"><h3 style="margin:0">연차 캘린더</h3><span class="sp"></span>${calNav(y,m,'lcMove')}</div>
   ${calGrid(y,m,items,'lcDay')}<p class="mute" style="margin:6px 0 0"><span class="lvi" style="display:inline-block">확정</span> <span class="lvi pend" style="display:inline-block">승인 대기</span> <span class="lvi mine" style="display:inline-block">내 휴가</span> · 날짜를 누르면 그날 휴가자를 볼 수 있습니다. 사유는 표시하지 않습니다.</p></div>`;}
 function lcDay(d){const ls=(S.leaveCal||[]).filter(l=>l.start<=d&&l.end>=d);
-  alertBox(`${fmtDay(d)} 휴가자`,ls.length?ls.map(l=>`${l.name} · ${l.kind}${l.st==='pending'?' (승인 대기)':''}`):['휴가자가 없습니다.']);}
+  alertBox(`${fmtDay(d)} 휴가자`,ls.length?ls.map(l=>`${l.name} · ${l.kind==='반차'?halfTxt(l):l.kind}${l.st==='pending'?' (승인 대기)':''}`):['휴가자가 없습니다.']);}
 
 /* ---------- 회사 일정 (구글 캘린더 실시간 연동, 관리자 전용) ---------- */
 const CAL_HIDE_KEY='goshen_cal_hide';
@@ -3705,7 +3708,15 @@ function leaveSum(w,asOf,list){
 }
 const asOfW=w=>(w.status==='퇴사'&&w.leave&&w.leave<today())?w.leave:today();
 const fmtD=v=>{v=Math.round(Number(v||0)*10)/10;return (v%1===0?String(v):v.toFixed(1));};
-function lvLabel(l){return l.kind==='반차'?l.start+' (반차)':(l.start===l.end?l.start:l.start+' ~ '+l.end);}
+const HALF_DEF={am:'08:00~12:00',pm:'13:00~17:00'},HALF_KO={am:'오전',pm:'오후'};
+const halfTxt=l=>HALF_KO[l.half]?HALF_KO[l.half]+' 반차'+(l.hTime?' ('+l.hTime+')':''):'반차';
+function lvLabel(l){return l.kind==='반차'?l.start+(HALF_KO[l.half]?' '+halfTxt(l):' (반차)'):(l.start===l.end?l.start:l.start+' ~ '+l.end);}
+/* 반차 오전/오후 + 시간 입력칸 (pre: lv 또는 al) */
+function halfBox(pre,l){const h=l.half||'am',t=l.hTime||HALF_DEF[h];const[a,b]=t.split('~');
+  return `<div id="${pre}_hw" style="display:${l.kind==='반차'?'':'none'}"><div class="grid2"><label class="f"><span>오전 / 오후</span><select id="${pre}_half" onchange="halfPick('${pre}')"><option value="am" ${h==='am'?'selected':''}>오전 반차</option><option value="pm" ${h==='pm'?'selected':''}>오후 반차</option></select></label>
+  <label class="f"><span>반차 시간</span><div class="row" style="gap:4px;flex-wrap:nowrap"><input id="${pre}_hs" type="time" value="${a||''}"><span>~</span><input id="${pre}_he" type="time" value="${b||''}"></div></label></div></div>`;}
+function halfPick(pre){const h=document.getElementById(pre+'_half').value;const[a,b]=HALF_DEF[h].split('~');document.getElementById(pre+'_hs').value=a;document.getElementById(pre+'_he').value=b;}
+function halfVal(pre,kind){if(kind!=='반차')return {half:'',hTime:''};const g=k=>document.getElementById(pre+k).value;return {half:g('_half'),hTime:g('_hs')+'~'+g('_he')};}
 /* 날짜에 걸린 승인 휴가 (월간 출근부 표시용) */
 function leaveOn(wid,ds){return (S.leaves||[]).find(l=>l.workerId===wid&&l.status==='approved'&&l.kind!=='발생조정'&&l.kind!=='기존사용(이관)'&&l.start<=ds&&(l.end||l.start)>=ds);}
 const lvShort=k=>({연차:'연',반차:'반',병가:'병',기타:'기'}[k]||'휴');
@@ -3715,7 +3726,7 @@ function lvCheck(p,admin){
   const kinds=admin?LV_ADMIN_KINDS:LV_KINDS;
   if(kinds.indexOf(p.kind)<0)return '사용 구분을 선택하세요.';
   if(!/^\d{4}-\d{2}-\d{2}$/.test(p.start||''))return '사용 시작일을 입력하세요.';
-  if(p.kind==='반차'){p.end=p.start;p.days=0.5;}
+  if(p.kind==='반차'&&!HALF_KO[p.half]&&admin){p.end=p.start;p.days=0.5;p.half='';p.hTime='';}else if(p.kind==='반차'){p.end=p.start;p.days=0.5;if(!HALF_KO[p.half])return '반차는 오전/오후를 선택하세요.';const t=String(p.hTime||HALF_DEF[p.half]),m=t.match(/^(\d{2}):(\d{2})~(\d{2}):(\d{2})$/);if(!m||m[1]+m[2]>=m[3]+m[4])return '반차 시간을 확인하세요 (예: 08:00~12:00).';p.hTime=t;}else{p.half='';p.hTime='';}
   if(!/^\d{4}-\d{2}-\d{2}$/.test(p.end||''))p.end=p.start;
   if(p.end<p.start)return '종료일이 시작일보다 빠릅니다.';
   const d=Number(p.days);
@@ -3726,14 +3737,14 @@ function lvCheck(p,admin){
     if(p.kind!=='기존사용(이관)'&&d>cal)return '사용일수가 기간(달력 '+cal+'일)보다 많습니다.';}
   return null;
 }
-function lvOverlap(list,wid,s,e,exceptId){return (list||[]).find(l=>l.workerId===wid&&l.id!==exceptId&&(l.status==='pending'||l.status==='approved')&&LV_KINDS.indexOf(l.kind)>=0&&l.start<=e&&(l.end||l.start)>=s);}
+function lvOverlap(list,wid,s,e,exceptId,half){return (list||[]).find(l=>l.workerId===wid&&l.id!==exceptId&&(l.status==='pending'||l.status==='approved')&&LV_KINDS.indexOf(l.kind)>=0&&l.start<=e&&(l.end||l.start)>=s&&!(half&&l.kind==='반차'&&l.half&&l.half!==half));}
 
 /* 시제품용 처리 — 운영판에서는 lvDo가 서버 호출로 바뀝니다 */
 const LV={
   apply(p){const me=W(ses.uid);const er=lvCheck(p,false);if(er)return er;
     if(p.start<ymdAdd(today(),0,0,-30))return '30일 이전 날짜는 관리자에게 등록을 요청하세요.';
-    const o=lvOverlap(S.leaves,me.id,p.start,p.end);if(o)return '이미 신청된 휴가와 날짜가 겹칩니다 ('+lvLabel(o)+').';
-    S.leaves.push({id:uid(),workerId:me.id,kind:p.kind,start:p.start,end:p.end,days:Number(p.days),reason:String(p.reason||''),status:'pending',createdAt:stamp(),decidedBy:'',decidedAt:'',rejectReason:'',history:[{at:stamp(),by:me.id,action:'신청',detail:''}]});
+    const o=lvOverlap(S.leaves,me.id,p.start,p.end,'',p.kind==='반차'?p.half:'');if(o)return '이미 신청된 휴가와 날짜가 겹칩니다 ('+lvLabel(o)+').';
+    S.leaves.push({id:uid(),workerId:me.id,kind:p.kind,start:p.start,end:p.end,days:Number(p.days),half:p.half||'',hTime:p.hTime||'',reason:String(p.reason||''),status:'pending',createdAt:stamp(),decidedBy:'',decidedAt:'',rejectReason:'',history:[{at:stamp(),by:me.id,action:'신청',detail:''}]});
     logG(me.id,'연차 신청',`${me.name} ${p.kind} ${lvLabel(p)} (${fmtD(p.days)}일)`);return null;},
   cancel(p){const l=S.leaves.find(x=>x.id===p.id&&x.workerId===ses.uid);if(!l||l.status!=='pending')return '승인 대기 중인 신청만 취소할 수 있습니다.';
     l.status='cancelled';l.history.push({at:stamp(),by:ses.uid,action:'취소',detail:''});logG(ses.uid,'연차 취소',`${W(ses.uid).name} ${l.kind} ${lvLabel(l)}`);return null;},
@@ -3743,11 +3754,11 @@ const LV={
     l.history.push({at:stamp(),by:ses.uid,action:LSTATUS[p.status],detail:l.rejectReason});
     logG(ses.uid,'연차 '+LSTATUS[p.status],`${W(l.workerId).name} ${l.kind} ${lvLabel(l)}${l.rejectReason?' — '+l.rejectReason:''}`);return null;},
   save(p){const d=p.data;if(!W(d.workerId).id)return '근로자를 선택하세요.';const er=lvCheck(d,true);if(er)return er;
-    if(LV_KINDS.indexOf(d.kind)>=0){const o=lvOverlap(S.leaves,d.workerId,d.start,d.end,p.id);if(o)return '같은 날짜에 이미 휴가가 있습니다 ('+lvLabel(o)+').';}
+    if(LV_KINDS.indexOf(d.kind)>=0){const o=lvOverlap(S.leaves,d.workerId,d.start,d.end,p.id,d.kind==='반차'?d.half:'');if(o)return '같은 날짜에 이미 휴가가 있습니다 ('+lvLabel(o)+').';}
     if(p.id){const l=S.leaves.find(x=>x.id===p.id);if(!l)return '기록을 찾을 수 없습니다.';const before=`${l.kind} ${lvLabel(l)} ${fmtD(l.days)}일`;
-      Object.assign(l,{workerId:d.workerId,kind:d.kind,start:d.start,end:d.end,days:Number(d.days),reason:d.reason||''});
+      Object.assign(l,{workerId:d.workerId,kind:d.kind,start:d.start,end:d.end,days:Number(d.days),half:d.half||'',hTime:d.hTime||'',reason:d.reason||''});
       l.history.push({at:stamp(),by:ses.uid,action:'관리자 수정',detail:before+' → '+`${l.kind} ${lvLabel(l)} ${fmtD(l.days)}일`});logG(ses.uid,'연차 수정',`${W(l.workerId).name} ${before} → ${l.kind} ${lvLabel(l)} ${fmtD(l.days)}일`);}
-    else{S.leaves.push({id:uid(),workerId:d.workerId,kind:d.kind,start:d.start,end:d.end,days:Number(d.days),reason:d.reason||'',status:'approved',createdAt:stamp(),decidedBy:ses.uid,decidedAt:stamp(),rejectReason:'',history:[{at:stamp(),by:ses.uid,action:'관리자 등록',detail:''}]});
+    else{S.leaves.push({id:uid(),workerId:d.workerId,kind:d.kind,start:d.start,end:d.end,days:Number(d.days),half:d.half||'',hTime:d.hTime||'',reason:d.reason||'',status:'approved',createdAt:stamp(),decidedBy:ses.uid,decidedAt:stamp(),rejectReason:'',history:[{at:stamp(),by:ses.uid,action:'관리자 등록',detail:''}]});
       logG(ses.uid,'연차 등록',`${W(d.workerId).name} ${d.kind} ${lvLabel(d)} ${fmtD(d.days)}일`);}
     return null;},
   del(p){const l=S.leaves.find(x=>x.id===p.id);if(!l)return '기록을 찾을 수 없습니다.';S.leaves=S.leaves.filter(x=>x.id!==p.id);logG(ses.uid,'연차 삭제',`${W(l.workerId).name} ${l.kind} ${lvLabel(l)} ${fmtD(l.days)}일 (${LSTATUS[l.status]})`);return null;},
@@ -3770,6 +3781,7 @@ function vMyLeave(me){
   <label class="f"><span>사용일수 (자동 계산, 수정 가능)</span><input id="lv_days" inputmode="decimal" value="${weekdays(t,t)}"></label>
   <label class="f"><span>사용 시작일</span><input id="lv_s" type="date" value="${t}" onchange="lvCalc()"></label>
   <label class="f" id="lv_ew"><span>사용 종료일</span><input id="lv_e" type="date" value="${t}" onchange="lvCalc()"></label></div>
+  ${halfBox('lv',{kind:'연차'})}
   <label class="f"><span>휴가 사유 (선택)</span><input id="lv_reason" maxlength="200"></label>
   <p class="mute" style="margin-top:0">사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 병가·기타도 연차에서 차감됩니다.</p>
   <div class="row"><span class="sp"></span><button class="btn pri" onclick="lvApply()">신청하기</button></div></div>`;
@@ -3781,11 +3793,12 @@ function vMyLeave(me){
   return h+'</table></div></div>';
 }
 function lvCalc(){const k=document.getElementById('lv_kind').value,s=document.getElementById('lv_s'),e=document.getElementById('lv_e'),d=document.getElementById('lv_days'),ew=document.getElementById('lv_ew');
+  document.getElementById('lv_hw').style.display=k==='반차'?'':'none';
   if(k==='반차'){e.value=s.value;ew.style.display='none';d.value='0.5';d.disabled=true;}
   else{ew.style.display='';d.disabled=false;if(e.value<s.value)e.value=s.value;d.value=String(weekdays(s.value,e.value));}}
 async function lvApply(){
   const g=k=>document.getElementById(k).value.trim();
-  const p={kind:g('lv_kind'),start:g('lv_s'),end:g('lv_e'),days:g('lv_days'),reason:g('lv_reason')};
+  const p=Object.assign({kind:g('lv_kind'),start:g('lv_s'),end:g('lv_e'),days:g('lv_days'),reason:g('lv_reason')},halfVal('lv',g('lv_kind')));
   const er=lvCheck(p,false);if(er){toast(er);return;}
   const me=W(ses.uid),L=leaveSum(me,today(),S.leaves);
   if(L&&Number(p.days)>L.remain-L.pend&&!(await confirmBox(`신청 일수(${fmtD(p.days)}일)가 남은 연차(${fmtD(L.remain-L.pend)}일, 승인 대기 제외)보다 많습니다.\n그래도 신청할까요?`,'신청')))return;
@@ -3827,12 +3840,12 @@ function aLvForm(id,_,wid){
   <label class="f"><span>시작일 (기간 판단 기준일)</span><input id="al_s" type="date" value="${l.start}" onchange="alCalc()"></label>
   <label class="f"><span>종료일</span><input id="al_e" type="date" value="${l.end||l.start}" onchange="alCalc()"></label>
   <label class="f"><span>일수</span><input id="al_d" inputmode="decimal" value="${l.days}"></label>
-  <label class="f"><span>사유·메모</span><input id="al_r" value="${esc(l.reason||'')}"></label></div>
+  <label class="f"><span>사유·메모</span><input id="al_r" value="${esc(l.reason||'')}"></label></div>${halfBox('al',l)}
   <div class="infobox" style="font-size:13px"><b>기존사용(이관)</b>: 엑셀 연차대장에서 이미 쓴 일수를 한 번에 넣을 때 (시작일 = 해당 연차 기간 안의 아무 날짜).<br><b>발생조정</b>: 발생일수를 늘리거나(+) 줄일 때(−), 예: 결근으로 개근 못한 달 −1.<br>관리자가 등록한 기록은 바로 "승인"으로 저장됩니다.</div>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="aLvSave('${id||''}')">저장</button></div></div>`);}
-function alCalc(){const k=document.getElementById('al_k').value,s=document.getElementById('al_s'),e=document.getElementById('al_e'),d=document.getElementById('al_d');
+function alCalc(){const k=document.getElementById('al_k').value,s=document.getElementById('al_s'),e=document.getElementById('al_e'),d=document.getElementById('al_d');document.getElementById('al_hw').style.display=k==='반차'?'':'none';
   if(k==='반차'){e.value=s.value;d.value='0.5';}else if(LV_KINDS.indexOf(k)>=0){if(e.value<s.value)e.value=s.value;d.value=String(weekdays(s.value,e.value));}}
-function aLvSave(id){const g=k=>document.getElementById(k).value.trim();lvDo('save',{id,data:{workerId:g('al_w'),kind:g('al_k'),start:g('al_s'),end:g('al_e'),days:g('al_d').replace(/[+\s일]/g,''),reason:g('al_r')}},'저장했습니다.');}
+function aLvSave(id){const g=k=>document.getElementById(k).value.trim();lvDo('save',{id,data:Object.assign({workerId:g('al_w'),kind:g('al_k'),start:g('al_s'),end:g('al_e'),days:g('al_d').replace(/[+\s일]/g,''),reason:g('al_r')},halfVal('al',g('al_k')))},'저장했습니다.');}
 function aLvDecide(id,st){lvDo('decide',{id,status:st,reason:''},st==='approved'?'승인했습니다.':'처리했습니다.');}
 function aLvReject(id){const l=S.leaves.find(x=>x.id===id);openModal(`<div class="mbox" style="max-width:460px"><h3>${esc(W(l.workerId).name)} · ${esc(l.kind)} ${esc(lvLabel(l))} 반려</h3><label class="f"><span>반려 사유 (근로자에게 표시)</span><textarea id="lr_r" rows="3"></textarea></label><div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn bad" onclick="lvDo('decide',{id:'${id}',status:'rejected',reason:document.getElementById('lr_r').value.trim()},'반려했습니다.')">반려</button></div></div>`);}
 async function aLvDel(id){const l=S.leaves.find(x=>x.id===id);if(!(await confirmBox(`${esc(W(l.workerId).name)} · ${esc(l.kind)} ${esc(lvLabel(l))} 기록을 삭제할까요?\n변경 이력에 삭제 사실이 남습니다.`,'삭제')))return;lvDo('del',{id},'삭제했습니다.');}
@@ -3983,7 +3996,6 @@ const I18=[
 ['승인대기','Chờ duyệt','Pending'],
 ['승인','Đã duyệt','Approved'],
 ['반려','Bị trả lại','Returned'],
-['공사 선택','Chọn công trình','Select project'],
 ['— 공사를 선택하세요 —','— Chọn công trình —','— Select a project —'],
 ['시작','Bắt đầu','Start'],
 ['종료','Kết thúc','End'],
@@ -4024,6 +4036,11 @@ const I18=[
 ['연차 사용 신청','Xin nghỉ phép','Request leave'],
 ['사용 구분','Loại nghỉ','Leave type'],
 ['반차','Nghỉ nửa ngày','Half day'],
+['오전 반차','Nghỉ buổi sáng','Morning half day'],
+['오후 반차','Nghỉ buổi chiều','Afternoon half day'],
+['오전 / 오후','Sáng / Chiều','AM / PM'],
+['반차 시간','Giờ nghỉ nửa ngày','Half-day hours'],
+['공사 선택','Chọn công trình','Select project'],
 ['병가','Nghỉ ốm','Sick leave'],
 ['기타','Khác','Other'],
 ['기존사용(이관)','Đã dùng trước (chuyển sổ)','Previously used (migrated)'],
@@ -4279,6 +4296,8 @@ const I18R=[
 [/^QR 촬영: (.+) · GPS 확인 불가$/,(m)=>L2(`Quét QR: ${m[1]} · không có GPS`,`QR scan: ${m[1]} · GPS unavailable`)],
 [/^처리 이력 (\d+)건$/,(m)=>L2(`Lịch sử xử lý (${m[1]})`,`History (${m[1]})`)],
 [/^(\S+) \(반차\)$/,(m)=>`${m[1]} (${L2('nửa ngày','half day')})`],
+[/^(\S+) (오전|오후) 반차( \(.+\))?$/,(m)=>`${m[1]} ${m[2]==='오전'?L2('Nghỉ buổi sáng','Morning half day'):L2('Nghỉ buổi chiều','Afternoon half day')}${m[3]||''}`],
+[/^(오전|오후) 반차( \(.+\))?$/,(m)=>`${m[1]==='오전'?L2('Nghỉ buổi sáng','Morning half day'):L2('Nghỉ buổi chiều','Afternoon half day')}${m[2]||''}`],
 [/^어제\((.+)\) 출근 기록에 퇴근이 없습니다\. (.+)$/,(m)=>L2(`Hôm qua (${trCore(m[1])}) có giờ vào ca nhưng chưa tan ca. `,`Yesterday (${trCore(m[1])}) has a clock-in but no clock-out. `)+(m[2].indexOf('아래 버튼')>=0?L2('Nếu làm ca đêm, hãy dùng nút bên dưới để tan ca cho hôm qua.','If you worked a night shift, use the button below to clock out for yesterday.'):L2('Nếu đang kết thúc ca đêm, hãy bấm "Tan ca cho ngày hôm qua".','If you are finishing a night shift, tap "Clock out for yesterday".'))],
 [/^※ 예시 문안입니다.*$/,()=>L2('※ Bản dịch chỉ để tham khảo; bản tiếng Hàn là bản chính thức.','※ Translation for reference; the Korean text is authoritative.')],
 [/^근무 (\S+)( \(퇴근 시 자동\))?$/,(m)=>L2(`Giờ làm ${m[1]}${m[2]?' (tự động khi tan ca)':''}`,`Worked ${m[1]}${m[2]?' (auto at clock-out)':''}`)],
