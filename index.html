@@ -5000,17 +5000,21 @@ function call(op,p){
   return go().finally(function(){busyMsg('');});
 }
 function busyMsg(t){var b=document.getElementById('busy');if(!b)return;var d=b.querySelector('.bmsg');if(!d){d=document.createElement('div');d.className='bmsg';d.style.cssText='font-size:12px;color:#666;margin-top:6px';b.firstChild.appendChild(d);}d.textContent=t;}
-const READ_OPS={boot:1,qrInfo:1,records:1,roster_permitGet:1};
-function call1(op,p){if(!READ_OPS[op])return call0(op,p);
-  return call0(op,p).catch(e=>{const m=String(e&&e.message||e);if(e&&e.relogin)throw e;if(/응답이 늦습니다|인터넷 연결|서버 연결 오류|응답을 읽지/.test(m))return new Promise(r=>setTimeout(r,800)).then(()=>call0(op,p));throw e;});}
-function call0(op,p){
+/* 구글 서버가 가끔(약 10회 중 1번) 응답 없이 멈춤 → 짧게 기다렸다가 같은 요청번호(rid)로 다시 보냄. 서버가 같은 번호는 한 번만 처리 */
+const READ_OPS={boot:1,qrInfo:1,records:1,roster_permitGet:1},LONG_OPS={calList:1,roster_permitUp:1,qual_ocr:1,comp_fileUp:1,comp_get:1,buy_tpl:1,car_fileUp:1,car_fileGet:1,qual_fileGet:1};
+function call1(op,p){if(LONG_OPS[op])return call0(op,p,'',op==='calList'?60000:120000);
+  const rid=READ_OPS[op]?'':Date.now().toString(36)+Math.random().toString(36).slice(2,8),to=op==='check'?25000:READ_OPS[op]?12000:20000;let n=0;
+  const go=()=>call0(op,p,rid,to).catch(e=>{const m=String(e&&e.message||e);if(e&&(e.relogin||e.busy))throw e;
+    if(n<2&&/응답이 늦습니다|인터넷 연결|서버 연결 오류|응답을 읽지/.test(m)){n++;if(op!=='check')busyMsg('서버 응답이 늦어 다시 보내는 중… ('+n+'/2)');return new Promise(r=>setTimeout(r,500)).then(go);}throw e;});
+  return go().finally(()=>{if(op!=='check')busyMsg('');});}
+function call0(op,p,rid,toMs){
   if(BOOT.api){ /* 외부 호스팅 화면: 구글 로그인 쿠키 없이 서버 호출 (계정 여러 개·브라우저 무관) */
-    const ac=(typeof AbortController!=='undefined')?new AbortController():null;const tm=setTimeout(()=>{if(ac)ac.abort();},op==='calList'?60000:op==='check'?70000:(op==='roster_permitUp'||op==='qual_ocr')?120000:30000);
-    return fetch(BOOT.api,{method:'POST',credentials:'omit',redirect:'follow',cache:'no-store',signal:ac?ac.signal:undefined,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({t:TOKEN,op:op,p:p||{},h:ST_H})})
+    const ac=(typeof AbortController!=='undefined')?new AbortController():null;const tm=setTimeout(()=>{if(ac)ac.abort();},toMs||30000);
+    return fetch(BOOT.api,{method:'POST',credentials:'omit',redirect:'follow',cache:'no-store',signal:ac?ac.signal:undefined,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({t:TOKEN,op:op,p:p||{},h:ST_H,rid:rid||''})})
       .finally(()=>clearTimeout(tm))
       .then(r=>{if(!r.ok)throw new Error('서버 연결 오류 ('+r.status+')');return r.text();})
       .then(tx=>{let r;try{r=JSON.parse(tx);}catch(e){throw new Error('서버 응답을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.');}
-        if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;e.busy=!!r.busy;throw e;}if(r&&r.state)stMerge(r.state);return r||{};},
+        if(r&&r.dupBig){return call0('boot',{},'',12000).then(b=>{if(b.state)applyState(b.state);return {};});}if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;e.busy=!!r.busy;throw e;}if(r&&r.state)stMerge(r.state);return r||{};},
         e=>{if(e&&e.name==='AbortError')throw new Error('서버 응답이 늦습니다. 잠시 후 다시 눌러 주세요.');throw (e&&e.message&&e.message.indexOf('서버')===0)?e:new Error('인터넷 연결을 확인해 주세요.\n('+((e&&(e.name+': '+e.message))||e)+')');});
   }
   return new Promise((res,rej)=>{google.script.run.withSuccessHandler(r=>{if(r&&r.error){const e=new Error(r.error);e.relogin=!!r.relogin;rej(e);}else res(r||{});}).withFailureHandler(e=>rej(new Error((e&&e.message)||String(e)))).api(TOKEN,op,p||{});});}
