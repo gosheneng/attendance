@@ -1,6 +1,6 @@
 {
   "name": "고센이엔지 전자시스템",
-  "short_name": "고센",
+  "short_name": "고센이엔지",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
