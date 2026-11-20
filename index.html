@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>고센이엔지 전자시스템</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%238d2d30'/%3E%3Cpath d='M40 10h14L34 54H20z' fill='%231b786e'/%3E%3Ctext x='22' y='44' font-family='Arial' font-weight='900' font-size='34' fill='%23fff' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E">
-<meta name="theme-color" content="#8d2d30">
+<meta name="theme-color" content="#8d2d30"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="고센">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 :root{--bg:#f3f5f8;--card:#fff;--ink:#1c2430;--mute:#6b7685;--line:#e1e5eb;--pri:#8d2d30;--pri2:#1b786e;--brand-r:#8d2d30;--brand-g:#1b786e;--ok:#1f8a4c;--warn:#b86e00;--bad:#c23b3b;--chip:#eef2f7}
@@ -2727,7 +2727,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.21a';
+const APP_VER='2026.11.21b';
 const LOGO_B64='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';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
@@ -2899,7 +2899,7 @@ function vWorker(me){
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
   h+=tabs([['today','출퇴근'],['crew','투입현황'],['hist','내 근무기록',rej||''],['leave','연차'],['board','건의함'],['docs','계약서·명세서']],ui.wTab==='past'?'today':ui.wTab,'wTab');
-  if(ui.wTab==='today')h+=qualBanner(me)+myRosterBanner()+vDay(true);
+  if(ui.wTab==='today')h+=qualBanner(me)+myRosterBanner()+vDay(true)+pushCard(0);
   else if(ui.wTab==='crew')h+=vCrew();
   else if(ui.wTab==='board')h+=vBoard();
   else if(ui.wTab==='past'){
@@ -3399,6 +3399,46 @@ async function calLoad(fresh){const [a,b]=calRange(),k=a+'_'+b;ui.calBusy=true;u
   ui.calBusy=false;render();}
 function calMove(d){if(d===0){ui.cY=+today().slice(0,4);ui.cM=+today().slice(5,7);}else[ui.cY,ui.cM]=ymAdd(ui.cY,ui.cM,d);calLoad(false);}
 /* 대시보드: 구글 캘린더 회사 일정 — 오늘·내일 */
+/* ===== 휴대폰 알림(웹 푸시) 켜기 — 안드로이드 크롬 바로 가능, 아이폰은 홈 화면에 추가한 앱에서만 (iOS 16.4+) ===== */
+const PUSH_PUB='BILepjVbmfrhAL9kSI6r-cZVyWheB-7pO21IG7NfVlb8-end2EaLCT8l4fW54-nydwwC7HZ5bG9CXOkCY6HUc9I';
+function pushEnv(){const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const sa=!!((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true);
+  const sup='serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&!!(window.BOOT&&BOOT.api);
+  const v=/OS (\d+)_(\d+)/.exec(ua),iosOld=!!(ios&&v&&(+v[1]<16||(+v[1]===16&&+v[2]<4)));const inapp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\//i.test(ua);
+  return {ios,sa,sup,iosOld,inapp};}
+async function pushRefresh(){const E=pushEnv();let st='off';
+  if(!E.sup)st='nosup';else if(Notification.permission==='denied')st='denied';
+  else{try{const r=await navigator.serviceWorker.getRegistration();const sb=r&&await r.pushManager.getSubscription();st=sb?'on':'off';}catch(e){st='off';}}
+  if(ui.pushSt!==st){ui.pushSt=st;render();}}
+function pushCard(adm){if(!LIVE)return '';if(!ui.pushChk){ui.pushChk=1;setTimeout(pushRefresh,0);}
+  const st=ui.pushSt||'',E=pushEnv(),what=adm?'승인 요청·세금계산서·결재 요청·연차 신청 등':'반려·승인·투입명단·연차 결과 등';
+  const btn=st==='on'?`<span class="chip st-ok">켜짐</span> <button class="btn sm" onclick="pushTest()">시험 알림</button> <button class="btn sm" onclick="pushOff()">끄기</button>`
+    :st==='denied'?`<span class="chip st-bad">차단됨</span> <button class="btn sm" onclick="pushHelp('denied')">푸는 방법</button>`
+    :st==='nosup'?`<button class="btn sm pri" onclick="pushHelp()">알림 켜는 방법</button>`:`<button class="btn sm pri" onclick="pushOn()">알림 켜기</button>`;
+  return `<div class="card" style="padding:12px 16px"><div class="row" style="gap:6px;flex-wrap:wrap"><b>📱 휴대폰 알림</b><span class="sp"></span>${btn}</div><div class="mute" style="font-size:12px;margin-top:4px">${what}을 휴대폰 알림으로 받습니다.${E.ios&&!E.sa?' (아이폰은 홈 화면에 추가한 앱에서만)':''}</div></div>`;}
+function pushHelp(k){const E=pushEnv();
+  if(k==='denied')return alertBox('알림이 차단되어 있습니다',E.ios?['설정 앱 → 알림 → 「고센」 → 알림 허용을 켜 주세요.']:['주소창 왼쪽 자물쇠(또는 ⋮ → 설정 → 사이트 설정) → 알림 → 「허용」으로 바꾼 뒤 이 화면을 새로고침하세요.']);
+  if(E.inapp)return alertBox('일반 브라우저에서 열어 주세요',['카카오톡·네이버 앱 안의 화면에서는 알림을 받을 수 없습니다.',E.ios?'오른쪽 아래 「⋯」 → 「Safari로 열기」를 누른 뒤 다시 시도하세요.':'오른쪽 위 「⋮」 → 「다른 브라우저로 열기」 → Chrome을 고른 뒤 다시 시도하세요.']);
+  if(E.ios&&E.iosOld)return alertBox('iOS 16.4 이상이 필요합니다',['설정 → 일반 → 소프트웨어 업데이트에서 iOS를 최신으로 올린 뒤 다시 시도하세요.']);
+  if(E.ios&&!E.sa)return alertBox('아이폰은 홈 화면에 추가해야 알림을 받을 수 있습니다',['① Safari 아래쪽 공유 버튼(□↑)을 누르세요.','② 「홈 화면에 추가」를 누르세요.','③ 홈 화면에 생긴 「고센」 아이콘으로 열고, 다시 로그인하세요.','④ 화면의 「📱 휴대폰 알림 → 알림 켜기」를 누르고 「허용」을 고르세요.']);
+  return alertBox('이 브라우저는 알림을 지원하지 않습니다',['안드로이드는 Chrome, 아이폰은 Safari에서 열어 주세요.']);}
+function b64uU8(s){s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function devName(){const ua=navigator.userAgent||'';return (/iPhone/.test(ua)?'iPhone':/iPad/.test(ua)?'iPad':/Android/.test(ua)?'Android':/Windows/.test(ua)?'Windows PC':/Mac/.test(ua)?'Mac':'기기')+(/SamsungBrowser/.test(ua)?' 삼성인터넷':/CriOS|Chrome/.test(ua)?' Chrome':/Safari/.test(ua)?' Safari':'');}
+async function pushOn(){const E=pushEnv();if(!E.sup||E.inapp)return pushHelp();
+  let perm;try{perm=await Notification.requestPermission();}catch(e){perm=Notification.permission;}
+  if(perm!=='granted'){ui.pushSt=perm==='denied'?'denied':'off';render();return alertBox('알림을 허용하지 않았습니다',['알림을 받으려면 「허용」을 눌러야 합니다. 다시 「알림 켜기」를 눌러 주세요.']);}
+  window.liveBusy(true);
+  try{const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+    let sb=await reg.pushManager.getSubscription();if(!sb)sb=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uU8(PUSH_PUB)});
+    const r=await window.liveCall('push_sub',{sub:sb.toJSON(),ua:devName()});if(!r||r.error||!r.k)throw new Error((r&&r.error)||'서버 등록 실패');
+    const c=await caches.open('goshen-push');await c.put('cfg',new Response(JSON.stringify({api:BOOT.api,k:r.k})));
+    window.liveBusy(false);ui.pushSt='on';render();toast('휴대폰 알림을 켰습니다. 「시험 알림」으로 확인해 보세요.');}
+  catch(e){window.liveBusy(false);alertBox('알림을 켜지 못했습니다',[String(e&&e.message||e)]);}}
+async function pushOff(){window.liveBusy(true);try{const r=await navigator.serviceWorker.getRegistration();const sb=r&&await r.pushManager.getSubscription();
+  if(sb){try{await window.liveCall('push_unsub',{endpoint:sb.endpoint});}catch(e){}await sb.unsubscribe();}try{await caches.delete('goshen-push');}catch(e){}}catch(e){}
+  window.liveBusy(false);ui.pushSt='off';render();toast('이 휴대폰의 알림을 껐습니다.');}
+async function pushTest(){window.liveBusy(true);let r;try{r=await window.liveCall('push_test',{});}catch(e){window.liveBusy(false);return alertBox('시험 알림을 보내지 못했습니다',[String(e&&e.message||e)]);}
+  window.liveBusy(false);if(r&&r.error)alertBox('시험 알림을 보내지 못했습니다',[r.error]);else toast((r&&r.msg)||'보냈습니다.');}
 function calDash(){const td=today(),tm=addDaysC(td,1),k=td+'_'+tm,D=ui.calDashD&&ui.calDashD.k===k?ui.calDashD:null;
   if(!D&&!ui.calDashBusy){ui.calDashBusy=1;setTimeout(async()=>{let r=null,err='';try{r=await calDo('list',{from:td,to:tm});}catch(e){err=String(e&&e.message||e);}ui.calDashBusy=0;ui.calDashD={k,r,err,at:Date.now()};if(ui.aTab==='dash')render();},0);}
   const hid=calHidden(),evs=D&&D.r?D.r.events.filter(e=>hid.indexOf(e.cal)<0):[],col={};if(D&&D.r)D.r.cals.forEach(c=>col[c.id]=c);
@@ -4142,7 +4182,7 @@ const MENU_KW={forms:'양식 서식 엑셀 PPT 파워포인트 템플릿 다운�
 function menuHits(q){q=String(q||'').trim().toLowerCase();if(!q)return '<span class="mute" style="font-size:13px">메뉴 이름이나 하는 일을 입력하면 바로 갈 수 있는 메뉴가 나옵니다. (Enter = 첫 번째 메뉴로 이동)</span>';const L=(ui._menus||[]).filter(m=>m.k!=='dash'&&(!q||(m.l+' '+m.g+' '+(MENU_KW[m.k]||'')).toLowerCase().indexOf(q)>=0));
   if(!L.length)return '<span class="mute">찾는 메뉴가 없습니다.</span>';return L.map(m=>`<button class="stab" onclick="aTab('${m.k}')">${esc(m.l)}${m.g!==m.l?` <span class="mute" style="font-size:12px">${esc(m.g)}</span>`:''}</button>`).join('');}
 function menuSearch(q){const e=document.getElementById('msr');if(e)e.innerHTML=menuHits(q);}
-function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return menuSearchCard()+(P.indexOf('cal')>=0?calDash():'')+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('buy')>=0?buyDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+(P.indexOf('workers')>=0?qualDashCard():'')+aDash();}finally{ui._dashCar=0;}}
+function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return menuSearchCard()+(P.indexOf('cal')>=0?calDash():'')+pushCard(1)+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('buy')>=0?buyDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+(P.indexOf('workers')>=0?qualDashCard():'')+aDash();}finally{ui._dashCar=0;}}
   const td=today();const act=S.workers.filter(w=>w.status==='재직'&&w.role!=='admin');
   const recs=S.records.filter(r=>r.date===td);
   const inN=recs.filter(r=>r.checkIn).length,noOut=recs.filter(r=>r.checkIn&&!r.checkOut).length;
