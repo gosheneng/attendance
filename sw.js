@@ -1,4 +1,4 @@
-/* 고센이엔지 전자시스템 — 휴대폰 알림(웹 푸시)
+/* 고센이엔지 통합근무시스템 — 휴대폰 알림(웹 푸시)
    서버는 내용 없이 '알림 있음' 신호만 보냄 → 여기서 서버에 내용을 물어보고 알림을 띄움 */
 var CFG_CACHE = 'goshen-push';
 function getCfg() {
@@ -15,12 +15,12 @@ self.addEventListener('push', function (e) {
       .then(function (r) { return r.text(); }).then(function (t) { var o = JSON.parse(t); return (o && o.items) || []; })
       .catch(function () { return []; });
   }).then(function (items) {
-    if (!items.length) return self.registration.showNotification('고센이엔지 전자시스템', { body: '새 알림이 있습니다. 눌러서 확인하세요.', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'goshen' });
+    if (!items.length) return self.registration.showNotification('고센이엔지 통합근무시스템', { body: '새 알림이 있습니다. 눌러서 확인하세요.', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'goshen' });
     if (items.length > 3) {
       return self.registration.showNotification('새 알림 ' + items.length + '건', { body: items.map(function (n) { return '· ' + n.t; }).join('\n'), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'goshen-many' });
     }
     return Promise.all(items.map(function (n) {
-      return self.registration.showNotification(n.t || '고센이엔지 전자시스템', { body: n.b || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: n.tag || undefined, renotify: !!n.tag, data: { u: n.u || '' } });
+      return self.registration.showNotification(n.t || '고센이엔지 통합근무시스템', { body: n.b || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: n.tag || undefined, renotify: !!n.tag, data: { u: n.u || '' } });
     }));
   }));
 });
