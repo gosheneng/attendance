@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!--v:2026.11.22t-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2732,10 +2732,10 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22s';
+const APP_VER='2026.11.22t';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
-  fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.match(/const APP_VER='([^']+)'/);if(!m||m[1]===APP_VER)return;shown=true;
+  fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
     const d=document.createElement('div');d.style.cssText='position:fixed;left:8px;right:8px;bottom:12px;z-index:300;padding:12px 14px;border-radius:10px;background:#8d2d30;color:#fff;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer';
     d.textContent='🔄 새 버전이 있습니다 — 여기를 눌러 새로고침하세요';d.onclick=()=>{const q=new URLSearchParams(location.search);q.set('v',m[1]);location.replace(location.pathname+'?'+q.toString()+location.hash);};document.body.appendChild(d);}).catch(()=>{});};
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')chk();});setInterval(chk,600000);setTimeout(chk,8000);})();
