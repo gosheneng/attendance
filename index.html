@@ -2595,6 +2595,8 @@ const pname=id=>(P(id)||{name:id?'(삭제된 공사)':'(미선택)'}).name;
 const pFull=p=>p?[p.client,p.plant].filter(Boolean).map(String).concat([p.name]).join(' · '):'';
 const pnameFull=id=>P(id)?pFull(P(id)):pname(id);
 const recOf=(wid,date)=>S.records.find(r=>r.workerId===wid&&r.date===date);
+async function rrnView(id){const w=W(id);if(!w)return;if(!(await confirmBox(`<b>${esc(w.name)}</b> 님의 주민등록번호 전체를 볼까요?\n\n열람 기록이 변경이력에 남습니다.`,'보기')))return;
+  window.liveBusy(true);try{const r=await window.liveCall('rrn_view',{id});if(r&&r.error)throw new Error(r.error);alertBox(`<b>${esc(w.name)}</b><div style="font-size:22px;letter-spacing:1px;margin:10px 0">${esc(r.rrn)}</div><span class="mute">필요한 곳에만 쓰고 메모·사진으로 남기지 마세요.</span>`);}catch(e){window.liveFail(e);}finally{window.liveBusy(false);}}
 const rrnShow=v=>!v?'-':(v.length>=14?esc(v):esc(v)+'****** <span class="chip" title="근로자 첫 로그인 전">미등록</span>');
 const fmtPhone=v=>{const d=String(v||'').replace(/\D/g,'');return d.length===11?d.replace(/^(\d{3})(\d{4})(\d{4})$/,'$1-$2-$3'):d.length===10?d.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/,'$1-$2-$3'):d;};
 const rateShow=v=>(v===''||v==null)?'-':Number(v).toLocaleString('ko-KR')+'원';
@@ -2718,7 +2720,7 @@ function render(){
   if(!ses.uid&&ses.setup){app.innerHTML=h+vSetup(ses.setupW||W(ses.setup));return;}
   if(!ses.uid){app.innerHTML=h+vLogin();return;}
   const me=W(ses.uid);
-  if(!me.privacy){app.innerHTML=h+vPrivacy(me);return;}
+  if(!me.privacy||(LIVE&&me.privacyVer!==PRIV_VER)){app.innerHTML=h+vPrivacy(me);return;}
   if(!me.consent){app.innerHTML=h+vConsent(me);return;}
   if(qr&&qr.spot){app.innerHTML=h+vQR(me);return;}
   const av=isStaff(me)&&!ui.asWorker;document.body.classList.toggle('adminView',av);
@@ -2728,7 +2730,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.21zn';
+const APP_VER='2026.11.21zo';
 const LOGO_B64='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';
 /* ---------- 로그인 / 동의 ---------- */
 function vLogin(){
@@ -2746,7 +2748,7 @@ function vLogin(){
 }
 /* 카카오톡·네이버 등 앱 안 브라우저: 문제 시 기본 브라우저로 열기 */
 function inAppName(){const u=navigator.userAgent||'';return /KAKAOTALK/i.test(u)?'카카오톡':/NAVER\(inapp/i.test(u)?'네이버':/Instagram|FBAN|FBAV|Line\//i.test(u)?'앱':'';}
-function inAppBox(){const n=inAppName();const ver=`<p class="mute" style="text-align:center;font-size:11px;margin:6px 0 0">화면 버전 ${APP_VER}</p>`;if(!n)return ver;
+function inAppBox(){const n=inAppName();const ver=`<p class="mute" style="text-align:center;font-size:11px;margin:6px 0 0"><a href="#privacy" onclick="event.preventDefault();openPolicy()"><b>개인정보 처리방침</b></a> · 화면 버전 ${APP_VER}</p>`;if(!n)return ver;
   const u=location.href,k='kakaotalk://web/openExternal?url='+encodeURIComponent(u);
   return `<div class="infobox" style="margin-top:10px">ℹ️ <b>${n} 안의 브라우저</b>로 열려 있습니다. 로그인 버튼이 반응하지 않으면 <b>기본 브라우저(사파리·크롬)</b>로 열어 주세요.<div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">${n==='카카오톡'?`<a class="btn pri" href="${k}">기본 브라우저로 열기</a>`:''}<button type="button" class="btn" onclick="copyUrl()">주소 복사</button></div></div>`+ver;}
 function copyUrl(){const u=location.href;try{navigator.clipboard.writeText(u).then(()=>toast('주소를 복사했습니다. 사파리에 붙여넣으세요.'),()=>prompt('주소를 복사하세요',u));}catch(e){prompt('주소를 복사하세요',u);}}
@@ -2794,20 +2796,66 @@ function vQR(me){
   ${isStaff(me)?'':`<div class="card"><p class="mute" style="margin:0">출근 후에는 화면이 작업 내역 작성으로 이어집니다. 퇴근할 때 QR을 다시 촬영하세요.</p></div>`}</div>`;
   return h;
 }
-const PRIV_VER='2026-11 판';
-function privacyHtml(){return `<div class="consent" style="max-height:none">
-  <b>[필수] 개인정보 수집·이용 동의</b>
-  <table style="margin-top:6px">
-  <tr><th>수집 항목</th><td>성명, 연락처, 주민등록번호, 소속, 근로형태, 입사·퇴사일, 임금 정보(1공수 단가 등), 출퇴근 시각·작업 기록</td></tr>
-  <tr><th>수집 목적</th><td>근로계약 체결·이행, 출퇴근 및 근무시간 관리, 급여 계산·지급, 4대보험 신고 및 소득세 원천징수</td></tr>
-  <tr><th>보유 기간</th><td>근로관계 종료 후 관계 법령에서 정한 보존 기간까지 (회사 방침 확정 필요)</td></tr>
-  <tr><th>거부 권리</th><td>동의를 거부할 수 있습니다. 다만 필수 항목에 동의하지 않으면 고센이엔지 전자시스템을 이용할 수 없으며, 서면 등 다른 방법으로 처리합니다.</td></tr>
-  </table>
-  <label class="row" style="margin:8px 0 14px"><input type="checkbox" id="pv_1" onchange="pvToggle()"> 위 개인정보 수집·이용에 동의합니다. (필수)</label>
-  <b>[필수] 주민등록번호 처리 안내</b>
-  <p style="margin:6px 0">주민등록번호는 동의가 아니라 <b>법령에 근거하여</b> 처리합니다. 회사는 소득세 원천징수 및 4대보험(국민연금·건강보험·고용보험·산재보험) 신고 등 법령상 의무 이행에 필요한 범위에서만 주민등록번호를 처리하며, 암호화하여 보관하고 관리자만 열람할 수 있도록 제한합니다.</p>
-  <label class="row" style="margin:8px 0 4px"><input type="checkbox" id="pv_2" onchange="pvToggle()"> 위 주민등록번호 처리 안내를 확인했습니다. (필수)</label>
-  <p class="mute" style="margin:8px 0 0">※ 예시 문안입니다(${PRIV_VER}). 실제 운영 전 노무사·법률 검토로 확정해야 합니다.</p></div>`;}
+const PRIV_VER='2026-11-21 개정';
+/* 개인정보 동의 문안 (한국어 원문 기준 · 베트남어/영어는 이해를 돕는 번역) */
+const PRIV_T={
+ ko:{h1:'[필수] 개인정보 수집·이용 동의',it:'수집 항목',itv:'성명, 연락처, 주민등록번호, 소속·직군·직급·사번, 입사·퇴사일, 임금 정보(1공수 단가·급여명세서), 출퇴근 시각·작업 기록, 연차·휴가, 자격·교육 이수 정보, 화면 언어, 휴대폰 알림 수신 정보',
+  pu:'수집 목적',puv:'근로계약 체결·이행, 출퇴근 및 근무시간 관리, 급여 계산·지급과 임금명세서 교부, 4대보험 신고 및 소득세 원천징수, 안전보건 관리(자격·교육·건강진단)',
+  ke:'보유 기간',kev:'• 근로자 명부·근로계약·임금·출퇴근(위치 포함)·연차 기록: 근로관계 종료 후 3년 (근로기준법 제42조)<br>• 급여·원천징수 등 세무 자료: 5년 (국세기본법 제85조의3)<br>• 건강진단 결과: 5년, 고용노동부 고시 물질을 다루는 경우 30년 (산업안전보건법 시행규칙 제241조)<br>• 기간이 지나면 지체 없이 파기합니다.',
+  re:'거부 권리',rev:'동의를 거부할 수 있습니다. 다만 필수 항목에 동의하지 않으면 고센이엔지 전자시스템을 이용할 수 없으며, 서면 등 다른 방법으로 처리합니다.',
+  c1:'위 개인정보 수집·이용에 동의합니다. (필수)',h2:'[필수] 법령에 따른 처리 및 위탁·국외 이전 안내',
+  rrn:'<b>주민등록번호</b>는 동의가 아니라 법령(소득세법, 4대보험 관련 법령)에 근거해 원천징수·4대보험 신고에 필요한 범위에서만 처리합니다. <b>암호화하여 보관</b>하고, 화면에는 뒤 6자리를 가려서 보여줍니다.',
+  hl:'<b>건강진단 정보</b>(검진일, 결과표·본인이 제출한 검진 결과)는 산업안전보건법 제129조~제132조 및 같은 법 시행규칙 제241조에 따라 처리합니다. 결과표는 전체 관리자와 본인만 볼 수 있고, 근로자 건강 보호 외의 목적으로 쓰지 않습니다.',
+  ov:'<b>위탁·국외 이전</b>: 자료는 구글(Google LLC)의 클라우드(구글 시트·드라이브, 미국 등 해외 데이터센터)에 저장되며, 글자 인식·번역도 구글 서비스를 이용합니다. 급여 계산은 회사가 맡긴 세무사무소, 4대보험 신고는 노무사사무소가 처리합니다.',
+  c2:'위 안내를 확인했습니다. (필수)',pol:'📄 개인정보 처리방침 전문 보기',note:'한국어 문안이 원문입니다.'},
+ vi:{h1:'[Bắt buộc] Đồng ý thu thập và sử dụng thông tin cá nhân',it:'Thông tin thu thập',itv:'Họ tên, số điện thoại, số đăng ký cư trú/số người nước ngoài, đơn vị·nhóm nghề·chức vụ·mã nhân viên, ngày vào làm/nghỉ việc, thông tin lương (đơn giá công·phiếu lương), giờ vào/ra ca·nhật ký công việc, nghỉ phép, chứng chỉ·đào tạo, ngôn ngữ màn hình, thông tin nhận thông báo điện thoại',
+  pu:'Mục đích',puv:'Ký kết và thực hiện hợp đồng lao động, quản lý giờ làm, tính và trả lương, cấp phiếu lương, khai báo 4 loại bảo hiểm và khấu trừ thuế thu nhập, quản lý an toàn sức khỏe (chứng chỉ·đào tạo·khám sức khỏe)',
+  ke:'Thời gian lưu giữ',kev:'• Hồ sơ lao động·hợp đồng·lương·chấm công (kể cả vị trí)·nghỉ phép: 3 năm sau khi chấm dứt quan hệ lao động<br>• Tài liệu thuế·khấu trừ: 5 năm<br>• Kết quả khám sức khỏe: 5 năm (30 năm với một số chất độc hại theo quy định)<br>• Hết thời hạn sẽ hủy ngay.',
+  re:'Quyền từ chối',rev:'Bạn có thể từ chối. Nếu không đồng ý các mục bắt buộc, bạn không thể dùng hệ thống này và công ty sẽ xử lý bằng giấy tờ hoặc cách khác.',
+  c1:'Tôi đồng ý thu thập và sử dụng thông tin cá nhân nêu trên. (Bắt buộc)',h2:'[Bắt buộc] Thông báo xử lý theo luật, ủy thác và chuyển ra nước ngoài',
+  rrn:'<b>Số đăng ký cư trú/số người nước ngoài</b> được xử lý theo luật (luật thuế thu nhập, luật 4 loại bảo hiểm), chỉ trong phạm vi cần cho khấu trừ thuế và khai báo bảo hiểm. Số được <b>mã hóa khi lưu</b>, và 6 số cuối được che trên màn hình.',
+  hl:'<b>Thông tin khám sức khỏe</b> (ngày khám, phiếu kết quả·kết quả bạn tự nộp) được xử lý theo Điều 129–132 Luật An toàn Vệ sinh Lao động và Điều 241 Quy tắc thi hành. Chỉ quản lý cấp cao nhất và chính bạn xem được phiếu kết quả, chỉ dùng để bảo vệ sức khỏe người lao động.',
+  ov:'<b>Ủy thác·chuyển ra nước ngoài</b>: Dữ liệu được lưu trên đám mây của Google (Google LLC) (Google Sheets·Drive, trung tâm dữ liệu ở Mỹ và nước khác); nhận dạng chữ·dịch cũng dùng dịch vụ Google. Văn phòng thuế được công ty ủy thác tính lương, văn phòng lao động khai báo bảo hiểm.',
+  c2:'Tôi đã đọc thông báo trên. (Bắt buộc)',pol:'📄 Xem toàn văn Chính sách xử lý thông tin cá nhân',note:'Bản tiếng Hàn là bản gốc; bản tiếng Việt chỉ để tham khảo.'},
+ en:{h1:'[Required] Consent to collection and use of personal information',it:'Items collected',itv:'Name, phone, resident/alien registration number, affiliation·job group·rank·employee no., hire/leave dates, pay information (daily rate·payslips), clock-in/out times·work logs, leave, qualifications·training, screen language, phone notification data',
+  pu:'Purpose',puv:'Concluding and performing the employment contract, attendance and working-hour management, payroll and payslips, social-insurance reporting and income-tax withholding, safety and health management (qualifications·training·health checkups)',
+  ke:'Retention',kev:'• Employee register·contract·pay·attendance (incl. location)·leave records: 3 years after employment ends<br>• Tax and withholding records: 5 years<br>• Health checkup results: 5 years (30 years for certain designated substances)<br>• Destroyed without delay after the period.',
+  re:'Right to refuse',rev:'You may refuse. If you do not agree to the required items you cannot use this system, and the company will use paper or other methods instead.',
+  c1:'I agree to the collection and use of personal information above. (Required)',h2:'[Required] Notice on legally required processing, outsourcing and overseas transfer',
+  rrn:'Your <b>resident/alien registration number</b> is processed under law (income-tax and social-insurance laws), only as needed for withholding and insurance reporting. It is <b>stored encrypted</b> and the last 6 digits are masked on screen.',
+  hl:'<b>Health checkup data</b> (dates, result sheets, results you submit) is processed under Articles 129–132 of the Occupational Safety and Health Act and Article 241 of its Enforcement Rule. Result sheets are visible only to the super admin and you, and are used only to protect workers’ health.',
+  ov:'<b>Outsourcing·overseas transfer</b>: Data is stored in Google’s (Google LLC) cloud (Google Sheets·Drive, data centers in the US and elsewhere); text recognition and translation also use Google services. Payroll is calculated by the company’s tax office and insurance reporting by its labor attorney office.',
+  c2:'I have read the notice above. (Required)',pol:'📄 Read the full Privacy Policy',note:'The Korean text is the original; this translation is for reference.'}};
+function privacyHtml(){const T=PRIV_T[LANG]||PRIV_T.ko;return `<div class="consent" style="max-height:none" data-notr="1">
+  <b>${T.h1}</b>
+  <table style="margin-top:6px"><tr><th>${T.it}</th><td>${T.itv}</td></tr><tr><th>${T.pu}</th><td>${T.puv}</td></tr><tr><th>${T.ke}</th><td>${T.kev}</td></tr><tr><th>${T.re}</th><td>${T.rev}</td></tr></table>
+  <label class="row" style="margin:8px 0 14px"><input type="checkbox" id="pv_1" onchange="pvToggle()"> ${T.c1}</label>
+  <b>${T.h2}</b>
+  <p style="margin:6px 0">${T.rrn}</p><p style="margin:6px 0">${T.hl}</p><p style="margin:6px 0">${T.ov}</p>
+  <label class="row" style="margin:8px 0 4px"><input type="checkbox" id="pv_2" onchange="pvToggle()"> ${T.c2}</label>
+  <p style="margin:10px 0 0"><a href="#privacy" onclick="event.preventDefault();openPolicy()">${T.pol}</a></p>
+  <p class="mute" style="margin:6px 0 0;font-size:12px">${LANG==='ko'?'':T.note+' · '}${PRIV_VER}</p></div>`;}
+/* 개인정보 처리방침 (공개) — 로그인 화면·사용방법·주소#privacy 로 누구나 볼 수 있음 */
+const POLICY_VER='2026년 11월 21일';
+function policyHtml(){const S2=(n,t,b)=>`<h3 style="margin:16px 0 6px">제${n}조 (${t})</h3>${b}`;
+  return `<div style="font-size:14px;line-height:1.65">
+  <p>주식회사 고센이엔지(이하 「회사」)는 「개인정보 보호법」 제30조에 따라 근로자 등 정보주체의 개인정보를 보호하고 관련 고충을 신속하게 처리하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다. 이 방침은 회사가 운영하는 「고센이엔지 전자시스템」(출퇴근·근태·급여명세서·안전보건·발주·매입 관리)에 적용됩니다.</p>
+  ${S2(1,'개인정보의 처리 목적','<ul><li>근로계약의 체결·이행, 근로자 명부 관리</li><li>출퇴근·근무시간·연차 관리, 투입명단·작업 기록 관리</li><li>급여 계산·지급 및 임금명세서 교부</li><li>4대보험 신고, 소득세 원천징수 등 법령상 의무 이행</li><li>안전보건 관리(자격·교육 이수, 건강진단 관리, 사고 보고)</li><li>법인카드·발주·매입 등 회계 처리, 거래처 관리</li><li>공지·긴급알림 전달</li></ul>')}
+  ${S2(2,'처리하는 개인정보의 항목','<table class="nw" style="width:100%"><tr><th style="width:26%">구분</th><th>항목</th></tr><tr><td>근로자</td><td>성명, 연락처, 주민등록번호(외국인등록번호), 소속·직군·직급·사번, 입사·퇴사일, 임금 정보(1공수 단가, 급여명세서), 출퇴근 시각, 출근 QR 장소, 출퇴근 버튼을 누른 시점의 위치(위도·경도), 작업 기록, 연차·휴가, 자격·교육 이수 정보, 비밀번호(일방향 암호화), 화면 언어, 휴대폰 알림 수신 정보</td></tr><tr><td>근로자(민감정보)</td><td>건강진단 실시일, 건강진단 결과표 및 근로자가 제출한 검진 결과</td></tr><tr><td>협력업체 투입 인원</td><td>성명, 소속 업체, 투입일·공수</td></tr><tr><td>거래처 담당자</td><td>상호, 대표자·담당자 성명, 연락처, 이메일, 주소, 사업자등록증·통장사본</td></tr><tr><td>법인카드 사용</td><td>사용자 성명, 카드번호 앞 4자리·끝 4자리, 영수증 사진</td></tr></table>')}
+  ${S2(3,'개인정보의 처리 및 보유 기간','<ul><li>근로자 명부, 근로계약서, 임금대장, 출퇴근(위치 포함)·연차 등 근로계약 관련 기록: 근로관계 종료 후 3년 (근로기준법 제42조)</li><li>급여·원천징수·세금계산서·영수증 등 세무 자료: 5년 (국세기본법 제85조의3)</li><li>건강진단 결과: 5년, 고용노동부장관이 고시하는 물질을 취급하는 근로자는 30년 (산업안전보건법 시행규칙 제241조)</li><li>그 밖의 자료: 처리 목적을 달성할 때까지</li></ul>')}
+  ${S2(4,'개인정보의 파기 절차 및 방법','<p>보유 기간이 지나거나 처리 목적을 달성한 개인정보는 지체 없이 파기합니다. 전자 파일은 복구할 수 없는 방법으로 삭제하고, 종이 문서는 분쇄하거나 소각합니다. 다른 법령에 따라 보존해야 하는 경우에는 다른 개인정보와 분리하여 보관합니다.</p>')}
+  ${S2(5,'개인정보의 제3자 제공','<p>회사는 정보주체의 동의, 법률의 특별한 규정 등 「개인정보 보호법」 제17조·제18조에 해당하는 경우에만 개인정보를 제3자에게 제공합니다. 법령에 따라 국세청, 국민연금공단·국민건강보험공단·근로복지공단, 고용노동부 등에 신고·제출하는 경우가 이에 해당합니다.</p>')}
+  ${S2(6,'개인정보 처리의 위탁','<table class="nw" style="width:100%"><tr><th>수탁자</th><th>위탁 업무</th></tr><tr><td>Google LLC</td><td>자료 저장(구글 시트·드라이브), 시스템 운영, 사진 글자 인식, 번역</td></tr><tr><td>회사가 지정한 세무사무소 <span class="mute">[명칭 기재]</span></td><td>급여 계산, 원천징수 신고</td></tr><tr><td>회사가 지정한 노무사사무소 <span class="mute">[명칭 기재]</span></td><td>4대보험 취득·상실 신고 등 노무 업무</td></tr><tr><td>GitHub, Inc.</td><td>화면 프로그램 배포 (개인정보는 저장하지 않음)</td></tr></table>')}
+  ${S2(7,'개인정보의 국외 이전','<p>회사는 근로계약의 이행을 위하여 아래와 같이 개인정보를 국외로 처리위탁·보관합니다(「개인정보 보호법」 제28조의8 제1항 제3호).</p><ul><li>이전받는 자: Google LLC (연락처: https://support.google.com/policies)</li><li>이전 국가: 미국 등 Google 데이터센터 소재 국가</li><li>이전 시기·방법: 시스템 이용 시 네트워크로 전송</li><li>이전 항목: 제2조의 항목</li><li>이용 목적·보유 기간: 제1조의 목적, 제3조의 기간</li><li>거부 방법 및 효과: 개인정보 보호책임자에게 요청할 수 있으며, 거부하면 전자시스템 대신 서면 등 다른 방법으로 처리합니다.</li></ul>')}
+  ${S2(8,'민감정보·주민등록번호·위치정보의 처리','<ul><li><b>건강진단 정보</b>: 산업안전보건법 제129조~제132조 및 시행규칙 제241조에 따라 처리합니다. 결과표는 전체 관리자와 본인만 열람할 수 있으며 근로자 건강 보호 외의 목적으로 사용하지 않습니다.</li><li><b>주민등록번호</b>: 소득세법 및 4대보험 관련 법령에 근거하여 원천징수·보험 신고에 필요한 범위에서만 처리하며, 암호화하여 보관하고 화면에는 뒤 6자리를 가립니다. 전체 번호 열람은 전체 관리자만 가능하고 열람 기록이 남습니다.</li><li><b>위치정보</b>: 정보주체의 동의를 받아, 출근·퇴근 버튼을 누르는 시점의 위치만 수집합니다. 근무 중 계속 추적하지 않으며, 동의를 철회하면 관리자를 통한 기록 등 다른 방법으로 출퇴근을 확인합니다.</li></ul>')}
+  ${S2(9,'정보주체의 권리·의무 및 행사 방법','<p>정보주체는 회사에 대해 언제든지 개인정보 열람·정정·삭제·처리정지 요구 및 동의 철회를 할 수 있습니다. 전자시스템에서 본인 정보를 확인하거나, 서면·전화·이메일로 개인정보 보호책임자에게 요청하면 지체 없이 조치합니다. 다만 법령에서 보존을 정한 정보는 삭제를 요구할 수 없습니다.</p>')}
+  ${S2(10,'개인정보의 안전성 확보 조치','<ul><li>관리적 조치: 개인정보 처리 담당자 최소화, 메뉴별 권한 부여</li><li>기술적 조치: 주민등록번호 암호화(AES-256), 비밀번호 일방향 암호화, 건강진단 결과·급여명세서 열람 제한, 변경·열람 기록 보관, 정기 자동 백업</li><li>물리적 조치: 자료는 접근 통제된 클라우드에 보관하고 종이 서류는 잠금장치가 있는 곳에 보관</li></ul>')}
+  ${S2(11,'개인정보 보호책임자','<table class="nw"><tr><th>성명·직책</th><td>고영남 · 대표이사 <span class="mute">[확정 필요]</span></td></tr><tr><th>연락처</th><td>041-357-7485</td></tr><tr><th>주소</th><td>충남 당진시 송악읍 대섬길 4-15</td></tr></table>')}
+  ${S2(12,'권익침해 구제 방법','<ul><li>개인정보침해신고센터: (국번 없이) 118 · privacy.kisa.or.kr</li><li>개인정보분쟁조정위원회: 1833-6972 · www.kopico.go.kr</li><li>대검찰청: (국번 없이) 1301 · www.spo.go.kr</li><li>경찰청: (국번 없이) 182 · ecrm.police.go.kr</li></ul>')}
+  ${S2(13,'개인정보 처리방침의 변경','<p>이 방침은 '+POLICY_VER+'부터 적용합니다. 내용이 바뀌면 전자시스템 공지로 알리고, 필요한 경우 다시 동의를 받습니다.</p>')}
+  <p class="mute" style="margin-top:14px;font-size:12px">※ 초안입니다. 시행 전 노무사·변호사 검토로 확정하세요. 대괄호([ ]) 부분은 회사가 채워야 합니다.</p></div>`;}
+function openPolicy(){openModal(`<div class="mbox" style="max-width:760px" data-notr="1"><div class="row"><h2 style="margin:0">개인정보 처리방침</h2><span class="sp"></span><button class="btn sm" onclick="policyPrint()">🖨 인쇄</button><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div><p class="mute" style="margin:4px 0">주식회사 고센이엔지 · 시행 ${POLICY_VER}</p>${policyHtml()}</div>`);}
+function policyPrint(){const w=window.open('','_blank');if(!w)return;w.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>개인정보 처리방침 - 주식회사 고센이엔지</title><style>body{font-family:'현대하모니 L','Malgun Gothic',sans-serif;max-width:800px;margin:24px auto;padding:0 16px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px;text-align:left;vertical-align:top}.mute{color:#777}</style></head><body><h1>개인정보 처리방침</h1><p>주식회사 고센이엔지 · 시행 ${POLICY_VER}</p>${policyHtml()}</body></html>`);w.document.close();setTimeout(()=>w.print(),400);}
 function pvToggle(){const ok=document.getElementById('pv_1').checked&&document.getElementById('pv_2').checked;['sg_name','sg_phone','su_r1','su_r2','su_pw','su_pw2','su_btn'].forEach(k=>{const e=document.getElementById(k);if(e)e.disabled=!ok;});const a=document.getElementById('pv_all');if(a)a.checked=ok;}
 function pvAll(on){document.getElementById('pv_1').checked=on;document.getElementById('pv_2').checked=on;pvToggle();}
 function vPrivacy(me){return `<div class="wrap narrow"><div class="card" style="margin-top:16px"><h2>개인정보 수집·이용 동의</h2><p class="mute">${esc(me.name)} 님, 계속 이용하려면 아래 내용을 확인하고 동의해 주세요.</p>
@@ -2878,10 +2926,10 @@ function vConsent(me){
   <p class="mute">${esc(me.name)} 님, 처음 사용 시 아래 내용에 동의해야 출퇴근 기록을 할 수 있습니다.</p>
   <div class="consent"><table>
   <tr><th>수집 목적</th><td>출근·퇴근 사실 및 근무 현장 확인</td></tr>
-  <tr><th>수집 항목</th><td>출근·퇴근 버튼을 누르는 시점의 위치(위도·경도·정확도), 시각<br><b>근무 중 계속 추적하지 않습니다.</b></td></tr>
-  <tr><th>보유 기간</th><td>근로관계 종료 후 ○년 (회사 방침 확정 필요)</td></tr>
+  <tr><th>수집 항목</th><td>출근 시 촬영한 QR 장소, 출근·퇴근 버튼을 누르는 시점의 위치(위도·경도·정확도), 시각<br><b>근무 중 계속 추적하지 않습니다.</b></td></tr>
+  <tr><th>보유 기간</th><td>출퇴근 기록과 함께 근로관계 종료 후 3년 (근로기준법 제42조), 이후 지체 없이 파기</td></tr>
   <tr><th>거부 권리</th><td>동의를 거부할 수 있으며, 거부 시 관리자를 통한 수기 기록 등 다른 방법으로 출퇴근을 확인합니다.</td></tr>
-  </table><p class="mute" style="margin-top:8px">※ 예시 문안입니다. 실제 운영 전 노무사·법률 검토로 확정해야 합니다.</p></div>
+  </table><p style="margin:8px 0 0"><a href="#privacy" onclick="event.preventDefault();openPolicy()">📄 개인정보 처리방침 보기</a></p></div>
   <label class="row" style="margin:12px 0"><input type="checkbox" id="cs_ok"> 위 내용을 확인했으며 위치정보 수집·이용에 동의합니다.</label>
   <div class="row"><button class="btn" onclick="logout()">동의하지 않음</button><span class="sp"></span><button class="btn pri" onclick="doConsent()">동의하고 시작</button></div></div></div>`;
 }
@@ -4685,7 +4733,7 @@ function aWorkers(){
   <span class="mute" style="font-size:12.5px">자격·교육·건강검진은 「자격·교육·검진」 메뉴에서 관리합니다</span><input id="wf_q" type="search" style="width:220px;border:2px solid var(--pri2)" placeholder="🔍 이름·전화·직급·직군 검색" value="${esc(f.q)}" oninput="wFilt(this.value)" autocomplete="off"><span class="sp"></span><button class="btn pri" onclick="aWorkerForm('')">+ 신규 입사자 등록</button></div>
   <div class="tbl-wrap" style="margin-top:10px"><table class="nw"><tr><th>소속</th><th>형태</th><th>입사일</th><th>직군</th><th>직급</th><th>이름</th><th>주민등록번호</th><th>전화번호</th><th style="text-align:right">1공수 단가</th><th>퇴사일</th><th>상태</th><th>동의 현황</th><th>권한</th><th>관리</th></tr>`;
   h+=`<tr id="wf_none" style="display:${ws.length?'none':''}"><td colspan="14" class="mute">해당하는 근로자가 없습니다.</td></tr>`;
-  ws.forEach(w=>{h+=`<tr class="wf_r" data-s="${esc([w.name,w.phone,String(w.phone||'').replace(/\D/g,''),w.partner||'',w.rank||'',w.jobType||''].join(' ').toLowerCase())}"><td>${esc(affLabel(w))}</td><td>${w.type}</td><td>${w.join}</td><td>${w.jobType?`<span class="chip ${w.jobType==='사무직'?'st-ok':''}">${esc(w.jobType)}</span>`:'<span class="mute">-</span>'}</td><td>${w.rank?esc(w.rank):'<span class="mute">-</span>'}</td><td><b>${esc(w.name)}</b></td><td>${rrnShow(w.rrn)}</td><td>${esc(w.phone)}</td><td style="text-align:right">${rateShow(w.rate)}</td><td>${w.leave||'-'}</td><td><span class="chip ${w.status==='재직'?'st-ok':'st-bad'}">${w.status}</span>${w.status==='재직'&&!w.pw?'<span class="chip c-out">첫 로그인 전</span>':''}</td><td style="white-space:nowrap">${w.privacy?`<span class="chip st-ok" title="개인정보 동의 ${esc(w.privacy)}">개인 ✓</span>`:'<span class="chip c-out" title="개인정보 미동의">개인 ✗</span>'}${w.consent?`<span class="chip st-ok" title="위치정보 동의 ${esc(w.consent)}">위치 ✓</span>`:'<span class="chip c-out" title="위치정보 미동의">위치 ✗</span>'}</td><td style="white-space:nowrap">${roleLabel(w)}</td><td style="white-space:nowrap">${(!isSuper()&&w.role!=='worker')?'<span class="mute">전체 관리자만 변경</span>':`<button class="btn sm" onclick="aWorkerForm('${w.id}')">수정</button> ${isSuper()&&w.status==='재직'?`<button class="btn sm" onclick="aRoleForm('${w.id}')">권한</button> `:''}${w.status==='재직'?(w.id!==ses.uid?`<button class="btn sm bad" onclick="aLeave('${w.id}')">퇴사</button>`:''):(w.status==='퇴사'?`<button class="btn sm" onclick="aRejoin('${w.id}')">재입사</button>`:w.status==='가입반려'?`<button class="btn sm ok" onclick="aSignForm('${w.id}')">승인</button>`:'')} ${w.id!==ses.uid?`<button class="btn sm" onclick="aPin('${w.id}')">비번 초기화</button>`:''}`}</td></tr>`;});
+  ws.forEach(w=>{h+=`<tr class="wf_r" data-s="${esc([w.name,w.phone,String(w.phone||'').replace(/\D/g,''),w.partner||'',w.rank||'',w.jobType||'',w.empNo||''].join(' ').toLowerCase())}"><td>${esc(affLabel(w))}</td><td>${w.type}</td><td>${w.join}</td><td>${w.jobType?`<span class="chip ${w.jobType==='사무직'?'st-ok':''}">${esc(w.jobType)}</span>`:'<span class="mute">-</span>'}</td><td>${w.rank?esc(w.rank):'<span class="mute">-</span>'}</td><td><b>${esc(w.name)}</b>${w.empNo?` <span class="mute" style="font-size:12px">#${esc(w.empNo)}</span>`:''}</td><td>${rrnShow(w.rrn)}</td><td>${esc(w.phone)}</td><td style="text-align:right">${rateShow(w.rate)}</td><td>${w.leave||'-'}</td><td><span class="chip ${w.status==='재직'?'st-ok':'st-bad'}">${w.status}</span>${w.status==='재직'&&!w.pw?'<span class="chip c-out">첫 로그인 전</span>':''}</td><td style="white-space:nowrap">${w.privacy?`<span class="chip st-ok" title="개인정보 동의 ${esc(w.privacy)}">개인 ✓</span>`:'<span class="chip c-out" title="개인정보 미동의">개인 ✗</span>'}${w.consent?`<span class="chip st-ok" title="위치정보 동의 ${esc(w.consent)}">위치 ✓</span>`:'<span class="chip c-out" title="위치정보 미동의">위치 ✗</span>'}</td><td style="white-space:nowrap">${roleLabel(w)}</td><td style="white-space:nowrap">${(!isSuper()&&w.role!=='worker')?'<span class="mute">전체 관리자만 변경</span>':`<button class="btn sm" onclick="aWorkerForm('${w.id}')">수정</button> ${isSuper()&&w.status==='재직'?`<button class="btn sm" onclick="aRoleForm('${w.id}')">권한</button> `:''}${w.status==='재직'?(w.id!==ses.uid?`<button class="btn sm bad" onclick="aLeave('${w.id}')">퇴사</button>`:''):(w.status==='퇴사'?`<button class="btn sm" onclick="aRejoin('${w.id}')">재입사</button>`:w.status==='가입반려'?`<button class="btn sm ok" onclick="aSignForm('${w.id}')">승인</button>`:'')} ${w.id!==ses.uid?`<button class="btn sm" onclick="aPin('${w.id}')">비번 초기화</button>`:''}`}</td></tr>`;});
   if(q)setTimeout(()=>wFilt(q,1),0);
   return h+`</table></div><p class="mute">퇴사자는 삭제하지 않고 로그인만 막습니다. 근로계약 관련 서류는 근로기준법상 보존 의무(3년)가 있어 출근 기록을 그대로 보존합니다.</p></div>`;
 }
@@ -4743,6 +4791,7 @@ function aHelp(){const en=admEn(),q=(ui.ahq||'').trim().toLowerCase();
   <p class="mute" style="margin:6px 0 0;font-size:13px">${en?'Tap a topic to open it. Menus you have no permission for are not shown on your screen.':'항목을 누르면 펼쳐집니다. 권한이 없는 메뉴는 내 화면에 보이지 않을 수 있습니다. 근로자용 설명은 근로자 화면 「사용방법」 탭에 있습니다.'}</p></div>`;
   if(!L.length)h+=`<div class="card"><p class="mute" style="margin:0">${en?'No results.':'찾는 내용이 없습니다.'}</p></div>`;
   L.forEach((sct,i)=>{h+=`<details class="card ahsec" style="padding:12px 16px" ${q||i===0?'open':''}><summary style="cursor:pointer;font-weight:700;font-size:15px" data-notr="1">${sct.ic} ${esc(sct.t)}</summary><ul style="margin:8px 0 0;padding-left:20px;line-height:1.65" data-notr="1">${sct.items.map(x=>`<li data-notr="1">${esc(x)}</li>`).join('')}</ul></details>`;});
+  h+=`<div class="card" style="padding:12px 16px"><a href="#privacy" onclick="event.preventDefault();openPolicy()">🔒 개인정보 처리방침 (누구나 볼 수 있게 공개)</a> <span class="mute" style="font-size:12px">— 주소 끝에 #privacy 를 붙이면 바로 열립니다.</span></div>`;
   return h;}
 function ahOpen(v){document.querySelectorAll('details.ahsec').forEach(d=>d.open=!!v);}
 function ahPrint(){const en=admEn();const body=ADM_MANUAL.map(([ic,tk,te,items])=>`<h2>${ic} ${esc(en?te:tk)}</h2><ul>${items.map(x=>`<li>${esc(en?x[1]:x[0])}</li>`).join('')}</ul>`).join('');
@@ -4762,7 +4811,8 @@ function vHelp(me){const sec=(ic,t,body,open)=>`<details class="card" style="pad
   +sec('🌴','연차·휴가 신청',ol(['「연차·휴가」에서 종류(연차·반차 등)와 날짜를 골라 신청합니다.','관리자가 승인·반려하면 알림이 옵니다.']))
   +sec('📁','내 서류 (급여명세서·건강검진)',ol(['💰 급여명세서: 매달 올라오면 알림이 오고, 「내 서류」에서 월별로 봅니다.','🩺 건강검진: 검진을 받으면 결과표를 사진으로 찍어(최대 4장) 「📷 건강검진표 올리기」로 제출합니다. 날짜를 확인하고 제출하면 관리자가 승인합니다.','근로계약서도 준비되면 여기서 보고 서명합니다.']))
   +sec('💬','건의함',ol(['회사에 바라는 점이나 불편한 점을 적습니다.','익명으로도 쓸 수 있습니다.']))
-  +sec('❓','잘 안 될 때',ol(['위치가 안 잡히면 휴대폰 설정에서 위치(GPS)를 켜고, 브라우저의 위치 권한을 「허용」으로 바꿉니다.','화면이 이상하면 아래로 당겨 새로고침하세요.','비밀번호를 잊었으면 관리자에게 「비밀번호 초기화」를 요청하세요.','그래도 안 되면 화면을 캡처해 관리자에게 보내 주세요.']));}
+  +sec('❓','잘 안 될 때',ol(['위치가 안 잡히면 휴대폰 설정에서 위치(GPS)를 켜고, 브라우저의 위치 권한을 「허용」으로 바꿉니다.','화면이 이상하면 아래로 당겨 새로고침하세요.','비밀번호를 잊었으면 관리자에게 「비밀번호 초기화」를 요청하세요.','그래도 안 되면 화면을 캡처해 관리자에게 보내 주세요.']))
+  +`<div class="card" style="padding:12px 16px"><a href="#privacy" onclick="event.preventDefault();openPolicy()">🔒 개인정보 처리방침</a></div>`;}
 function appGuideModal(){openModal(`<div class="mbox" style="max-width:460px"><div class="row"><h3 style="margin:0">📲 앱 설치·사용 방법</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div><p class="mute" style="font-size:13px;margin:8px 0 0">안드로이드는 <b>크롬</b>, 아이폰은 <b>사파리</b>로 쓰세요. 카카오톡에서 받은 링크는 「다른 브라우저로 열기」로 여세요.</p>${agSteps(brEnv())}</div>`);}
 /* ---------- 생일 (주민번호 앞자리의 월-일, 양력 기준) ---------- */
 const isBday=w=>{const b=w&&(w.bday||((/^\d{2}(\d{2})(\d{2})/.exec(String(w.rrn||''))||[]).slice(1).join('-')));return !!b&&b===today().slice(5);};
@@ -4778,7 +4828,7 @@ function paySlip(id){const x=(S.payslips||[]).find(o=>o.id===id);if(!x)return;co
   if(LIVE&&x.wid===ses.uid&&!x.seen&&!x.draft){x.seen=stamp();window.liveCall('pay_seen',{id}).catch(()=>{});}
   if((x.items||[]).some(i=>i.g)){openModal(paySlipDoc(x,w.name||x.name));render();return;}
   openModal(`<div class="mbox" style="max-width:460px"><div class="row"><h3 style="margin:0">💰 ${x.month.slice(0,4)}년 ${Number(x.month.slice(5))}월 급여명세서</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <div class="mute" style="margin:4px 0 8px">${esc(w.name||x.name)} · 주식회사 고센이엔지</div>
+  <div class="mute" style="margin:4px 0 8px">${esc(w.name||x.name)}${w.empNo?' · 사번 '+esc(w.empNo):''} · 주식회사 고센이엔지</div>
   <table class="nw" style="width:100%">${(x.items||[]).map(i=>`<tr><td data-notr="1">${esc(payK(x,i.k))}${LANG!=='ko'&&payK(x,i.k)!==i.k?` <small class="mute">${esc(i.k)}</small>`:''}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${esc(payFmt(i.v))}</td></tr>`).join('')}
   ${x.net?`<tr style="background:#f3f7ff"><td><b>실지급액</b></td><td style="text-align:right"><b style="font-size:16px">${esc(payFmt(x.net))}원</b></td></tr>`:''}</table>
   <p class="mute" style="font-size:12px;margin:8px 0 0">세무사무소에서 계산한 급여대장 기준입니다. 궁금한 점은 관리자에게 문의하세요.</p></div>`);render();}
@@ -4788,7 +4838,7 @@ function paySlipDoc(x,name,prevB64){const I=x.items||[],G=g=>I.filter(i=>i.g===g
   return `<div class="mbox" style="max-width:640px"><div class="row" style="gap:6px"><span class="sp"></span>${x.pdf||prevB64!=null?`<button class="btn sm" onclick="${prevB64!=null?`payPdfLocal(${prevB64})`:`photoView('급여명세서 원본','pay_pdfGet',{id:'${x.id}'})`}">📄 원본 PDF</button>`:''}<button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <h2 style="text-align:center;margin:4px 0 2px">${x.month.slice(0,4)}년 ${x.month.slice(5)}월 급여 지급명세서</h2>
   <div class="row" style="font-size:13px;margin:6px 0"><span>주식회사 고센이엔지</span><span class="sp"></span>${gi('지급일')?`<span>지급일 : ${esc(gi('지급일'))}</span>`:''}</div>
-  <table class="nw" style="width:100%;font-size:13.5px"><tr><th style="width:22%">성명</th><td>${esc(name)}</td><th style="width:22%">부서</th><td>${esc(gi('부서')||'-')}</td></tr><tr><th>직위</th><td>${esc(gi('직위')||'-')}</td><th>입사일</th><td>${esc(gi('입사일')||'-')}</td></tr></table>
+  <table class="nw" style="width:100%;font-size:13.5px"><tr><th style="width:22%">성명</th><td>${esc(name)}</td><th style="width:22%">사번</th><td>${esc(gi('사번')||((W(x.wid)||{}).empNo)||'-')}</td></tr><tr><th>부서</th><td>${esc(gi('부서')||'-')}</td><th>직위</th><td>${esc(gi('직위')||'-')}</td></tr><tr><th>입사일</th><td colspan="3">${esc(gi('입사일')||'-')}</td></tr></table>
   <h4 style="text-align:center;margin:12px 0 4px;background:#eef1f5;padding:4px;border-radius:4px">세부 내역</h4>
   <table class="nw" style="width:100%;font-size:13.5px"><tr><th colspan="2" style="text-align:center">지 급</th><th colspan="2" style="text-align:center">공 제</th></tr><tr><th>임금 항목</th><th style="text-align:right">지급 금액</th><th>공제 항목</th><th style="text-align:right">공제 금액</th></tr>
   ${Array.from({length:n},(_,j)=>`<tr><td data-notr="1">${P[j]?K(P[j].k):''}</td><td style="${num}">${P[j]?esc(payFmt(P[j].v)):''}</td><td data-notr="1">${D[j]?K(D[j].k):''}</td><td style="${num}">${D[j]?esc(payFmt(D[j].v)):''}</td></tr>`).join('')}
@@ -4820,7 +4870,7 @@ function payPdfParse(items,PW){
   /* 인적사항: 머리글 위 줄들의 「라벨 값」 */
   const LB=['성명','생년월일(사번)','생년월일','부서','직위(직급)','직위','입사일','퇴사일'];
   rows.slice(0,hd).forEach(r=>{for(let i=0;i<r.it.length;i++){const k=T(r.it[i].s);if(LB.indexOf(k)<0)continue;const v=[];for(let j=i+1;j<r.it.length&&LB.indexOf(T(r.it[j].s))<0;j++)v.push(r.it[j].s);
-    const val=v.join(' ').trim();if(k==='성명')out.name=T(val);else if(/^생년월일/.test(k))out.birth=val.split(' ')[0]||'';else if(val)out.info.push({k:k.replace(/\(.*\)/,''),v:val});}});
+    const val=v.join(' ').trim();if(k==='성명')out.name=T(val);else if(/^생년월일/.test(k)){const pt=val.split(' ');out.birth=pt[0]||'';if(pt[1])out.info.push({k:'사번',v:pt[1]});}else if(val)out.info.push({k:k.replace(/\(.*\)/,''),v:val});}});
   const te=find(/지급액계/,hd+1),ne=find(/실수령액/,hd+1),ce=find(/^계산방법$/,hd+1);
   const col=(r,a,b)=>r.it.filter(o=>(o.x+o.x1)/2>=a&&(o.x+o.x1)/2<b).map(o=>o.s).join(' ').trim();
   rows.slice(hd+1,te<0?rows.length:te).forEach(r=>{const pk=col(r,b0,b1),pv=col(r,b1,b2),dk=col(r,b2,b3),dv=col(r,b3,1e9);
@@ -5052,7 +5102,8 @@ function aWorkerForm(id){
   <label class="f"><span>직급</span><select id="fw_rank"><option value="">(미지정)</option>${RANKS.map(a=>`<option ${w.rank===a?'selected':''}>${a}</option>`).join('')}</select></label>
   <label class="f"><span>근로형태 *</span><select id="fw_type">${['상용직','일용직'].map(a=>`<option ${w.type===a?'selected':''}>${a}</option>`).join('')}</select></label>
   <label class="f"><span>이름 *</span><input id="fw_name" value="${esc(w.name)}"></label>
-  <label class="f"><span>주민등록번호 * (앞 6자리-뒷자리 첫 1자리, 전체도 가능)</span><input id="fw_rrn" inputmode="numeric" maxlength="14" placeholder="예: 900101-1" value="${esc(w.rrn||'')}"></label>
+  <label class="f"><span>주민등록번호 * (앞 6자리-뒷자리 첫 1자리, 전체도 가능) <span class="mute" style="font-size:12px">🔒 암호화 보관 · 뒤 6자리는 가려서 보임</span>${id&&isSuper()&&String(w.rrn||'').length>=14?` <button type="button" class="btn sm" onclick="rrnView('${id}')">👁 전체 보기</button>`:''}</span><input id="fw_rrn" inputmode="numeric" maxlength="14" placeholder="예: 900101-1" value="${esc(w.rrn||'')}"></label>
+  <label class="f"><span>사번</span><input id="fw_emp" value="${esc(w.empNo||'')}" placeholder="예: 007"></label>
   <label class="f"><span>전화번호 * (로그인 ID, 숫자만)</span><input id="fw_phone" type="tel" inputmode="numeric" value="${esc(String(w.phone||'').replace(/\D/g,''))}" placeholder="01012345678" oninput="this.value=this.value.replace(/\D/g,'')"></label>
   <label class="f"><span>1공수 단가 (원)</span><input id="fw_rate" inputmode="numeric" value="${w.rate===''||w.rate==null?'':Number(w.rate).toLocaleString('ko-KR')}" placeholder="예: 200,000"></label>
 </div>
@@ -5438,6 +5489,7 @@ function langDetect(){try{const s=localStorage.getItem(LANG_KEY);if(s&&LANGS[s])
   for(const l of ls){if(l.indexOf('ko')===0)return 'ko';if(l.indexOf('vi')===0)return 'vi';if(l.indexOf('en')===0)return 'en';}
   return 'en';}
 let LANG=langDetect();
+window.addEventListener('load',()=>{if(location.hash==='#privacy')setTimeout(()=>{try{openPolicy();}catch(e){}},600);});
 let LANG_SAVED=(()=>{try{return !!localStorage.getItem(LANG_KEY);}catch(e){return false;}})();   /* 관리자 화면 영어는 직접 고른 경우에만 */
 /* [한국어, 베트남어, 영어] */
 const I18=[
@@ -5965,7 +6017,7 @@ function call(op,p){
 }
 function busyMsg(t){if(typeof CK_ON!=='undefined'&&CK_ON&&t){ckBar('⏳ '+t);return;}var b=document.getElementById('busy');if(!b)return;var d=b.querySelector('.bmsg');if(!d){d=document.createElement('div');d.className='bmsg';d.style.cssText='font-size:12px;color:#666;margin-top:6px';b.firstChild.appendChild(d);}d.textContent=t;}
 /* 구글 서버가 가끔(약 10회 중 1번) 응답 없이 멈춤 → 짧게 기다렸다가 같은 요청번호(rid)로 다시 보냄. 서버가 같은 번호는 한 번만 처리 */
-var READ_OPS={boot:1,pay_seen:1,ext_month:1,qrInfo:1,records:1,roster_permitGet:1},LONG_OPS={calList:1,roster_permitUp:1,qual_ocr:1,health_ocr:1,my_health_ocr:1,pay_parse:1,health_reqFile:1,comp_fileUp:1,comp_get:1,form_up:1,form_get:1,buy_tpl:1,car_fileUp:1,car_fileGet:1,qual_fileGet:1,buy_rcptOcr:1,buy_fileGet:1,vendor_fileUp:1,vendor_fileGet:1,pay_pdfGet:1,pay_save:1};
+var READ_OPS={boot:1,rrn_view:1,pay_seen:1,ext_month:1,qrInfo:1,records:1,roster_permitGet:1},LONG_OPS={calList:1,roster_permitUp:1,qual_ocr:1,health_ocr:1,my_health_ocr:1,pay_parse:1,health_reqFile:1,comp_fileUp:1,comp_get:1,form_up:1,form_get:1,buy_tpl:1,car_fileUp:1,car_fileGet:1,qual_fileGet:1,buy_rcptOcr:1,buy_fileGet:1,vendor_fileUp:1,vendor_fileGet:1,pay_pdfGet:1,pay_save:1};
 function call1(op,p){if(LONG_OPS[op])return call0(op,p,'',op==='calList'?60000:120000);
   const rid=READ_OPS[op]?'':Date.now().toString(36)+Math.random().toString(36).slice(2,8),to=op==='check'?25000:READ_OPS[op]?12000:20000;let n=0;
   let nb=0;
@@ -6150,7 +6202,7 @@ aAppr=function(){if(ensureFrom(ui.f.from))return '<div class="card"><div class="
 /* ----- 관리자: 근로자 ----- */
 aWorkerSave=function(id){
   const g=k=>document.getElementById(k).value.trim();
-  run('saveWorker',{id,data:{name:g('fw_name'),phone:g('fw_phone'),aff:g('fw_aff'),partner:g('fw_partner'),type:g('fw_type'),rank:g('fw_rank'),jobType:g('fw_job'),join:g('fw_join'),rrn:g('fw_rrn'),rate:g('fw_rate')}},null,true).then(r=>{if(r)closeModal(),render();});
+  run('saveWorker',{id,data:{name:g('fw_name'),phone:g('fw_phone'),aff:g('fw_aff'),partner:g('fw_partner'),type:g('fw_type'),rank:g('fw_rank'),jobType:g('fw_job'),join:g('fw_join'),rrn:g('fw_rrn'),empNo:g('fw_emp'),rate:g('fw_rate')}},null,true).then(r=>{if(r)closeModal(),render();});
 };
 aLeaveDo=function(id){const d=document.getElementById('lv_date').value;if(!d){toast('퇴사일을 입력하세요.');return;}run('leave',{id,date:d});};
 aRejoinDo=function(id){const d=document.getElementById('rj_date').value;if(!d)return;run('rejoin',{id,date:d});};
