@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22al-->
+<!DOCTYPE html><!--v:2026.11.22am-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2762,7 +2762,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22al';
+const APP_VER='2026.11.22am';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3308,12 +3308,12 @@ function aGisung(){ledEnsureDemo();const y=ledY(),L=gList(),cm=Number(today().sl
   const tot={A:0,B:0,X:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.A+=x.c.A;tot.B+=x.c.B;tot.X+=x.c.X;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.g.m||[])[i])||0);});
   let h=`<div class="kpi"><div class="k"><span>${y}년 대장 공사</span><b>${L.length}건</b></div><div class="k"><span>수주금액 합계 (A)</span>${kWon(tot.A)}</div><div class="k"><span>당해년도 기성금</span>${kWon(tot.X,'var(--pri2)')}</div><div class="k"><span>이월 잔금 합계 (E)</span>${kWon(tot.E,'var(--warn)')}</div>${thisY?`<div class="k"><span>${cm}월 기성</span>${kWon(tot.m[cm-1])}</div>`:''}</div>
   <div class="card"><div class="row" style="flex-wrap:wrap;gap:6px"><h3 style="margin:0">${y}년 기성준공 관리대장</h3><span class="sp"></span>${canM('proj')||canM('gisung')?`${(()=>{const n=S.projects.filter(p=>!String(p.code||'').trim()).length;return n?`<button class="btn" onclick="projAutoAll()">🏷 발주번호 없는 공사 ${n}건 → 「발주처-번호」</button>`:'';})()}<button class="btn pri" onclick="aProjForm('')">+ 공사 등록</button>`:''}</div>${LED_NOTE}${ledHead('g')}
-  <div class="tbl-wrap ledwrap"><table class="nw led"><tr><th>사용</th><th>수주처</th><th>발주번호</th><th>발주처</th><th>공장명</th><th>공사명</th><th>담당자</th><th>허가서<br>등록</th><th>계약<br>시작</th><th>계약<br>종료</th><th>수주금액<br>(A)</th><th>보험료<br>정산</th><th>전년도<br>기성금 (B)</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>기성<br>진행률</th><th>당해년도<br>기성금</th><th>이월 잔금<br>(E)</th></tr>`;
+  <div class="tbl-wrap ledwrap"><table class="nw led"><tr><th>사용</th><th>발주번호</th><th>발주처</th><th>공장명</th><th>수주처</th><th>공사명</th><th>담당자</th><th>허가서<br>등록</th><th>계약<br>시작</th><th>계약<br>종료</th><th>수주금액<br>(A)</th><th>보험료<br>정산</th><th>전년도<br>기성금 (B)</th>${MH.map(m=>`<th>${m}월</th>`).join('')}<th>기성<br>진행률</th><th>당해년도<br>기성금</th><th>이월 잔금<br>(E)</th></tr>`;
   if(!L.length)h+=`<tr><td colspan="28" class="mute">등록된 공사가 없습니다. 「+ 공사 등록」으로 추가하세요.</td></tr>`;
   const td=today();
   const gd={v:0,n:L.filter(x=>x.p.done).length};
   L.forEach(x=>{const p=x.p,g=x.g,c=x.c;h+=ledSec(p,gd,28);if(ledHide(p))return;const over=p.contractEnd&&p.contractEnd<td&&(c.E===''||c.E>0);
-    h+=`<tr class="click${p.done?' isdone':''}" onclick="gForm('${g.id}')"><td onclick="event.stopPropagation()" style="white-space:nowrap">${p.done?'<span class="chip st-pend">완료</span>':`<button class="chip ${p.active?'st-ok':'st-draft'}" style="border:none;cursor:pointer" title="눌러서 사용/중지 바꾸기" onclick="aProjToggle('${p.id}')">${p.active?'사용':'중지'}</button>`}</td><td>${esc(p.contractor||'고센이엔지')}</td><td>${esc(pCode(p))}</td><td>${esc(p.client||'')}</td><td>${esc(p.plant||'')}</td><td><b>${esc(p.name)}</b>${ledDoneChip(p)}</td><td>${esc(p.mgrName||'')}</td><td style="text-align:center">${p.permit?'✔':'<span class="mute">–</span>'}</td><td>${esc(p.contractStart||'')}</td><td${over?' style="color:var(--bad);font-weight:600" title="계약 종료일 지남 · 잔금 남음"':''}>${esc(p.contractEnd||'')}</td><td class="num">${won(p.amount)}</td><td style="text-align:center">${p.insSettled?'✔':'<span class="mute">–</span>'}</td><td class="num">${won(g.prev)}</td>${MH.map((_,i)=>`<td class="num">${won((g.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>=1?'style="color:var(--ok);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.X)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad)"':''}>${won(c.E)}</td></tr>`;});
+    h+=`<tr class="click${p.done?' isdone':''}" onclick="gForm('${g.id}')"><td onclick="event.stopPropagation()" style="white-space:nowrap">${p.done?'<span class="chip st-pend">완료</span>':`<button class="chip ${p.active?'st-ok':'st-draft'}" style="border:none;cursor:pointer" title="눌러서 사용/중지 바꾸기" onclick="aProjToggle('${p.id}')">${p.active?'사용':'중지'}</button>`}</td><td>${esc(pCode(p))}</td><td>${esc(p.client||'')}</td><td>${esc(p.plant||'')}</td><td>${esc(p.contractor||'고센이엔지')}</td><td><b>${esc(p.name)}</b>${ledDoneChip(p)}</td><td>${esc(p.mgrName||'')}</td><td style="text-align:center">${p.permit?'✔':'<span class="mute">–</span>'}</td><td>${esc(p.contractStart||'')}</td><td${over?' style="color:var(--bad);font-weight:600" title="계약 종료일 지남 · 잔금 남음"':''}>${esc(p.contractEnd||'')}</td><td class="num">${won(p.amount)}</td><td style="text-align:center">${p.insSettled?'✔':'<span class="mute">–</span>'}</td><td class="num">${won(g.prev)}</td>${MH.map((_,i)=>`<td class="num">${won((g.m||[])[i])}</td>`).join('')}<td class="num" ${c.rate!==''&&c.rate>=1?'style="color:var(--ok);font-weight:600"':''}>${pctS(c.rate)}</td><td class="num"><b>${won(c.X)}</b></td><td class="num" ${c.E!==''&&c.E<0?'style="color:var(--bad)"':''}>${won(c.E)}</td></tr>`;});
   if(L.length)h+=`<tr class="tot"><td colspan="10"><b>계</b></td><td class="num">${won(tot.A)}</td><td></td><td class="num">${won(tot.B)}</td>${tot.m.map(v=>`<td class="num">${v?won(v):''}</td>`).join('')}<td></td><td class="num"><b>${won(tot.X)}</b></td><td class="num"><b>${won(tot.E)}</b></td></tr>`;
   return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 월별 기성금과 담당자·계약 종료·허가서·보험료 정산을 고칠 수 있습니다. 진행률 = (전년도 기성금 + 당해년도 기성금) ÷ 수주금액, 이월 잔금 = 수주금액 − 누적 기성금. 「사용」을 누르면 사용/중지가 바뀝니다 (중지된 공사는 근로자 공사 선택 목록에서 빠짐).</p></div>`;}
 /* 공사 등록·사용 상태 관리 (기성준공 안으로 통합) */
@@ -3455,11 +3455,11 @@ function ledClose(m){const y=ledY(),L=ledCloseList(y,m),sum=f=>L.reduce((a,x)=>a
 function ledExport(kind){const y=ledY(),st=today()+' 출력',sum=(L,f)=>L.reduce((a,x)=>a+(Number(f(x))||0),0),mm=MH.map(m=>m+'월'),ms=(L,k)=>MH.map((_,i)=>sum(L,x=>(x[k].m||[])[i])||'');
   if(kind==='g'){const L=gList(),tA=sum(L,x=>x.c.A),tB=sum(L,x=>x.c.B),tX=sum(L,x=>x.c.X),tE=sum(L,x=>x.c.E);
     xlsxSave(`${y}년_기성준공_관리대장`,{title:`${y}년 기성준공 관리대장`,sheet:`${y} 기성준공`,stamp:st,freezeCol:4,
-      head:['발주번호','발주처','공장명','공사명','담당자','허가서','계약시작','계약종료','수주금액(A)','보험료정산','전년도기성금(B)'].concat(mm,['기성진행률','당해년도기성금','이월잔금(E)','상태','메모']),
-      types:['t','t','t','t','t','t','t','t','n','t','n'].concat(MH.map(()=>'n'),['p','n','n','t','t']),
-      widths:[12,10,10,30,8,6,10,10,13,7,13].concat(MH.map(()=>11),[8,13,13,6,18]),
-      rows:L.map(x=>[x.p.code||'',x.p.client||'',x.p.plant||'',x.p.name,x.p.mgrName||'',x.p.permit?'O':'',x.p.contractStart||'',x.p.contractEnd||'',x.p.amount,x.p.insSettled?'O':'',x.g.prev].concat(MH.map((_,i)=>(x.g.m||[])[i]),[x.c.rate,x.c.X,x.c.E,x.p.done?'완료':'',x.g.memo||''])),
-      total:['계','','','','','','','',tA,'',tB].concat(ms(L,'g'),[tA?(tB+tX)/tA:'',tX,tE,'',''])});}
+      head:['발주번호','발주처','공장명','수주처','공사명','담당자','허가서','계약시작','계약종료','수주금액(A)','보험료정산','전년도기성금(B)'].concat(mm,['기성진행률','당해년도기성금','이월잔금(E)','상태','메모']),
+      types:['t','t','t','t','t','t','t','t','t','n','t','n'].concat(MH.map(()=>'n'),['p','n','n','t','t']),
+      widths:[12,10,10,11,30,8,6,10,10,13,7,13].concat(MH.map(()=>11),[8,13,13,6,18]),
+      rows:L.map(x=>[x.p.code||'',x.p.client||'',x.p.plant||'',x.p.contractor||'고센이엔지',x.p.name,x.p.mgrName||'',x.p.permit?'O':'',x.p.contractStart||'',x.p.contractEnd||'',x.p.amount,x.p.insSettled?'O':'',x.g.prev].concat(MH.map((_,i)=>(x.g.m||[])[i]),[x.c.rate,x.c.X,x.c.E,x.p.done?'완료':'',x.g.memo||''])),
+      total:['계','','','','','','','','',tA,'',tB].concat(ms(L,'g'),[tA?(tB+tX)/tA:'',tX,tE,'',''])});}
   else{const L=sList(),tD=sum(L,x=>x.c.D),tC=sum(L,x=>x.s.carry),tS=sum(L,x=>x.c.S),tE=sum(L,x=>x.c.E);
     xlsxSave(`${y}년_안전관리비_관리대장`,{title:`${y}년 산업안전보건관리비 관리대장`,sheet:`${y} 안전관리비`,stamp:st,freezeCol:4,
       head:['발주번호','공장명','공사명','담당자','계상된안전관리비','전년도이월금'].concat(mm,['산안비진행률','계(D)','잔액(E)','상태','메모']),
@@ -4383,11 +4383,11 @@ function ceoXlsx(){const v=ui.ceoV||'pj',f=ui.ceoF||{},fr=(a,b)=>b?a/b:'',st=tod
   const VN={pj:'공사별',plant:'공장별',ctr:'우리 회사별',client:'발주처별',period:'기간별',labcmp:'노무비 비교'}[v]||v;
   if(v==='pj'){const L=ui._ceoShown||[];if(!L.length){toast('내보낼 내용이 없습니다.');return;}const TX=ceoTax(L);
     const pm=id=>((S.projects||[]).find(x=>x.id===id)||{}).mgrName||'';
-    const rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.plant,P.name,pm(P.id),P.client,P.code,P.ctr||'(미입력)',P.done?'완료':'진행',P.amount,P.gisung,fr(P.gisung,P.amount),P.mat,P.sub,P.exp,ceoLab(P),c,p,fr(p,P.gisung),on,p-on,tx,p-on-tx];});
+    const rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.code,P.client,P.plant,P.ctr||'(미입력)',P.name,pm(P.id),P.done?'완료':'진행',P.amount,P.gisung,fr(P.gisung,P.amount),P.mat,ceoLab(P),P.exp,P.sub,c,p,fr(p,P.gisung),on,tx,p-on,p-on-tx];});
     const sum=i=>rows.reduce((a,r)=>a+(Number(r[i])||0),0),Tg=sum(8),Tp=sum(15);
-    xlsxSave('실시간손익표_공사별_'+today(),{title:'실시간 손익표 — 공사별',sheet:'공사별',stamp:st,freezeCol:2,
-      head:['공장명','공사명','PM(공사담당)','발주처','발주번호','수주처','상태','수주금액','기성금액','진행률','재료비','외주비','경비','노무비','원가 합계','이윤','이윤율','예상 부담금','부담금 반영 이윤','세금 예상','세후 이윤'],
-      types:'tttttttnnpnnnnnnpnnnn'.split(''),widths:[12,40,12,16,14,12,7,15,15,8,14,14,14,14,15,15,8,13,15,13,15],rows,
+    xlsxSave('실시간손익표_공사별_'+today(),{title:'실시간 손익표 — 공사별',sheet:'공사별',stamp:st,freezeCol:5,
+      head:['발주번호','발주처','공장명','수주처','공사명','담당자','상태','수주금액','기성금액','진행률','재료비','노무비','경비','외주비','원가 합계','이윤','이윤율','예상 부담금','세금 예상','부담금 반영 이윤','세후 이윤'],
+      types:'tttttttnnpnnnnnnpnnnn'.split(''),widths:[14,14,12,12,40,10,7,15,15,8,14,14,14,14,15,15,8,13,13,15,15],rows,
       total:['합계','','','','','','',sum(7),Tg,fr(Tg,sum(7)),sum(10),sum(11),sum(12),sum(13),sum(14),Tp,fr(Tp,Tg),sum(17),sum(18),sum(19),sum(20)]});return;}
   if(v==='labcmp'){const R=ui._lcRows||[];if(!R.length){toast('내보낼 내용이 없습니다.');return;}const rows=[];
     R.forEach(r=>{rows.push([r.m.slice(0,4)+'년 '+Number(r.m.slice(5))+'월','(월 합계)',r.g,'',r.a,r.hasPay?r.pay:'',r.hasPay?r.pay-r.a:'']);r.W.forEach(w=>rows.push(['',w.nm,w.g,w.rate||'',w.a,w.pay==null?'':w.pay,w.pay==null?'':w.pay-w.a]));});
