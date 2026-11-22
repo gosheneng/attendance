@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.23c-->
+<!DOCTYPE html><!--v:2026.11.23e-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.23c';
+const APP_VER='2026.11.23e';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5772,6 +5772,31 @@ function noteXlsx(){const L=(ui.noteL||[]).slice().sort((a,b)=>String(a.due).loc
     rows:L.map(x=>[x.status,x.due,x.client,x.pname,x.amount,x.no,x.issuer,x.bank,x.issue,x.recv,x.discDate,x.discBank,x.status==='할인'?x.discFee:'',x.status==='할인'?x.amount-x.discFee:x.status==='만기입금'?x.amount:'',x.paidDate,x.ctr,x.memo]),
     total:['합계','','','',L.reduce((t,x)=>t+x.amount,0),'','','','','','','',L.filter(x=>x.status==='할인').reduce((t,x)=>t+x.discFee,0),'','','','']});}
 function flowGo(k){aTab(k);if(ui.aTab!==k)toast('이 메뉴는 권한이 없어 열 수 없습니다.');window.scrollTo(0,0);}
+/* 결재 흐름 마인드맵 (관리자 사용방법) */
+const SIGN_FLOW=[
+ {ic:'📦',t:'자재·소모품 발주 · 공사발주',c:'#1f5fa8',rows:[
+   ['',[['po_mat','담당자 작성','거래처 선택 · 견적서 📎 · 필요하면 ⚡선급금 체크'],['po_mat','결재요청','담당자'],['sign','대표이사 알림','휴대폰 🔔 · 오늘 업무 맨 위 카드'],['sign','「결재」 메뉴','내용·견적서 보고 판단']]],
+   ['✅ 승인',[['po_mat','전자서명 완료','발주서 결재란에 대표 서명'],['po_mat','담당자 출력','인쇄·PDF·엑셀 → 거래처 발송'],['paydue','경리 알림','매입 › 결재 완료·지급 대기'],['stmt','명세표·계산서 입력','20일 정기 지급'],['bank','통장 대조','이체 완료 확정']]],
+   ['⚡ 선급금 있으면',[['paydue','선지급 자동 승인','발주 승인과 함께'],['paydue','경리 이체 대기','희망 이체일 순'],['bank','이체 → 통장 대조 연결',''],['stmt','월말 계산서에서 차감','잔금만 20일 지급']]],
+   ['↩ 반려',[['po_mat','자동 「작성중」','반려 사유 표시 · 담당자 알림'],['po_mat','고쳐서 다시 결재요청','']]]]},
+ {ic:'⚡',t:'선지급 (발주서 없이)',c:'#a56609',rows:[
+   ['',[['prq','선지급 요청','거래처·금액·희망 이체일'],['sign','대표이사 결재','「결재」 메뉴'],['paydue','경리 이체 대기','알림'],['bank','이체 → 통장 대조','']]]]},
+ {ic:'🕘',t:'출퇴근·연차 (근로자)',c:'#2f7d4f',rows:[
+   ['',[['','근로자 공수 입력·퇴근','휴대폰 (점선)'],['appr','출퇴근 승인','관리자'],['month','월간 출근부','세무사무소 CSV']]],
+   ['',[['','근로자 연차 신청','휴대폰'],['leave','연차 승인·반려','관리자 → 근로자 알림']]]]},
+ {ic:'🧾',t:'세금계산서 · 급여명세서',c:'#6b0660',rows:[
+   ['',[['tax','세금계산서 발행요청','PM'],['tax','경리 발행·반려','→ 기성준공']]],
+   ['',[['pay','급여명세서 올리기·공개','전체 관리자'],['','근로자 ✍️ 수령 서명 후 열람','휴대폰 (교부 증빙)']]]]}];
+function signFlowCard(){const sel=ui.sfSel==null?null:ui.sfSel;
+  const box=(b,c)=>{const w=!b[0];return `<div ${b[0]?`onclick="flowGo('${b[0]}')" style="cursor:pointer;`:'style="'}border:2px ${w?'dashed':'solid'} ${c};border-radius:10px;padding:6px 10px;background:#fff;min-width:120px;max-width:200px"><div style="font-weight:700;font-size:13px">${esc(b[1])}</div>${b[2]?`<div class="mute" style="font-size:11.5px;line-height:1.35">${esc(b[2])}</div>`:''}</div>`;};
+  const arr='<div style="color:#9aa3b2;font-size:18px;align-self:center">➜</div>';
+  return `<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">✍️ 결재 흐름 마인드맵</h3><span class="sp"></span>${SIGN_FLOW.map((f,i)=>`<button class="btn sm ${sel===i?'pri':''}" onclick="ui.sfSel=${sel===i?'null':i};render()">${f.ic} ${esc(f.t)}</button>`).join('')}</div>
+  <p class="mute" style="margin:6px 0 8px;font-size:13px">누가 올리고 누가 결재하며 다음은 누가 하는지를 순서대로 보여 줍니다. 칸을 누르면 그 메뉴로 갑니다. 점선 칸은 근로자가 휴대폰에서 하는 일입니다. 위 버튼으로 한 가지 흐름만 볼 수 있습니다.</p>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line,#e3e7ee);border-radius:10px;padding:10px;background:#fafbfc">
+  <div style="text-align:center;margin-bottom:8px"><span style="display:inline-block;background:#8d2d30;color:#fff;border-radius:20px;padding:6px 18px;font-weight:800">✍️ 고센이엔지 결재 흐름</span></div>
+  ${SIGN_FLOW.map((f,i)=>sel!=null&&sel!==i?'':`<div style="border-left:5px solid ${f.c};padding:6px 0 6px 10px;margin:10px 0"><div style="font-weight:800;color:${f.c};margin-bottom:6px">${f.ic} ${esc(f.t)}</div>
+    ${f.rows.map(([lab,bs])=>`<div style="display:flex;gap:6px;align-items:stretch;margin:6px 0;flex-wrap:nowrap">${lab?`<div style="align-self:center;font-size:12px;font-weight:700;min-width:92px;color:${/반려/.test(lab)?'var(--bad)':/선급/.test(lab)?'#a56609':'var(--ok)'}">${lab} ➜</div>`:''}${bs.map((b,k)=>(k?arr:'')+box(b,f.c)).join('')}</div>`).join('')}</div>`).join('')}
+  </div></div>`;}
 function flowCard(en){const sel=ui.flowSel==null?null:ui.flowSel,b=sel!=null?FLOW_MAP[sel]:null;
   return `<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">🧭 ${en?'Workflow mind map':'업무 흐름 마인드맵'}</h3><span class="sp"></span>${FLOW_MAP.map((f,i)=>`<button class="btn sm ${sel===i?'pri':''}" onclick="ui.flowSel=${sel===i?'null':i};render()">${f.ic} ${esc(f.t[en?1:0])}</button>`).join('')}</div>
   <p class="mute" style="margin:6px 0 8px;font-size:13px">${en?'Tap a branch to highlight that workflow; tap a box to open its menu. Numbers are the order of work. Dashed boxes are done by workers.':'가지(색 버튼)를 누르면 그 업무 흐름만 강조됩니다. 네모 칸을 누르면 해당 메뉴로 이동합니다. 숫자는 일하는 순서이며, 점선 칸은 근로자가 하는 일입니다. 휴대폰은 좌우로 밀어서 보세요.'}</p>
@@ -5781,7 +5806,7 @@ function aHelp(){const en=admEn(),q=(ui.ahq||'').trim().toLowerCase();
   const L=admMan().map(([ic,tk,te,items])=>({ic,t:en?te:tk,items:items.map(x=>en?x[1]:x[0])})).filter(sct=>!q||(sct.t+' '+sct.items.join(' ')).toLowerCase().indexOf(q)>=0);
   let h=`<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">📖 ${en?'Admin guide':'관리자 사용방법'}</h3><span class="sp"></span><input type="search" style="width:200px" placeholder="${en?'Search the guide':'🔍 매뉴얼에서 찾기'}" value="${esc(ui.ahq||'')}" onchange="ui.ahq=this.value;render()"><button class="btn sm" onclick="ahOpen(1)">${en?'Expand all':'모두 펼치기'}</button><button class="btn sm" onclick="ahOpen(0)">${en?'Collapse all':'모두 접기'}</button><button class="btn sm pri" onclick="ahPrint()">🖨 ${en?'Print / save manual':'매뉴얼 인쇄·저장'}</button></div>
   <p class="mute" style="margin:6px 0 0;font-size:13px">${en?'Tap a topic to open it. Menus you have no permission for are not shown on your screen.':'항목을 누르면 펼쳐집니다. 권한이 없는 메뉴는 내 화면에 보이지 않을 수 있습니다. 근로자용 설명은 근로자 화면 「사용방법」 탭에 있습니다.'}</p></div>`;
-  if(!q)h+=flowCard(en)+accBlock(en);
+  if(!q)h+=flowCard(en)+(en?'':signFlowCard())+accBlock(en);
   if(!L.length)h+=`<div class="card"><p class="mute" style="margin:0">${en?'No results.':'찾는 내용이 없습니다.'}</p></div>`;
   L.forEach((sct,i)=>{h+=`<details class="card ahsec" style="padding:12px 16px" ${q||i===0?'open':''}><summary style="cursor:pointer;font-weight:700;font-size:15px" data-notr="1">${sct.ic} ${esc(sct.t)}</summary><ul style="margin:8px 0 0;padding-left:20px;line-height:1.65" data-notr="1">${sct.items.map(x=>/^(예\)|e\.g\.)/.test(x)?`<li data-notr="1" style="list-style:none;margin:6px 0 6px -20px;padding:8px 10px;background:#f4f8f4;border-left:4px solid #2f7d4f;border-radius:6px">💡 ${esc(x)}</li>`:`<li data-notr="1">${esc(x)}</li>`).join('')}</ul></details>`;});
   h+=`<div class="card" style="padding:12px 16px"><a href="#privacy" onclick="event.preventDefault();openPolicy()">🔒 개인정보 처리방침 (누구나 볼 수 있게 공개)</a> <span class="mute" style="font-size:12px">— 주소 끝에 #privacy 를 붙이면 바로 열립니다.</span></div>`;
@@ -5854,12 +5879,34 @@ const payNum=v=>{const t=String(v||'').replace(/[,\s원₩]/g,'');return /^-?\d+
 const payFmt=v=>{const n=payNum(v);return n===null?String(v):n.toLocaleString('ko-KR');};
 const payK=(x,k)=>{const t=((x.tr||{})[LANG]||{})[k];return t&&LANG!=='ko'?t:k;};
 function myPayCard(me){const L=(S.payslips||[]).filter(x=>x.wid===me.id&&!x.draft).sort((a,b)=>b.month.localeCompare(a.month));
-  return `<div class="card"><h3 style="margin:0 0 6px">💰 내 급여명세서</h3>${L.length?L.map(x=>`<button class="btn" style="display:flex;width:100%;margin-top:6px;justify-content:space-between" onclick="paySlip('${x.id}')"><span>${x.month.slice(0,4)}. ${Number(x.month.slice(5))}월분${x.seen?'':' <span class="chip st-pend">NEW</span>'}</span><b>${x.net?payFmt(x.net)+'원':''}</b></button>`).join(''):'<p class="mute" style="margin:0">아직 올라온 급여명세서가 없습니다.</p>'}</div>`;}
+  return `<div class="card"><h3 style="margin:0 0 6px">💰 내 급여명세서</h3>${L.length?L.map(x=>`<button class="btn" style="display:flex;width:100%;margin-top:6px;justify-content:space-between" onclick="paySlip('${x.id}')"><span>${x.month.slice(0,4)}. ${Number(x.month.slice(5))}월분${x.rcpt?' <span class="chip st-ok">✍️</span>':' <span class="chip st-pend">'+(LANG==='vi'?'Cần ký':LANG==='en'?'Sign':'서명 필요')+'</span>'}</span><b>${x.net?payFmt(x.net)+'원':''}</b></button>`).join(''):'<p class="mute" style="margin:0">아직 올라온 급여명세서가 없습니다.</p>'}</div>`;}
+/* 급여명세서 수령 서명: 본인 휴대폰에서 손서명 → 저장된 뒤에 열람 (교부 증빙) */
+const PSL={ko:{t:'급여명세서 수령 확인',b:(y,m,n)=>`본인 <b>${n}</b>은(는) 주식회사 고센이엔지로부터 <b>${y}년 ${m}월분 급여명세서</b>를 교부받았음을 확인합니다.`,h:'아래 칸에 손가락으로 서명하세요.',c:'다시 쓰기',ok:'서명하고 명세서 보기',e:'서명을 해 주세요.'},
+  vi:{t:'Xác nhận đã nhận bảng lương',b:(y,m,n)=>`Tôi, <b>${n}</b>, xác nhận đã nhận <b>bảng lương tháng ${m}/${y}</b> từ công ty Goshen E&G.`,h:'Ký tên bằng ngón tay vào ô bên dưới.',c:'Ký lại',ok:'Ký và xem bảng lương',e:'Vui lòng ký tên.'},
+  en:{t:'Payslip receipt confirmation',b:(y,m,n)=>`I, <b>${n}</b>, confirm that I received my <b>payslip for ${y}-${m}</b> from Goshen E&G Co., Ltd.`,h:'Sign in the box below with your finger.',c:'Clear',ok:'Sign and view payslip',e:'Please sign.'}};
+function paySign(id){const x=(S.payslips||[]).find(o=>o.id===id);if(!x)return;const L=PSL[LANG]||PSL.ko,me=W(ses.uid)||{};
+  openModal(`<div class="mbox" style="max-width:460px"><div class="row"><h3 style="margin:0">✍️ ${L.t}</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">✕</button></div>
+  <p style="margin:10px 0;line-height:1.6" data-notr="1">${L.b(x.month.slice(0,4),Number(x.month.slice(5)),esc(me.name||x.name))}</p>
+  <div class="mute" style="font-size:12.5px" data-notr="1">${L.h}</div>
+  <canvas id="ps_cv" width="420" height="180" style="width:100%;height:180px;border:2px dashed #9aa3b2;border-radius:10px;background:#fff;touch-action:none;margin-top:6px"></canvas>
+  <div class="row" style="margin-top:8px;gap:6px"><button class="btn" onclick="psClear()" data-notr="1">${L.c}</button><span class="sp"></span><button class="btn pri" onclick="psGo('${id}')" data-notr="1">${L.ok}</button></div>
+  <p class="mute" style="font-size:11.5px;margin:8px 0 0">${LANG==='ko'?'서명한 날짜·시간과 기기 정보가 함께 저장됩니다.':LANG==='vi'?'Ngày giờ ký và thông tin thiết bị được lưu lại.':'The date, time and device are saved with your signature.'}</p></div>`);
+  setTimeout(()=>{const c=document.getElementById('ps_cv');if(!c)return;const r=c.getBoundingClientRect(),k=window.devicePixelRatio||1;c.width=Math.round(r.width*k);c.height=Math.round(r.height*k);const g=c.getContext('2d');g.scale(k,k);g.lineWidth=2.6;g.lineCap='round';g.lineJoin='round';g.strokeStyle='#111';c._n=0;let on=false;
+    const P=e=>{const b=c.getBoundingClientRect();return [e.clientX-b.left,e.clientY-b.top];};
+    c.onpointerdown=e=>{on=true;c.setPointerCapture(e.pointerId);const [a,b]=P(e);g.beginPath();g.moveTo(a,b);};
+    c.onpointermove=e=>{if(!on)return;const [a,b]=P(e);g.lineTo(a,b);g.stroke();c._n++;};
+    c.onpointerup=c.onpointercancel=()=>{on=false;};},60);}
+function psClear(){const c=document.getElementById('ps_cv');if(!c)return;c.getContext('2d').clearRect(0,0,c.width,c.height);c._n=0;}
+async function psGo(id){const c=document.getElementById('ps_cv'),L=PSL[LANG]||PSL.ko;if(!c||(c._n||0)<8){toast(L.e);return;}
+  const r=await window.liveRun('pay_sign',{id,sig:c.toDataURL('image/png'),ua:navigator.userAgent},null,true);if(!r)return;const x=(S.payslips||[]).find(o=>o.id===id);if(x&&!x.rcpt)x.rcpt=stamp();closeModal();paySlip(id);}
+function psView(id){photoView('급여명세서 수령 서명','pay_sigGet',{id});}
+const psLine=x=>isSuper()&&x.wid!==ses.uid?`<div class="${x.rcpt?'infobox':'warnbox'}" style="margin:6px 0;font-size:12.5px">${x.rcpt?`✍️ 근로자 수령 서명: ${esc(String(x.rcpt).slice(0,16))} <button class="btn sm" onclick="psView('${x.id}')">서명 보기</button>`:'⚠ 아직 근로자 수령 서명 전입니다.'}</div>`:'';
 function paySlip(id){const x=(S.payslips||[]).find(o=>o.id===id);if(!x)return;const w=W(x.wid)||{name:x.name};
+  if(LIVE&&x.wid===ses.uid&&!x.draft&&!x.rcpt){paySign(id);return;}
   if(LIVE&&x.wid===ses.uid&&!x.seen&&!x.draft){x.seen=stamp();window.liveCall('pay_seen',{id}).catch(()=>{});}
-  if((x.items||[]).some(i=>i.g)){openModal(paySlipDoc(x,w.name||x.name));render();return;}
+  if((x.items||[]).some(i=>i.g)){openModal(paySlipDoc(x,w.name||x.name).replace('<h2 style="text-align:center',psLine(x)+'<h2 style="text-align:center'));render();return;}
   openModal(`<div class="mbox" style="max-width:460px"><div class="row"><h3 style="margin:0">💰 ${x.month.slice(0,4)}년 ${Number(x.month.slice(5))}월 급여명세서</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <div class="mute" style="margin:4px 0 8px">${esc(w.name||x.name)}${w.empNo?' · 사번 '+esc(w.empNo):''} · 주식회사 고센이엔지</div>
+  <div class="mute" style="margin:4px 0 8px">${esc(w.name||x.name)}${w.empNo?' · 사번 '+esc(w.empNo):''} · 주식회사 고센이엔지</div>${psLine(x)}
   <table class="nw" style="width:100%">${(x.items||[]).map(i=>`<tr><td data-notr="1">${esc(payK(x,i.k))}${LANG!=='ko'&&payK(x,i.k)!==i.k?` <small class="mute">${esc(i.k)}</small>`:''}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${esc(payFmt(i.v))}</td></tr>`).join('')}
   ${x.net?`<tr style="background:#f3f7ff"><td><b>실지급액</b></td><td style="text-align:right"><b style="font-size:16px">${esc(payFmt(x.net))}원</b></td></tr>`:''}</table>
   <p class="mute" style="font-size:12px;margin:8px 0 0">세무사무소에서 계산한 급여대장 기준입니다. 궁금한 점은 관리자에게 문의하세요.</p></div>`);render();}
@@ -5963,7 +6010,7 @@ function aPay(){const can=isSuper(),L=S.payslips||[],mos=[...new Set(L.map(x=>x.
   <div id="pay_prev">${PAY_P?payPrev():''}</div></div>`;
   h+=`<div class="card"><h3 style="margin:0 0 8px">올린 급여명세서</h3>${mos.length?mos.map(m=>{const X=L.filter(x=>x.month===m),dr=X.filter(x=>x.draft).length,open=ui.payOpen===m||(dr&&ui.payOpen!=='-'+m);return `<div style="border-top:1px solid var(--line);padding:8px 0${dr?';background:#fff8e1;margin:0 -10px;padding:8px 10px;border-radius:8px':''}"><div class="row" style="gap:6px;flex-wrap:wrap"><b>${m.slice(0,4)}년 ${Number(m.slice(5))}월분</b>${dr?`<span class="chip st-pend">🔒 미리보기 중 · 근로자에게 안 보임</span>`:`<span class="chip st-ok">공개됨</span>`}<span class="mute">${X.length}명${dr?'':' · 확인 '+X.filter(x=>x.seen).length+'명'}</span><span class="sp"></span><button class="btn sm" onclick="ui.payOpen=${open?`'-${m}'`:`'${m}'`};render()">${open?'접기':(dr?'👁 미리보기':'명단 보기')}</button>${dr?`<button class="btn ok sm" onclick="payPublish('${m}',${dr})">✅ 근로자에게 공개 + 알림</button>`:''}<button class="btn sm bad" onclick="payDel('${m}')">이 달 삭제</button></div>
     ${dr&&open?`<p class="mute" style="font-size:12.5px;margin:6px 0 0">이름을 누르면 <b>근로자 휴대폰에 보이는 모양 그대로</b> 열립니다. 틀린 곳이 있으면 「이 달 삭제」 후 엑셀을 고쳐 다시 올리세요. 확인이 끝나면 「✅ 근로자에게 공개 + 알림」을 누르세요.</p>`:''}
-    ${open?`<div style="margin-top:6px">${X.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>`<button class="btn sm" style="margin:2px" onclick="paySlip('${x.id}')">${esc(x.name)} ${x.net?payFmt(x.net):''}${x.seen?' ✔':''}</button>`).join('')}</div>`:''}</div>`;}).join(''):'<p class="mute" style="margin:0">아직 올린 명세서가 없습니다.</p>'}</div>`;
+    ${open?`<div style="margin-top:6px">${X.sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(x=>`<button class="btn sm" style="margin:2px" onclick="paySlip('${x.id}')">${esc(x.name)} ${x.net?payFmt(x.net):''}${x.rcpt?' ✍️':x.draft?'':' <span style="color:var(--bad)">미서명</span>'}</button>`).join('')}</div>`:''}</div>`;}).join(''):'<p class="mute" style="margin:0">아직 올린 명세서가 없습니다.</p>'}</div>`;
   return h;}
 const addMonthsYM=(ym,n)=>{const [y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');};
 async function payPick(inp){const f=(inp.files||[])[0];inp.value='';if(!f)return;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf')return payPdfPick(f);if(f.size>10*1024*1024){toast('10MB 이하 파일만 됩니다.');return;}
