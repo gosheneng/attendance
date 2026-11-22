@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bl-->
+<!DOCTYPE html><!--v:2026.11.22bm-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -157,7 +157,7 @@ table.led th{text-align:center;line-height:1.25}
   .mbox{max-width:min(1100px,94vw)}}
 .ptitle{display:none;font-size:20px;font-weight:700;margin:2px 0 14px}
 .subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 14px}.stab{padding:6px 14px;border:1px solid #c3cad5;border-radius:18px;background:#fff;font-size:14px;cursor:pointer;color:#1f2937;font-weight:500}.stab.on{background:#8d2d30;border-color:#8d2d30;color:#fff;font-weight:600}.stab .cnt{margin-left:5px}
-</style>
+.ncnt{display:inline-block;margin-left:5px;padding:0 6px;border-radius:9px;background:#c62828;color:#fff;font-size:11px;font-weight:700;line-height:17px;vertical-align:1px}</style>
 </head>
 <body>
 <div id="app"><div id="boot-msg" style="max-width:420px;margin:60px auto;text-align:center;color:#55606e;font-size:15px"><div class="spin"></div>고센이엔지 통합근무시스템을 불러오는 중…</div></div>
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bl';
+const APP_VER='2026.11.22bm';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3615,11 +3615,16 @@ async function calDelGo(cal,id){const e=calFind(cal,id);if(!(await confirmBox(`<
 /* ===== 🔔 알림함 (휴대폰 알림을 지워도 30일 동안 다시 보기) ===== */
 function bellBtn(){const n=(S.notis||[]).filter(x=>!x.read).length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge();}}catch(e){}   /* 지원되는 기기(아이폰 홈 화면 앱·PC 앱)에서 앱 아이콘에 숫자 */
   return `<button class="btn sm bell" onclick="notiBox()" title="알림함">🔔${n?`<b class="bdg">${n>99?'99+':n}</b>`:''}</button>`;}
-const NOTI_TAB={sign:'sign',note:'notes',cal:'cal',prq:'prq',todo:'todo',appr:'appr',leave:'leave',notice:'notice',buy:'po_mat',tax:'tax',board:'board',roster:'roster'};
+const NOTI_TAB={signup:'workers',lvreq:'leave',hq:'quals',inj:'dash',sign:'sign',note:'notes',cal:'cal',prq:'prq',todo:'todo',appr:'appr',leave:'leave',notice:'notice',buy:'po_mat',tax:'tax',board:'board',roster:'roster'};
 function notiBox(){const L=S.notis||[],un=L.filter(x=>!x.read).length;
   openModal(`<div class="mbox" style="max-width:520px"><div class="row" style="gap:6px"><h3 style="margin:0">🔔 알림함</h3><span class="mute" style="font-size:12.5px">최근 30일</span><span class="sp"></span>${un?`<button class="btn sm" onclick="notiRead('',1)">모두 읽음</button>`:''}<button class="btn sm" onclick="closeModal()">닫기</button></div>
   <div style="max-height:65vh;overflow:auto;margin-top:8px">${L.length?L.map(x=>`<div class="click" onclick="notiGo('${x.id}')" style="padding:8px 6px;border-top:1px solid var(--line);${x.read?'opacity:.65':'background:#fbf5f5'}"><div class="row" style="gap:6px">${x.read?'':'<i style="width:8px;height:8px;border-radius:50%;background:#c62828;flex:none"></i>'}<b style="flex:1">${esc(x.t)}</b><span class="mute" style="font-size:11.5px">${esc(String(x.at).slice(5,16))}</span></div>${x.b?`<div style="font-size:13px;margin-top:2px;white-space:pre-line">${esc(x.b)}</div>`:''}</div>`).join(''):'<p class="mute">받은 알림이 없습니다.</p>'}</div></div>`);}
 function notiRead(id,all){if(!LIVE)return;window.liveCall('noti_read',{id,all:all?1:0}).then(r=>{if(r&&r.state){applyState(r.state);}if(document.querySelector('.mbox h3')&&/알림함/.test(document.querySelector('.mbox h3').textContent))notiBox();render();}).catch(()=>{});}
+/* 알림 → 메뉴: 태그 앞부분으로 찾음 (긴 것 먼저) */
+function notiTab(x){const tg=String(x.tag||'');let k=NOTI_TAB[tg]?tg:Object.keys(NOTI_TAB).sort((a,b)=>b.length-a.length).find(k=>tg.indexOf(k)===0);let t=k?NOTI_TAB[k]:'';if(t==='po_mat'){const b=(S.buys||[]).find(o=>tg==='buy'+o.id);if(b&&b.kind==='공사')t='po_con';}return t;}
+function notiCnts(){const m={};(S.notis||[]).forEach(x=>{if(x.read)return;const t=notiTab(x);if(t)m[t]=(m[t]||0)+1;});return m;}
+/* 메뉴에 들어가면 그 메뉴의 새 알림을 읽음으로 (알림함 기록은 남음) */
+function notiSeen(tab){const L=(S.notis||[]).filter(x=>!x.read&&notiTab(x)===tab);if(!L.length)return;L.forEach(x=>x.read=1);if(LIVE)window.liveCall('noti_read',{ids:L.map(x=>x.id)}).then(r=>{if(r&&r.state)applyState(r.state);}).catch(()=>{});}
 function notiGo(id){const x=(S.notis||[]).find(o=>o.id===id);if(!x)return;if(!x.read){x.read=1;notiRead(id,0);}const me=W(ses.uid)||{},tg=String(x.tag||''),t=NOTI_TAB[tg]||NOTI_TAB[(Object.keys(NOTI_TAB).find(k=>tg.indexOf(k)===0))];if(t&&isStaff(me)){ui.asWorker=false;closeModal();const bx=t==='po_mat'&&(S.buys||[]).find(o=>tg==='buy'+o.id);aTab(bx&&bx.kind==='공사'?'po_con':t);}else notiBox();}
 /* 시제품: 예시 일정 (운영판에서는 구글 캘린더) */
 async function calDo(op,p){if(op==='list'){const cals=[{id:'c1',name:'1. 현장설명회',color:'#e67c73'},{id:'c2',name:'냉연1',color:'#33b679'},{id:'c3',name:'3. 휴가',color:'#8e24aa'}];
@@ -3879,7 +3884,7 @@ function aBuy(kk){const me=W(ses.uid),adm=me&&me.role==='admin',k=kk||ui.buyK||'
   const all=(S.buys||[]),pend=all.filter(x=>(x.kind==='자재'||x.kind==='공사')&&x.status==='결재요청'),chk=canM('card');
   const L=all.filter(x=>x.kind===k&&(mon==='all'||String(x.date).slice(0,7)===mon)&&(!st||bSt(x)===st)).sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.updatedAt).localeCompare(String(a.updatedAt)));
   const months=[...new Set(all.map(x=>String(x.date).slice(0,7)).concat([today().slice(0,7)]))].sort().reverse();
-  let h=(prqAppr()&&pend.length?`<div class="card click" onclick="aTab('sign')" style="border-left:4px solid var(--warn)"><b>🧾 결재 대기 ${pend.length}건</b> <span class="mute">「결재」 메뉴에서 승인·반려 ›</span></div>`:'')+`<div class="card"><div class="row"><h3 style="margin:0">${BUY_K.find(x=>x[0]===k)[1]}</h3><span class="sp"></span>${k==='카드'&&adm?`<button class="btn" onclick="cardMgr()">💳 카드 관리 (${(S.cards||[]).filter(c=>c.active).length})</button>`:''}${k==='자재'||k==='공사'?`<button class="btn bad" onclick="prqForm('',{kind:'${k}'})">⚡ 선지급 요청</button>`:''}<button class="btn pri" onclick="bForm('','${k}')">+ ${BUY_K.find(x=>x[0]===k)[1]} 작성</button></div>
+  let h=(prqAppr()&&pend.length?`<div class="card click" onclick="aTab('sign')" style="border-left:4px solid var(--warn)"><b>🧾 결재 대기 ${pend.length}건</b> <span class="mute">「결재」 메뉴에서 승인·반려 ›</span></div>`:'')+`<div class="card"><div class="row"><h3 style="margin:0">${BUY_K.find(x=>x[0]===k)[1]}</h3><span class="sp"></span>${k==='카드'&&adm?`<button class="btn" onclick="cardMgr()">💳 카드 관리 (${(S.cards||[]).filter(c=>c.active).length})</button>`:''}<button class="btn pri" onclick="bForm('','${k}')">+ ${BUY_K.find(x=>x[0]===k)[1]} 작성</button></div>
   ${cardOnly?'<p class="mute" style="margin:4px 0">본인이 사용한 법인카드 내역만 기록·확인합니다. (내역대조·영수증 확인은 담당자가 합니다)</p>':''}
   <p class="mute" style="margin:8px 0 6px">${BUY_DESC[k]} 금액은 모두 <b>VAT 별도</b>(공급가)이며, VAT 포함 금액은 「VAT 포함 보기」를 켜면 보입니다.</p>
   <div class="row" style="gap:8px;margin:8px 0;flex-wrap:wrap"><select style="width:auto" onchange="ui.buyM=this.value;render()"><option value="all" ${mon==='all'?'selected':''}>전체 기간</option>${months.map(m=>`<option value="${m}" ${m===mon?'selected':''}>${m.replace('-','년 ')}월</option>`).join('')}</select>
@@ -3929,18 +3934,19 @@ function bfRender(fresh){if(!fresh)bfSync();const x=BF,me=W(ses.uid),adm=me&&me.
     ${x.items.map((it,i)=>`<tr data-it="${i}"><td><textarea rows="2" style="min-width:240px" ${ro} onchange="BF.items[${i}].name=this.value">${esc(it.name)}</textarea></td><td><input style="width:56px" value="${esc(it.unit||'')}" ${ro} onchange="BF.items[${i}].unit=this.value"></td><td><input style="width:64px" inputmode="decimal" value="${esc(it.qty)}" ${ro} onchange="BF.items[${i}].qty=Number(this.value)||0;setTimeout(bfRender,0)"></td><td><input style="width:110px" inputmode="numeric" value="${esc(it.price===''?'':won(it.price))}" ${ro} onchange="BF.items[${i}].price=Number(this.value.replace(/[^\\d.-]/g,''))||0;setTimeout(bfRender,0)"></td><td style="text-align:right">${won(Math.round((Number(it.qty)||0)*(Number(it.price)||0)))}</td><td><input style="width:90px" value="${esc(it.note||'')}" ${ro} onchange="BF.items[${i}].note=this.value"></td><td>${lock?'':`<button type="button" class="btn sm bad" onclick="bfSync();BF.items.splice(${i},1);bfRender(1)">✕</button>`}</td></tr>`).join('')}
     <tr class="tot"><td colspan="4"><b>합계 (VAT 별도)</b></td><td style="text-align:right"><b>${won(x.items.reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0))}</b></td><td colspan="2" class="mute">VAT 포함 ${won(Math.round(x.items.reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0)*1.1))}</td></tr></table></div>
     ${lock||x.items.length>=10?'':`<button type="button" class="btn sm" onclick="bfSync();BF.items.push({name:'',spec:'',unit:'식',qty:1,price:'',note:''});bfRender(1)">+ 품목 추가</button>`}
+    ${bfAdvBox(x,ro)}
     <details style="margin-top:10px" ${x.id?'':'open'}><summary style="cursor:pointer;font-weight:600">발주 조건 (발주서에 들어감)</summary>
     <div class="grid2" style="margin-top:8px"><label class="f"><span>납기</span>${I('bf_due',d.due,'예: 2025년 10월 5일~15일 (대보수기간)')}</label><label class="f"><span>장소</span>${I('bf_place',d.place)}</label>
     <label class="f"><span>작업표준절차</span>${I('bf_std',d.std)}</label><label class="f"><span>안전작업기준</span>${I('bf_safe',d.safe)}</label></div>
     <label class="f"><span>기타내용</span><textarea id="bf_etc" rows="3" ${ro}>${esc(d.etc)}</textarea></label>
     <div class="grid2">${PO_COND.map(([n,a,b],i)=>`<label class="f" style="margin-bottom:4px"><span>${n}</span><select id="bf_c${i}" ${ro}>${[a,b,'해당없음'].map(v=>`<option ${d.cond[i]===v?'selected':''}>${v}</option>`).join('')}</select></label>`).join('')}</div>
-    <div class="grid2"><label class="f"><span>대금지불 — 선급금</span><div class="row" style="gap:4px;flex-wrap:nowrap"><input type="checkbox" id="bf_adv" style="width:auto" ${d.adv?'checked':''} ${ro}><input id="bf_advtxt" value="${esc(d.advTxt)}" placeholder="선급금 내용" ${ro} style="flex:1"></div></label>
+    <div class="grid2">
     <label class="f"><span>노무비</span><div class="row" style="gap:8px;flex-wrap:wrap">${PO_LABOR.map(v=>`<label class="row" style="gap:3px"><input type="checkbox" class="bf_lab" value="${v}" style="width:auto" ${d.labor.indexOf(v)>=0?'checked':''} ${ro}>${v}</label>`).join('')}</div></label>
     <label class="f"><span>대금지불 조건 1</span>${I('bf_pay1',d.pay1)}</label><label class="f"><span>대금지불 조건 2</span>${I('bf_pay2',d.pay2)}</label></div></details>`;}
   h+=`<label class="f" style="margin-top:8px"><span>비고 (내부 메모)</span><textarea id="bf_memo" rows="2" ${ro}>${esc(x.memo||'')}</textarea></label>
   ${(x.hist||[]).length?`<div class="mute" style="font-size:12px;margin:4px 0">${x.hist.slice(-6).map(t=>esc(t.at+' '+((W(t.by)||{}).name||'')+' — '+t.text)).join('<br>')}</div>`:''}
   ${x.kind==='공사'&&x.id?ledBox(x):''}
-  <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">${x.id&&!lock?`<button class="btn bad" onclick="bfDel()">삭제</button>`:''}${!card&&x.id&&x.status!=='반려'?`<button class="btn bad" onclick="prqFromBuy('${x.id}')">⚡ 이 발주 선지급 요청</button>`:''}${!card&&x.id&&!(x.kind==='공사'&&x.status!=='승인'&&x.status!=='발행')?`<button class="btn" onclick="poXlsx('${x.id}')">📄 엑셀</button>`:''}<span class="sp"></span>
+  <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">${x.id&&!lock?`<button class="btn bad" onclick="bfDel()">삭제</button>`:''}${!card&&x.id&&!(x.kind==='공사'&&x.status!=='승인'&&x.status!=='발행')?`<button class="btn" onclick="poXlsx('${x.id}')">📄 엑셀</button>`:''}<span class="sp"></span>
   ${!card?`<button class="btn" onclick="poPreview()">👁 미리보기 · 인쇄</button>`:''}
   ${!lock?(mat?`<button class="btn" onclick="bfSave(false)">임시저장</button><button class="btn pri" onclick="bfSave(true)">결재요청</button>`:`<button class="btn pri" onclick="bfSave(false)">저장</button>`):''}
   ${prqAppr()&&mat&&x.status==='결재요청'?`<button class="btn bad" onclick="bfDecide('no')">반려</button><button class="btn ok" onclick="bfDecide('ok')">승인</button>`:''}${prqAppr()&&mat&&(x.status==='승인'||x.status==='반려'||x.status==='발행')?`<button class="btn" onclick="bfDecide('undo')">작성중으로 되돌리기</button>`:''}</div></div>`;
@@ -4089,16 +4095,16 @@ function signPend(){const B=(S.buys||[]).filter(x=>(x.kind==='자재'||x.kind===
 function signDash(){if(!prqAppr())return '';const p=signPend();if(!p.n)return '';const c=k=>p.B.filter(x=>x.kind===k).length;
   return `<div class="card click" onclick="aTab('sign')" style="border:2px solid var(--warn);border-left-width:6px;background:#fffaf0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="font-size:17px">✍ 결재 대기 ${p.n}건</b>${c('자재')?`<span class="chip st-pend">자재·소모품 ${c('자재')}</span>`:''}${c('공사')?`<span class="chip st-pend">공사발주 ${c('공사')}</span>`:''}${p.Q.length?`<span class="chip st-pend">선지급 ${p.Q.length}</span>`:''}<span class="sp"></span><span class="btn sm pri">결재하러 가기 ›</span></div></div>`;}
 async function signDecide(id,ok){const x=(S.buys||[]).find(o=>o.id===id);if(!x)return;const nm=(x.kind==='공사'?'공사발주':'자재·소모품 발주')+` · ${x.vendor||''} ${won(buyAmt(x))}원(VAT별도)`;let reason='';
-  if(ok){if(!(await confirmBox(`${nm}\n${x.pname||''}\n\n승인할까요?`,'승인')))return;}else{reason=await textBox(`${nm} — 반려 사유를 입력하세요.`,'반려','예: 단가 재협의 필요');if(reason==null)return;if(!String(reason).trim()){toast('반려 사유를 입력하세요.');return;}}
+  if(ok){const dv=(x.doc||{}).adv==='1'?`\n⚡ 선지급 ${won(Math.round((Number((x.doc||{}).advAmt)||buyAmt(x))*1.1))}원(VAT 포함)도 함께 승인되어 경리 이체 대기로 넘어갑니다.`:'';if(!(await confirmBox(`${nm}\n${x.pname||''}${dv}\n\n승인할까요?`,'승인')))return;}else{reason=await textBox(`${nm} — 반려 사유를 입력하세요.`,'반려','예: 단가 재협의 필요');if(reason==null)return;if(!String(reason).trim()){toast('반려 사유를 입력하세요.');return;}}
   liveOnly('buy_decide',{id,act:ok?'ok':'no',reason});}
 function aSign(){if(!prqAppr())return '<div class="card"><p class="mute" style="margin:0">결재는 지정된 대표이사에서만 합니다.</p></div>';
   const p=signPend(),wn=id=>(W(id)||{}).name||'',its=x=>{const it=x.items||[];return esc((it[0]||{}).name||x.title||'')+(it.length>1?` <span class="mute">외 ${it.length-1}건</span>`:'');};
-  const L=p.B.map(x=>({t:x.kind==='공사'?'공사발주':'자재·소모품',at:x.reqAt||x.updatedAt||'',who:wn(x.by),pj:x.pname||'',v:x.vendor||'',qn:String((x.doc||{}).qf||'').split(',').filter(Boolean).length,id:x.id,what:its(x),amt:buyAmt(x),vat:'VAT 별도',view:`bForm('${x.id}')`,ok:`signDecide('${x.id}',1)`,no:`signDecide('${x.id}',0)`}))
+  const L=p.B.map(x=>({t:x.kind==='공사'?'공사발주':'자재·소모품',at:x.reqAt||x.updatedAt||'',who:wn(x.by),pj:x.pname||'',v:x.vendor||'',qn:String((x.doc||{}).qf||'').split(',').filter(Boolean).length,id:x.id,adv:(x.doc||{}).adv==='1'?((Number((x.doc||{}).advAmt)||buyAmt(x))*1.1):0,what:its(x),amt:buyAmt(x),vat:'VAT 별도',view:`bForm('${x.id}')`,ok:`signDecide('${x.id}',1)`,no:`signDecide('${x.id}',0)`}))
     .concat(p.Q.map(x=>({t:'선지급',at:x.at||'',who:x.byName||wn(x.by),pj:x.pname||'',v:x.vname||'',what:esc(x.desc||'')+(x.date?` <span class="mute">· 희망 이체일 ${esc(x.date)}</span>`:''),amt:(Number(x.supply)||0)+(Number(x.vat)||0),vat:'VAT 포함',view:`prqForm('${x.id}')`,ok:`prqDecide('${x.id}',1)`,no:`prqDecide('${x.id}',0)`}))).sort((a,b)=>String(a.at).localeCompare(String(b.at)));
   const TC={'자재·소모품':'#2f7d4f','공사발주':'#1f5fa8','선지급':'#a56609'};
   let h=`<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">✍ 결재</h3><span class="chip ${p.n?'st-pend':'st-ok'}">대기 ${p.n}건</span><span class="sp"></span></div>
   <p class="mute" style="margin:6px 0;font-size:12.5px">사무실 담당자가 올린 <b>자재·소모품 발주 · 공사발주 · 선지급</b> 결재요청이 모두 여기 모입니다. 「내용 보기」로 확인하고 <b>승인</b> 또는 <b>반려</b>(사유 필수)하세요. 승인하면 <b>전자서명</b>이 발주서 결재란에 찍히고, 요청한 담당자(출력 가능 안내)와 <b>경리 담당</b>(지급·이체 등 후속 처리)에게 휴대폰 알림이 갑니다. 오래된 요청이 위에 있습니다.</p>
-  ${L.length?`<div style="display:grid;gap:8px">${L.map(r=>`<div style="border:1px solid var(--line);border-left:5px solid ${TC[r.t]};border-radius:10px;padding:10px 12px;background:#fff"><div class="row" style="gap:6px;flex-wrap:wrap"><span class="chip" style="background:${TC[r.t]};color:#fff">${r.t}</span><b>${esc(r.v)}</b><span class="sp"></span><b style="font-size:16px">${won(r.amt)}원</b><span class="mute" style="font-size:11.5px">${r.vat}</span></div>
+  ${L.length?`<div style="display:grid;gap:8px">${L.map(r=>`<div style="border:1px solid var(--line);border-left:5px solid ${TC[r.t]};border-radius:10px;padding:10px 12px;background:#fff"><div class="row" style="gap:6px;flex-wrap:wrap"><span class="chip" style="background:${TC[r.t]};color:#fff">${r.t}</span><b>${esc(r.v)}</b>${r.adv?`<span class="chip st-bad" title="승인하면 선지급도 함께 승인되어 경리 이체 대기로 넘어갑니다">⚡ 선지급 ${won(Math.round(r.adv))}원 포함</span>`:''}<span class="sp"></span><b style="font-size:16px">${won(r.amt)}원</b><span class="mute" style="font-size:11.5px">${r.vat}</span></div>
     <div style="font-size:13px;margin-top:4px">${r.pj?'🏗 '+esc(r.pj)+'<br>':''}📦 ${r.what}</div><div class="mute" style="font-size:12px;margin-top:2px">요청: ${esc(r.who)} · ${esc(String(r.at).slice(0,16))}</div>
     <div class="row" style="gap:6px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap">${r.t==='자재·소모품'?(r.qn?`<button class="btn sm" onclick="photoView('거래처 견적서','buy_fileGet',{id:'${r.id}',k:'q'})">📎 견적서 ${r.qn}개</button>`:'<span class="chip" style="align-self:center">견적서 없음</span>'):''}<button class="btn sm" onclick="${r.view}">📄 내용 보기</button><button class="btn sm bad" onclick="${r.no}">반려</button><button class="btn sm ok" onclick="${r.ok}">승인</button></div></div>`).join('')}</div>`:'<div class="infobox">결재할 요청이 없습니다. 👍</div>'}</div>`;
   const cut=addDaysC(today(),-30),D=(S.buys||[]).filter(x=>(x.kind==='자재'||x.kind==='공사')&&x.apprAt&&String(x.apprAt).slice(0,10)>=cut).map(x=>({t:x.kind==='공사'?'공사발주':'자재·소모품',at:x.apprAt,v:x.vendor||'',pj:x.pname||'',amt:buyAmt(x),st:x.status==='작성중'&&x.reason?'반려':x.status,rs:x.reason||'',view:`bForm('${x.id}')`}))
@@ -4715,6 +4721,18 @@ async function bfRcpt(inp){let fs=[...(inp.files||[])];inp.value='';if(!fs.lengt
   d.rf=rf.join(',');BF._rmsg=msgs.map(t=>`<div style="font-size:13px;margin:3px 0">${t}</div>`).join('')+(hl.length?`<div class="mute" style="font-size:12px;margin:4px 0">노란 칸이 사진에서 읽은 값입니다. 영수증과 맞는지 확인하고 상세내역(무엇을 샀는지)을 채운 뒤 <b>저장</b>하세요.</div>`:'');
   bfRender(1);hl.forEach(id=>{const e=document.getElementById(id);if(e)e.style.background='#fff3c4';});{const e=document.getElementById('bf_title');if(e&&hl.length&&!e.value.trim())e.focus();}}
 /* 자재·소모품 발주: 거래처 견적서 첨부 (📷 촬영 또는 PC에서 사진·PDF 올리기, 최대 5개) */
+/* 발주서 안에서 바로 선지급(선급금): 체크하면 대표이사 발주 결재 한 번으로 선지급도 승인 → 경리 「이체 대기」 */
+function bfAdvBox(x,ro){const d=x.doc||{},on=d.adv==='1'||d.adv===true,sum=(x.items||[]).reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0),vid=vidByName(x.vendor),amt=Number(String(d.advAmt||'').replace(/[^\d]/g,''))||0,base=amt||sum;
+  return `<div style="margin-top:10px;border:1px solid ${on?'var(--bad)':'var(--line)'};border-radius:10px;padding:10px 12px;${on?'background:#fff7f5':''}"><label class="row" style="gap:6px;font-weight:700"><input type="checkbox" id="bf_adv" style="width:auto" ${on?'checked':''} ${ro} onchange="bfSync();bfRender(1)"> ⚡ 대금지불 — 선급금 (선지급: 입금해야 출고·착수하는 거래처)</label>
+  ${on?`<div class="grid2" style="margin-top:8px"><label class="f"><span>선지급 금액 (공급가, 원)</span><input id="bf_advamt" inputmode="numeric" value="${amt?won(amt):''}" placeholder="비우면 발주 합계 ${won(sum)}원" ${ro} oninput="bfAdvVat()"></label>
+  <label class="f"><span>세액 (10% 자동) · VAT 포함</span><div id="bf_advvat" style="padding:8px 0;font-weight:700">${won(Math.round(base*0.1))}원 · 합계 ${won(Math.round(base*1.1))}원</div></label>
+  <label class="f"><span>희망 이체일</span><input type="date" id="bf_advdate" value="${esc(d.advDate||'')}" ${ro}></label>
+  <label class="f"><span>수주처 (돈을 보내는 회사)</span><select id="bf_advctr" ${ro}><option value="">— 선택 —</option>${CTR_BASE.map(c=>`<option ${d.advCtr===c?'selected':''}>${c}</option>`).join('')}</select></label></div>
+  <label class="f"><span>선급금 내용 (발주서 「선급금 ( )」에 들어감)</span><input id="bf_advtxt" value="${esc(d.advTxt||'')}" placeholder="예: 계약금 30% / 자재대금 전액" ${ro}></label>
+  <label class="row" style="gap:6px;font-size:13px"><input type="checkbox" id="bf_advfin" style="width:auto" ${d.advFin==='1'?'checked':''} ${ro}> 이 선지급으로 거래 끝 (나중에 세금계산서 잔금 없음)</label>
+  ${x.vendor&&!vid?`<div class="badbox" style="margin-top:6px">「${esc(x.vendor)}」이(가) 거래처관리에 없습니다. 선지급하려면 거래처를 먼저 등록하세요 (경리에게 요청).</div>`:''}
+  <div class="mute" style="font-size:12px;margin-top:6px">✅ 따로 선지급 요청을 올리지 않아도 됩니다. 대표이사가 이 발주를 <b>승인하면 선지급도 함께 승인</b>되어 경리에게 「이체 대기」 알림이 가고, 월말 세금계산서가 오면 선지급한 만큼 빼고 잔금만 20일에 지급합니다.</div>`:`<input type="hidden" id="bf_advtxt" value="${esc(d.advTxt||'')}">`}</div>`;}
+function bfAdvVat(){const e=document.getElementById('bf_advamt'),o=document.getElementById('bf_advvat');if(!e||!o)return;const sum=(BF.items||[]).reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0),v=Number(e.value.replace(/[^\d]/g,''))||sum;o.textContent=won(Math.round(v*0.1))+'원 · 합계 '+won(Math.round(v*1.1))+'원';}
 function bfQuoteBox(x,ro){const qf=String((x.doc||{}).qf||'').split(',').filter(Boolean);
   return `<div class="infobox" style="margin:8px 0"><div class="row" style="gap:6px;flex-wrap:wrap"><b>📎 거래처 견적서</b>${qf.length?`<span class="chip st-ok">${qf.length}개 첨부</span>`:'<span class="chip">없음</span>'}<span class="sp"></span>${!ro&&qf.length<5?`<label class="btn pri sm" style="cursor:pointer">📷 촬영<input type="file" accept="image/*" capture="environment" style="display:none" onchange="bfQuote(this)"></label><label class="btn sm" style="cursor:pointer">💻 사진·PDF 올리기<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="bfQuote(this)"></label>`:''}${qf.length?`<button type="button" class="btn sm" onclick="bfQuoteView()">👁 미리보기</button>`:''}${!ro&&qf.length?`<button type="button" class="btn sm" onclick="bfQuoteClr()">빼기</button>`:''}</div>
   <div class="mute" style="font-size:12px;margin-top:4px">휴대폰은 「📷 촬영」, 컴퓨터는 「💻 사진·PDF 올리기」(여러 개 한 번에, 최대 5개). 대표이사가 결재할 때 함께 봅니다. <b>저장(또는 결재요청)</b>해야 첨부가 보관됩니다.</div></div>`;}
@@ -4738,8 +4756,8 @@ function bfFromInc(){const t=Number(document.getElementById('bf_inc').value.repl
 function bfSync(){const g=k=>{const e=document.getElementById(k);return e?e.value:undefined;},x=BF;if(!document.getElementById('bf_date'))return;
   x.date=g('bf_date');x.projectId=g('bf_pj');x.memo=g('bf_memo');
   if(x.kind==='카드'){x.title=g('bf_title').trim();if(document.getElementById('bf_card'))x.doc.card=g('bf_card');x.doc.user=(g('bf_user')||'').trim();x.doc.cc=g('bf_cc')||'경비';x.doc.ccx=(g('bf_ccx')||'').trim();x.vendor=(g('bf_vendor')||'').trim();x.amount=Number(String(g('bf_amt')).replace(/[^\d.-]/g,''))||'';}
-  else{x.vendor=g('bf_vendor').trim();const d=x.doc;d.vMgr=g('bf_vmgr');d.vTel=g('bf_vtel');d.vMail=g('bf_vmail');d.content=g('bf_content');
-    if(document.getElementById('bf_due')){d.due=g('bf_due');d.place=g('bf_place');d.std=g('bf_std');d.safe=g('bf_safe');d.etc=g('bf_etc');d.cond=PO_COND.map((_,i)=>g('bf_c'+i));d.adv=document.getElementById('bf_adv').checked?'1':'';d.advTxt=g('bf_advtxt');d.pay1=g('bf_pay1');d.pay2=g('bf_pay2');d.labor=[...document.querySelectorAll('.bf_lab:checked')].map(e=>e.value);}
+  else{x.vendor=g('bf_vendor').trim();const d=x.doc;d.vMgr=g('bf_vmgr');d.vTel=g('bf_vtel');d.vMail=g('bf_vmail');d.content=g('bf_content');{const a=document.getElementById('bf_adv');if(a){d.adv=a.checked?'1':'';d.advTxt=g('bf_advtxt')||'';if(document.getElementById('bf_advamt')){d.advAmt=String(g('bf_advamt')||'').replace(/[^\d]/g,'');d.advDate=g('bf_advdate')||'';d.advCtr=g('bf_advctr')||'';d.advFin=document.getElementById('bf_advfin').checked?'1':'';}d.advVid=vidByName(x.vendor)||'';}}
+    if(document.getElementById('bf_due')){d.due=g('bf_due');d.place=g('bf_place');d.std=g('bf_std');d.safe=g('bf_safe');d.etc=g('bf_etc');d.cond=PO_COND.map((_,i)=>g('bf_c'+i));d.pay1=g('bf_pay1');d.pay2=g('bf_pay2');d.labor=[...document.querySelectorAll('.bf_lab:checked')].map(e=>e.value);}
     document.querySelectorAll('#modal textarea[onchange^="BF.items"]').forEach((t,i)=>{if(x.items[i])x.items[i].name=t.value;});}}
 function bfSave(submit){bfSync();const x=BF;
   if(x.kind==='카드'){const er=[];if(!x.doc.user)er.push({f:'bf_user',m:'사용자를 입력하세요.'});if(!x.vendor)er.push({f:'bf_vendor',m:'사용처명을 입력하세요.'});if(!x.title)er.push({f:'bf_title',m:'상세내역을 입력하세요.'});if(!(Number(x.amount)>0))er.push({f:'bf_amt',m:'금액(VAT 별도)을 숫자로 입력하세요.'});
@@ -4759,6 +4777,7 @@ function bfCheck(x){const e=[],d=x.doc||{},n=v=>Number(String(v==null?'':v).repl
     if(!(n(q)>0))e.push({it:i,m:`${i+1}번 품목: 수량을 0보다 큰 숫자로 넣으세요.`});
     if(!(n(pr)>0))e.push({it:i,m:`${i+1}번 품목: 단가를 숫자로 넣으세요.`});});
   if(!named)e.push({it:0,m:'품목을 1개 이상 입력하세요 (품명 및 사양).'});
+  if(d.adv==='1'){if(!vidByName(x.vendor))e.push({f:'bf_vendor',m:'선지급하려면 거래처관리에 등록된 거래처 이름을 넣으세요.'});if(!d.advCtr)e.push({f:'bf_advctr',m:'선지급 수주처(돈을 보내는 회사)를 고르세요.'});}
   return e;}
 function bfErr(er){BF._err=er;bfRender(1);}
 /* 저장: 성공하면 닫고, 서버가 거절하면 창을 그대로 두고 이유를 위에 표시 */
@@ -5191,14 +5210,15 @@ function vAdmin(me){
   const P=permsOf(me),cardOnly=me.role==='manager'&&P.indexOf('card')<0,tl=allT.filter(t=>t[0]==='sign'?prqAppr():t[0]==='todo'?todoOk(me):t[0]==='prq'?me.role!=='worker':t[0]==='ceo'||t[0]==='ceoviz'||t[0]==='ceotodo'?ceoSee(me):t[0]==='next'||t[0]==='vault'?me.role==='admin':(t[0]==='ahelp'||P.indexOf(TAB_PERM[t[0]]||t[0])>=0||(t[0]==='card'&&cardOnly)||(t[0]==='month'&&(S.extTodo||[]).length)||t[0]==='forms'||(t[0]==='gisung'&&P.indexOf('proj')>=0)));   /* 권한 없는 관리자도 법인카드 지출은 기록 */
   if(!tl.find(t=>t[0]===ui.aTab))ui.aTab=tl[0][0];
   /* 메뉴 묶음: 큰 메뉴 → 아래 작은 탭 */
-  const gl=ADMIN_GROUPS.map(([gk,gl2,subs])=>{const ss=subs.map(k=>tl.find(t=>t[0]===k)).filter(Boolean);return ss.length?[gk,gl2,ss.reduce((a,t)=>a+(Number(t[2])||0),0)||'',ss]:null;}).filter(Boolean);
+  notiSeen(ui.aTab);const NC=notiCnts();tl.forEach(t=>{t[3]=NC[t[0]]||0;});
+  const gl=ADMIN_GROUPS.map(([gk,gl2,subs])=>{const ss=subs.map(k=>tl.find(t=>t[0]===k)).filter(Boolean);return ss.length?[gk,gl2,ss.reduce((a,t)=>a+(Number(t[2])||0)+(t[3]||0),0)||'',ss]:null;}).filter(Boolean);
   const cg=gl.find(g=>g[3].some(t=>t[0]===ui.aTab))||gl[0];
   ui._menus=gl.flatMap(g=>g[3].map(t=>({k:t[0],l:t[1],g:g[1]})));
-  const nav=`<nav class="snav" aria-label="메뉴">${gl.map(g=>`${g[0]==='g_home'?'':`<div class="sg" onclick="aGroup('${g[0]}')">${g[1]}</div>`}${g[3].map(([k,l,c])=>`<button class="${k===ui.aTab?'on':''}" onclick="aTab('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}</button>`).join('')}`).join('')}</nav>`.replace(`onclick="aTab('dash')">`,`onclick="aTab('dash')" style="font-weight:800;color:#8d2d30">🏠 `);   /* 오늘 업무: 묶음 없이 단일 메뉴 */
+  const nav=`<nav class="snav" aria-label="메뉴">${gl.map(g=>`${g[0]==='g_home'?'':`<div class="sg" onclick="aGroup('${g[0]}')">${g[1]}</div>`}${g[3].map(([k,l,c,n])=>`<button class="${k===ui.aTab?'on':''}" onclick="aTab('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}${n?`<span class="ncnt" title="새 알림 ${n}건 (들어가면 확인 처리)">🔔${n}</span>`:''}</button>`).join('')}`).join('')}</nav>`.replace(`onclick="aTab('dash')">`,`onclick="aTab('dash')" style="font-weight:800;color:#8d2d30">🏠 `);   /* 오늘 업무: 묶음 없이 단일 메뉴 */
   const curT=cg[3].find(t=>t[0]===ui.aTab)||cg[3][0];
   h=h.replace('<div class="wrap">','<div class="wrap aw">')+`<div class="adm">${nav}<main>`;
   h+=`<div class="gnav">${tabs(gl.map(g=>[g[0],g[1],g[2]]),cg[0],'aGroup')}</div><div class="ptitle">${esc(cg[1])}${cg[3].length>1?` <span class="mute" style="font-weight:400">›</span> ${esc(curT[1])}`:''}</div>`;
-  if(cg[3].length>1)h+=`<div class="subtabs">${cg[3].map(([k,l,c])=>`<button class="stab ${k===ui.aTab?'on':''}" onclick="aTab('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}</button>`).join('')}</div>`;
+  if(cg[3].length>1)h+=`<div class="subtabs">${cg[3].map(([k,l,c,n])=>`<button class="stab ${k===ui.aTab?'on':''}" onclick="aTab('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}${n?`<span class="ncnt">🔔${n}</span>`:''}</button>`).join('')}</div>`;
   if(me.role!=='admin')h+=`<div class="mute" style="margin:-6px 0 10px">메뉴 담당자 화면입니다 — 권한을 받은 메뉴만 보입니다. 다른 메뉴가 필요하면 전체 관리자에게 요청하세요.</div>`;
   const f={sign:aSign,ceotodo:aCeoTodo,forms:aForms,tax:aTax,leave:aLeaveTab,dash:aDash,appr:aAppr,month:aMonth,workers:aWorkers,quals:aQuals,notice:aNotice,pay:aPay,ahelp:aHelp,proj:aProjects,gisung:aGisung,safety:aSafety,cal:aCal,qr:aQr,log:aLog,next:aNext,roster:aRoster,car:aCar,board:aBoard,pre:aPre,company:aCompany,po_mat:()=>aBuy('자재'),po_con:()=>aBuy('공사'),card:()=>aBuy('카드'),stmt:aStmt,vendor:aVendor,vault:aVault,ceo:aCeo,ceoviz:aCeoViz,prq:aPrq,bank:aBank,todo:vTodo,notes:aNotes}[ui.aTab];
   return h+f()+'</main></div></div>';
