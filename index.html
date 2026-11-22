@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bq-->
+<!DOCTYPE html><!--v:2026.11.22br-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bq';
+const APP_VER='2026.11.22br';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4752,6 +4752,9 @@ function bfAdvBox(x,ro){const d=x.doc||{},on=d.adv==='1'||d.adv===true,sum=(x.it
 function bfAdvVat(){const e=document.getElementById('bf_advamt'),o=document.getElementById('bf_advvat');if(!e||!o)return;const sum=(BF.items||[]).reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0),v=Number(e.value.replace(/[^\d]/g,''))||sum;o.textContent=won(Math.round(v*0.1))+'원 · 합계 '+won(Math.round(v*1.1))+'원';}
 /* 자재·소모품 발주: 거래처는 거래처관리에 등록된 곳에서 고름 → 담당자·전화·메일 자동 채움 */
 const isPtnCat=c=>/외주|협력|도급/.test(String(c||''));   /* 협력업체(공사발주 상대) */
+/* 근로자 소속 협력업체: 거래처관리의 협력업체 목록에서 고름 (노무비 직불 대조 때 업체명이 정확히 맞도록) */
+function ptnSel(id,cur){const L=(S.vlite||S.vendors||[]).filter(v=>v.active!=='N'&&isPtnCat(v.cat)).map(v=>v.name).sort((a,b)=>a.localeCompare(b,'ko')),has=!cur||L.indexOf(cur)>=0;
+  return `<select id="${id}"><option value="">— 협력업체 선택 (${L.length}곳) —</option>${has?'':`<option value="${esc(cur)}" selected>⚠ ${esc(cur)} (거래처관리 미등록)</option>`}${L.map(n=>`<option ${n===cur?'selected':''}>${esc(n)}</option>`).join('')}</select><div class="mute" style="font-size:12px;margin-top:2px">거래처관리에 업종 「협력업체(외주공사)」로 등록된 곳만 나옵니다.${L.length?'':' <b style="color:var(--warn)">등록된 협력업체가 없습니다 — 먼저 거래처관리에서 등록하세요.</b>'}</div>`;}
 function bfVendSel(x,ro){const con=x.kind==='공사',A=(S.vlite||S.vendors||[]).filter(v=>v.active!=='N').slice().sort((a,b)=>String(a.cat||'').localeCompare(String(b.cat||''),'ko')||String(a.name).localeCompare(String(b.name),'ko'));const cur=x.vendor||'',has=!cur||A.some(v=>v.name===cur);
   const P=con?A.filter(v=>isPtnCat(v.cat)):A,O=con?A.filter(v=>!isPtnCat(v.cat)):[];const opt=v=>`<option value="${esc(v.name)}" ${v.name===cur?'selected':''}>${v.cat&&!con?'['+esc(v.cat)+'] ':''}${esc(v.name)}${v.pay==='선지급'?' ⚡선지급':''}</option>`;
   return `<div class="row" style="gap:6px;flex-wrap:nowrap"><select id="bf_vendor" ${ro} onchange="bfVendPick(this.value)" style="flex:1"><option value="">— ${con?'협력업체':'거래처'} 선택 (${P.length}곳) —</option>${has?'':`<option value="${esc(cur)}" selected>⚠ ${esc(cur)} (미등록)</option>`}${con?`<optgroup label="협력업체 (외주공사)">${P.map(opt).join('')}</optgroup>${O.length?`<optgroup label="기타 거래처">${O.map(opt).join('')}</optgroup>`:''}`:P.map(opt).join('')}</select>${!ro&&canM('vendor')?`<button type="button" class="btn sm" onclick="bfVendNew()">+ ${con?'협력업체':'거래처'} 등록</button>`:''}</div>${ro?'':`<div class="mute" style="font-size:12px;margin-top:2px">${con?'협력업체는 거래처관리에 업종 「협력업체(외주공사)」로 등록합니다. ':''}목록에 없으면 ${canM('vendor')?'「+ '+(con?'협력업체':'거래처')+' 등록」으로 먼저 등록하세요':'경리(거래처관리 담당)에게 등록을 요청하세요'}.</div>`}`;}
@@ -5508,7 +5511,7 @@ function aSignForm(id){const w=W(id);
   openModal(`<div class="mbox" style="max-width:560px"><div class="row"><h2 style="margin:0">가입 승인 — ${esc(w.name)}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <p class="mute">${esc(w.phone)} · ${esc(w.rrn||'')} · 신청 ${esc(w.signupAt||'')}</p>
   <div class="grid2"><label class="f"><span>소속 *</span><select id="sa_aff" onchange="document.getElementById('sa_pw').style.display=this.value==='협력업체'?'block':'none'">${['고센이엔지','씨유이엔지','협력업체'].map(a=>`<option>${a}</option>`).join('')}</select></label>
-  <label class="f" id="sa_pw" style="display:none"><span>협력업체명 *</span><input id="sa_partner"></label>
+  <label class="f" id="sa_pw" style="display:none"><span>협력업체명 *</span>${ptnSel('sa_partner','')}</label>
   <label class="f"><span>근로형태 *</span><select id="sa_type"><option>상용직</option><option>일용직</option></select></label>
   <label class="f"><span>입사일 *</span><input id="sa_join" type="date" value="${today()}"></label>
   <label class="f"><span>1공수 단가 (원)</span><input id="sa_rate" inputmode="numeric" placeholder="예: 200,000"></label>
@@ -6062,7 +6065,7 @@ function aWorkerForm(id){
   const w=id?W(id):{name:'',phone:'',aff:'고센이엔지',partner:'',type:'상용직',job:'',join:today(),role:'worker',rrn:'',rate:''};
   openModal(`<div class="mbox" style="max-width:620px"><div class="row"><h2 style="margin:0">${id?'근로자 정보 수정':'신규 입사자 등록'}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:12px"><label class="f"><span>소속 *</span><select id="fw_aff" onchange="document.getElementById('fw_pw').style.display=this.value==='협력업체'?'block':'none'">${['고센이엔지','씨유이엔지','협력업체'].map(a=>`<option ${w.aff===a?'selected':''}>${a}</option>`).join('')}</select></label>
-  <label class="f" id="fw_pw" style="display:${w.aff==='협력업체'?'block':'none'}"><span>협력업체명 *</span><input id="fw_partner" value="${esc(w.partner||'')}"></label>
+  <label class="f" id="fw_pw" style="display:${w.aff==='협력업체'?'block':'none'}"><span>협력업체명 *</span>${ptnSel('fw_partner',w.partner||'')}</label>
   <label class="f"><span>입사일 *</span><input id="fw_join" type="date" value="${w.join}"></label>
   <label class="f"><span>직군</span><select id="fw_job"><option value="">(미지정)</option>${JOBS.map(a=>`<option ${w.jobType===a?'selected':''}>${a}</option>`).join('')}</select></label>
   <label class="f"><span>직급</span><select id="fw_rank"><option value="">(미지정)</option>${RANKS.map(a=>`<option ${w.rank===a?'selected':''}>${a}</option>`).join('')}</select></label>
