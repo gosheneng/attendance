@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22ae-->
+<!DOCTYPE html><!--v:2026.11.22af-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -158,7 +158,7 @@ window.addEventListener('error',function(e){window.__showErr((e.message||'알 �
 window.addEventListener('unhandledrejection',function(e){var r=e.reason;window.__showErr('처리 오류: '+((r&&r.message)||String(r)));});
 setTimeout(function(){if(document.getElementById('boot-msg'))window.__showErr('화면을 불러오지 못했습니다. 새로고침해 보시고, 계속되면 Index 파일 붙여넣기가 끝까지 되었는지 확인하세요.');},12000);
 </script>
-<div id="modal" class="modal hidden"></div>
+<div id="modal" class="modal hidden"></div><div id="modal2" class="modal hidden" style="z-index:56"></div>
 <div id="toast"></div>
 <script>window.BOOT={qr:(new URLSearchParams(location.search).get('qr')||''),url:location.origin+location.pathname,api:'https://script.google.com/macros/s/AKfycbwaFIBN7QwB7h0d9LXDiCAFrS6GqlzrROq0SJ35GI0DthepYF930QYlJej-kSwSFsWq/exec'};</script>
 <script>
@@ -2655,11 +2655,23 @@ function validate(r,isAdmin){
 }
 
 /* ---------- 공통 UI ---------- */
-function openModal(h){const m=document.getElementById('modal');m.innerHTML=h;m.classList.remove('hidden');}
-function closeModal(){if(typeof scanStop==='function')scanStop();const m=document.getElementById('modal');m.classList.add('hidden');m.innerHTML='';}
-function confirmBox(msg,okLabel){return new Promise(res=>{modalResolve=res;openModal(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${msg}</div><div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="mRes(false)">취소</button><button class="btn pri" onclick="mRes(true)">${okLabel||'확인'}</button></div></div>`);});}
-function mRes(v){const f=modalResolve;modalResolve=null;closeModal();f&&f(v);}
-function alertBox(title,lines){openModal(`<div class="mbox" style="max-width:480px"><h3>${title}</h3>${lines&&lines.length?'<ul>'+lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul>':''}<div class="row" style="justify-content:flex-end"><button class="btn pri" onclick="closeModal()">확인</button></div></div>`);}
+function openModal(h){const m=document.getElementById('modal');if(m.classList.contains('hidden'))m.dataset.dirty='';m.innerHTML=h;m.classList.remove('hidden');}
+/* 입력하던 창을 실수로 닫지 않게: 내용을 고친 뒤 「닫기·취소」나 휴대폰 뒤로 버튼을 누르면 한 번 더 물어봄 (저장 성공 후 자동으로 닫히는 것은 그대로) */
+document.addEventListener('input',e=>{const m=document.getElementById('modal');if(m&&m.contains(e.target)&&e.target.id!=='tb_v')m.dataset.dirty='1';},true);
+document.addEventListener('change',e=>{const m=document.getElementById('modal');if(m&&m.contains(e.target)&&e.target.type!=='file')m.dataset.dirty='1';},true);
+const modalDirty=()=>{const m=document.getElementById('modal');return !!(m&&!m.classList.contains('hidden')&&m.dataset.dirty==='1'&&formOpen());};
+async function closeAsk(){if(!modalDirty()){closeModal();return;}if(await confirmBox('작성하던 내용이 저장되지 않았습니다.\n그래도 창을 닫을까요?','닫기'))closeModal();}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#modal button');if(!b)return;const oc=(b.getAttribute('onclick')||'').replace(/\s/g,'');
+  if((oc==='closeModal()'||oc==='closeModal();')&&/닫기|취소|✕/.test(b.textContent)&&modalDirty()){e.preventDefault();e.stopImmediatePropagation();closeAsk();}},true);
+function closeModal(){if(typeof scanStop==='function')scanStop();const m=document.getElementById('modal');m.classList.add('hidden');m.innerHTML='';m.dataset.dirty='';const t=document.getElementById('modal2');if(t){t.classList.add('hidden');t.innerHTML='';}}
+/* 입력창(폼)이 열려 있을 때 뜨는 확인·오류 창은 위에 겹쳐 띄움 → 확인을 눌러도 아래 입력창과 입력한 내용이 그대로 남음 */
+function formOpen(){const m=document.getElementById('modal');return !!(m&&!m.classList.contains('hidden')&&m.querySelector('input:not([type=hidden]),textarea,select'));}
+function openTop(h){const t=document.getElementById('modal2');if(t&&formOpen()){t.innerHTML=h;t.classList.remove('hidden');return;}openModal(h);}
+function closeTop(){const t=document.getElementById('modal2');if(t&&!t.classList.contains('hidden')){t.classList.add('hidden');t.innerHTML='';return;}closeModal();}
+const topOpen=()=>{const t=document.getElementById('modal2');return !!(t&&!t.classList.contains('hidden'));};
+function confirmBox(msg,okLabel){return new Promise(res=>{modalResolve=res;openTop(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${msg}</div><div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="mRes(false)">취소</button><button class="btn pri" onclick="mRes(true)">${okLabel||'확인'}</button></div></div>`);});}
+function mRes(v){const f=modalResolve;modalResolve=null;closeTop();f&&f(v);}
+function alertBox(title,lines){const keep=formOpen();openTop(`<div class="mbox" style="max-width:480px"><h3>${title}</h3>${lines&&lines.length?'<ul>'+lines.map(l=>'<li>'+esc(l)+'</li>').join('')+'</ul>':''}${keep?'<p class="mute" style="font-size:12.5px;margin:6px 0 0">「확인」을 누르면 입력하던 창으로 돌아갑니다. 입력한 내용은 그대로 있습니다.</p>':''}<div class="row" style="justify-content:flex-end"><button class="btn pri" onclick="closeTop()">확인</button></div></div>`);}
 let tt=null;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600);}
 function tabs(list,cur,fn){return `<div class="tabs">${list.map(([k,l,c])=>`<button class="tab ${k===cur?'on':''}" onclick="${fn}('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}</button>`).join('')}</div>`;}
 
@@ -2717,7 +2729,8 @@ function navGuard(){try{if(!(history.state&&history.state.gx))history.pushState(
 document.addEventListener('pointerdown',navGuard,true);document.addEventListener('keydown',navGuard,true);   /* 사용자가 화면을 만진 뒤에 걸어야 브라우저가 인정함 */
 window.addEventListener('popstate',function(){
   const m=document.getElementById('modal');
-  if(m&&!m.classList.contains('hidden')){if(typeof modalResolve!=='undefined'&&modalResolve)mRes(false);else closeModal();navGuard();return;}
+  if(topOpen()){if(typeof modalResolve!=='undefined'&&modalResolve)mRes(false);else closeTop();navGuard();return;}
+  if(m&&!m.classList.contains('hidden')){if(typeof modalResolve!=='undefined'&&modalResolve)mRes(false);else closeAsk();navGuard();return;}
   if(NAV_ST.length){const o=JSON.parse(NAV_ST.pop());ui.asWorker=o.w;ui.aTab=o.a;ui.wTab=o.t;if(o.d)ui.pastDate=o.d;NAV_RS=true;render();window.scrollTo(0,0);navGuard();return;}
   if(Date.now()-NAV_EXIT<2500){history.back();return;}
   NAV_EXIT=Date.now();toast('뒤로 버튼을 한 번 더 누르면 닫힙니다.');navGuard();});
@@ -2739,7 +2752,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22ae';
+const APP_VER='2026.11.22af';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3093,7 +3106,7 @@ async function outPrecheck(date){const r=recOf(ses.uid,date);const now=hm(new Da
   if(v.warns.length&&!(await confirmBox('<b>확인이 필요한 사항</b>\n· '+v.warns.map(esc).join('\n· ')+'\n\n그래도 퇴근하고 승인 요청할까요?','퇴근')))return false;
   return true;}
 function outConfirm(re){return new Promise(res=>{modalResolve=res;
-  openModal(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${re?'퇴근 시각을 <b>지금 '+hm(new Date())+'</b>으로 다시 기록할까요?\n이전 퇴근 시각은 처리이력에 남습니다.':'지금 <b>'+hm(new Date())+'</b>에 퇴근할까요?'}\n\n퇴근하면 공수가 바로 승인 요청됩니다.</div>
+  openTop(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${re?'퇴근 시각을 <b>지금 '+hm(new Date())+'</b>으로 다시 기록할까요?\n이전 퇴근 시각은 처리이력에 남습니다.':'지금 <b>'+hm(new Date())+'</b>에 퇴근할까요?'}\n\n퇴근하면 공수가 바로 승인 요청됩니다.</div>
   <label class="row" style="gap:8px;margin-top:14px;padding:10px;border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" id="sf_ok" style="width:22px;height:22px"> <span>✅ 오늘 다친 곳 없이 안전하게 작업을 마쳤습니다</span></label>
   <div class="mute" style="font-size:12px;margin-top:4px">체크해야 퇴근됩니다. 다친 곳이 있으면 관리자에게 바로 연락하세요. (관리자가 대신 퇴근 처리합니다)</div>
   <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" onclick="mRes(false)">취소</button><button class="btn pri" onclick="if(!document.getElementById('sf_ok').checked){toast('「다친 곳 없이 마쳤습니다」에 체크해야 퇴근됩니다. 다쳤으면 관리자에게 연락하세요.');return;}mRes({safe:'Y',note:''})">${re?'다시 기록':'퇴근'}</button></div></div>`);});}
@@ -4053,7 +4066,7 @@ async function buyToStmt(id){const x=(S.buys||[]).find(o=>o.id===id);if(!x)retur
     v=(S.vendors||[]).find(o=>nmN(o.name)===nmN(vn));}
   const it=Array.isArray(x.items)?x.items:[],desc=(x.kind==='공사'?'[공사발주] ':'[발주] ')+(x.title||it.slice(0,3).map(i=>i.name).filter(Boolean).join(', ')+(it.length>3?' 외 '+(it.length-3)+'건':''));
   closeModal();stmtForm('','거래명세표',v?v.id:'',{buyId:x.id,projectId:x.projectId||'',desc:desc.slice(0,300),supply:Number(x.amount)||'',vat:Number(x.vat)||'',ctr:(x.doc&&x.doc.ctr)||(v&&(v.vctr||[]).length===1?v.vctr[0]:'')});}
-function textBox(msg,label,ph){return new Promise(res=>{modalResolve=res;openModal(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${msg}</div><input id="tb_v" style="margin-top:10px" placeholder="${esc(ph||'')}"><div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" onclick="mRes(null)">취소</button><button class="btn pri" onclick="mRes((document.getElementById('tb_v')||{}).value||'')">${label||'확인'}</button></div></div>`);setTimeout(()=>{const e=document.getElementById('tb_v');if(e)e.focus();},50);});}
+function textBox(msg,label,ph){return new Promise(res=>{modalResolve=res;openTop(`<div class="mbox" style="max-width:460px"><div style="white-space:pre-line">${msg}</div><input id="tb_v" style="margin-top:10px" placeholder="${esc(ph||'')}"><div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" onclick="mRes(null)">취소</button><button class="btn pri" onclick="mRes((document.getElementById('tb_v')||{}).value||'')">${label||'확인'}</button></div></div>`);setTimeout(()=>{const e=document.getElementById('tb_v');if(e)e.focus();},50);});}
 function prqAppr(){const me=W(ses.uid);if(!me)return false;const c=(S.ceo||{}).id;return c?c===me.id:me.role==='admin';}
 const PRQ_ST={요청:'st-pend',승인:'st-ok',반려:'st-bad'};
 function prqStat(x){return x.paid?'<span class="chip st-ok">이체 완료 '+esc(String(x.paidAt||'').slice(5))+'</span>':x.st==='승인'?(x.chk?'<span class="chip st-ok">결재 ✔ · 서류 받음</span>':'<span class="chip st-ok">결재 승인</span> <span class="chip">서류 대기</span>'):`<span class="chip ${PRQ_ST[x.st]||''}">${x.st==='요청'?'결재 대기':esc(x.st)}</span>`;}
