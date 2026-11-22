@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bi-->
+<!DOCTYPE html><!--v:2026.11.22bj-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bi';
+const APP_VER='2026.11.22bj';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4545,38 +4545,46 @@ const vById=id=>(S.vendors||[]).find(v=>v.id===id);
 function vCtrChips(v){return (v.vctr||[]).map(c=>`<span class="chip" style="background:${F_CLR[c]||'#666'};color:#fff;border-color:transparent">${esc(c)}</span>`).join(' ');}
 function aVendor(){const L=(S.vendors||[]),f=ui.vf||(ui.vf={ctr:'',cat:'',q:'',off:false});
   const cats=[...new Set(V_CATS.concat(L.map(v=>v.cat).filter(Boolean)))];
-  const sh=L.filter(v=>(f.off||v.active!=='N')&&(!f.ctr||(f.ctr==='_none'?!(v.vctr||[]).length:(v.vctr||[]).indexOf(f.ctr)>=0))&&(!f.cat||v.cat===f.cat)&&(!f.q||[v.name,v.bizNo,v.mgr,v.tel,v.mail,v.ceo].join(' ').toLowerCase().indexOf(f.q.toLowerCase())>=0))
+  const sh=L.filter(v=>(f.off||v.active!=='N')&&(!f.cat||v.cat===f.cat)&&(!f.q||[v.name,v.bizNo,v.mgr,v.tel,v.mail,v.ceo].join(' ').toLowerCase().indexOf(f.q.toLowerCase())>=0))
     .sort((a,b)=>String(a.cat).localeCompare(String(b.cat),'ko')||String(a.name).localeCompare(String(b.name),'ko'));
   const yr=today().slice(0,4),sum=v=>(S.stmts||[]).filter(x=>x.vid===v.id&&String(x.date).slice(0,4)===yr).reduce((a,x)=>a+(Number(x.supply)||0)+(Number(x.vat)||0),0);
   const ctrTabs=[['','전체 ('+L.filter(v=>v.active!=='N').length+')']].concat(CTR_BASE.map(c=>[c,c+' ('+L.filter(v=>v.active!=='N'&&(v.vctr||[]).indexOf(c)>=0).length+')']));
   let h=`<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">거래처관리</h3><span class="sp"></span>${canM('vendor')?`<button class="btn" onclick="vendorExport()">📥 엑셀 내려받기</button><button class="btn pri" onclick="vendorForm('')">+ 거래처 등록</button>`:''}</div>
-  <p class="mute" style="margin:6px 0">수주처별·업종별로 거래처를 나눠 봅니다. 거래처를 누르면 사업자등록증·통장사본과 거래 내역(명세표·세금계산서·법인카드·발주)을 함께 봅니다.</p>
-  ${tabs(ctrTabs,f.ctr,'vfCtr')}
+  <p class="mute" style="margin:6px 0">거래처는 고센이엔지·씨유이엔지·선일디엔씨가 <b>함께</b> 씁니다 (회사별로 나누지 않음). 업종별로 나눠 보고, 거래처를 누르면 사업자등록증·통장사본과 거래 내역(명세표·세금계산서·법인카드·발주)을 함께 봅니다.</p>
   <div class="row" style="gap:8px;margin:8px 0;flex-wrap:wrap"><select style="width:auto" onchange="ui.vf.cat=this.value;render()"><option value="">전체 업종</option>${cats.map(c=>`<option ${c===f.cat?'selected':''}>${esc(c)}</option>`).join('')}</select>
   <input id="vf_q" style="flex:1;min-width:160px" placeholder="🔍 상호·사업자번호·담당자·연락처 검색" value="${esc(f.q)}" oninput="ui.vf.q=this.value;vfRefresh()">
   <label class="row" style="gap:4px;font-size:13px"><input type="checkbox" style="width:auto" ${f.off?'checked':''} onchange="ui.vf.off=this.checked;render()"> 거래 안 함 포함</label></div>
-  <div class="tbl-wrap" id="vf_tbl"><table class="nw"><tr><th>업종</th><th>상호</th><th>수주처</th><th>사업자번호</th><th>담당자</th><th>연락처</th><th>이메일</th><th>서류</th><th style="text-align:right">${yr}년 매입</th></tr>
-  ${sh.length?sh.map(v=>{const vf=v.vfiles||{};return `<tr class="click" onclick="vendorView('${v.id}')" ${v.active==='N'?'style="opacity:.5"':''}><td>${esc(v.cat||'-')}</td><td><b>${esc(v.name)}</b>${v.active==='N'?' <span class="chip">거래 안 함</span>':''}</td><td>${vCtrChips(v)||'<span class="mute">-</span>'}</td><td>${esc(v.bizNo||'')}</td><td>${esc(v.mgr||'')}</td><td>${esc(v.tel||'')}</td><td style="font-size:12.5px">${esc(v.mail||'')}</td><td style="font-size:12px;white-space:nowrap"><span title="사업자등록증">${vf.biz?'✅':'⬜'}사업자</span> <span title="통장사본">${vf.bank?'✅':'⬜'}통장</span></td><td style="text-align:right">${won(sum(v))}</td></tr>`;}).join(''):'<tr><td colspan="9" class="mute">해당하는 거래처가 없습니다.</td></tr>'}</table></div></div>`;
+  <div class="tbl-wrap" id="vf_tbl"><table class="nw"><tr><th>업종</th><th>상호</th><th>사업자번호</th><th>담당자</th><th>연락처</th><th>이메일</th><th>서류</th><th style="text-align:right">${yr}년 매입</th></tr>
+  ${sh.length?sh.map(v=>{const vf=v.vfiles||{};return `<tr class="click" onclick="vendorView('${v.id}')" ${v.active==='N'?'style="opacity:.5"':''}><td>${esc(v.cat||'-')}</td><td><b>${esc(v.name)}</b>${v.active==='N'?' <span class="chip">거래 안 함</span>':''}</td><td>${esc(v.bizNo||'')}</td><td>${esc(v.mgr||'')}</td><td>${esc(v.tel||'')}</td><td style="font-size:12.5px">${esc(v.mail||'')}</td><td style="font-size:12px;white-space:nowrap"><span title="사업자등록증">${vf.biz?'✅':'⬜'}사업자</span> <span title="통장사본">${vf.bank?'✅':'⬜'}통장</span></td><td style="text-align:right">${won(sum(v))}</td></tr>`;}).join(''):'<tr><td colspan="9" class="mute">해당하는 거래처가 없습니다.</td></tr>'}</table></div></div>`;
   return h;}
 function vfCtr(c){ui.vf.ctr=c;render();}
 function vfRefresh(){const q=document.getElementById('vf_q'),pos=q?q.selectionStart:0;render();const e=document.getElementById('vf_q');if(e){e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}}}
-function vendorForm(id){const v=id?vById(id):{name:'',cat:'',vctr:[],bizNo:'',ceo:'',mgr:'',tel:'',mail:'',addr:'',memo:'',active:'Y'};if(!v)return;
+function vendorForm(id){VD_PEND={};const v=id?vById(id):{name:'',cat:'',vctr:[],bizNo:'',ceo:'',mgr:'',tel:'',mail:'',addr:'',memo:'',active:'Y'};if(!v)return;
   const cats=[...new Set(V_CATS.concat((S.vendors||[]).map(x=>x.cat).filter(Boolean)))];
   openModal(`<div class="mbox" style="max-width:600px"><div class="row"><h2 style="margin:0">${id?'거래처 수정':'거래처 등록'}</h2><span class="sp"></span>${id?`<button class="btn sm" onclick="vendorView('${id}')">← 거래처 보기</button>`:''}<button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:10px"><label class="f"><span>상호 *</span><input id="vd_name" value="${esc(v.name)}" placeholder="예: ㈜○○철강"></label>
   <label class="f"><span>업종 분류</span><input id="vd_cat" list="vd_cats" value="${esc(v.cat||'')}" placeholder="골라 주세요 (직접 입력도 가능)"><datalist id="vd_cats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label></div>
-  <label class="f"><span>거래하는 수주처 (여러 개 가능)</span><div class="row" style="gap:12px;flex-wrap:wrap">${CTR_BASE.map(c=>`<label class="row" style="gap:4px"><input type="checkbox" class="vd_ctr" value="${c}" style="width:auto" ${(v.vctr||[]).indexOf(c)>=0?'checked':''}>${c}</label>`).join('')}</div></label>
   <div class="grid2"><label class="f"><span>사업자등록번호</span><input id="vd_biz" inputmode="numeric" value="${esc(v.bizNo||'')}" placeholder="000-00-00000"></label><label class="f"><span>대표자</span><input id="vd_ceo" value="${esc(v.ceo||'')}"></label>
   <label class="f"><span>담당자</span><input id="vd_mgr" value="${esc(v.mgr||'')}" placeholder="예: 박길영 부장"></label><label class="f"><span>연락처</span><input id="vd_tel" inputmode="tel" value="${esc(v.tel||'')}" placeholder="예: 041-000-0000 / 010-0000-0000"></label>
   <label class="f"><span>이메일</span><input id="vd_mail" inputmode="email" value="${esc(v.mail||'')}" placeholder="세금계산서 받는 메일 등"></label><label class="f"><span>주소</span><input id="vd_addr" value="${esc(v.addr||'')}"></label></div>
   <label class="f"><span>결제 조건</span><select id="vd_pay"><option value="" ${v.pay==='선지급'?'':'selected'}>정기 (매월 20일, 전달 거래분)</option><option value="선지급" ${v.pay==='선지급'?'selected':''}>⚡ 선지급 (입금해야 자재 출고)</option></select></label>
   <label class="f"><span>메모</span><textarea id="vd_memo" rows="2">${esc(v.memo||'')}</textarea></label>
-  ${id?`<label class="row" style="gap:6px"><input type="checkbox" id="vd_act" style="width:auto" ${v.active!=='N'?'checked':''}> 거래 중 (끄면 새 명세표·계산서에서 고를 수 없음)</label>`:'<p class="mute" style="font-size:12.5px">사업자등록증·통장사본은 저장한 뒤 첨부할 수 있습니다.</p>'}
+  ${id?`<label class="row" style="gap:6px"><input type="checkbox" id="vd_act" style="width:auto" ${v.active!=='N'?'checked':''}> 거래 중 (끄면 새 명세표·계산서에서 고를 수 없음)</label>`:''}
+  ${vdDocBox(v)}
   <div class="row" style="gap:6px;margin-top:10px">${id?`<button class="btn bad" onclick="vendorDel('${id}')">삭제</button>`:''}<span class="sp"></span><button class="btn pri" onclick="vendorSave('${id}')">저장</button></div></div>`);}
 async function vendorSave(id){const g=k=>(document.getElementById(k)||{}).value||'',a=document.getElementById('vd_act');
-  const data={name:g('vd_name'),cat:g('vd_cat'),vctr:[...document.querySelectorAll('.vd_ctr:checked')].map(e=>e.value),bizNo:g('vd_biz'),ceo:g('vd_ceo'),mgr:g('vd_mgr'),tel:g('vd_tel'),mail:g('vd_mail'),addr:g('vd_addr'),memo:g('vd_memo'),pay:g('vd_pay'),active:a?a.checked:true};
+  const data={name:g('vd_name'),cat:g('vd_cat'),vctr:id?((vById(id)||{}).vctr||[]):[],bizNo:g('vd_biz'),ceo:g('vd_ceo'),mgr:g('vd_mgr'),tel:g('vd_tel'),mail:g('vd_mail'),addr:g('vd_addr'),memo:g('vd_memo'),pay:g('vd_pay'),active:a?a.checked:true};
   if(!data.name.trim()){toast('상호를 입력하세요.');return;}if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return;}
-  const r=await window.liveRun('vendor_save',{id,data});if(r&&r.id)vendorView(r.id);}
+  const r=await window.liveRun('vendor_save',{id,data});const vid=(r&&r.id)||id;if(!r||!vid)return;
+  const P=VD_PEND||{},ks=Object.keys(P).filter(k=>P[k]),bad=[];VD_PEND={};
+  if(ks.length){window.liveBusy(true);try{for(const k of ks){try{const f=P[k];if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const q=await qImg(f);const r2=await window.liveCall('vendor_fileUp',{id:vid,k,name:f.name,mime:q.mime,b64:q.b64});if(r2&&r2.error)throw new Error(r2.error);if(r2&&r2.state)window.liveApply(r2.state);}catch(e){bad.push((k==='bank'?'통장사본':'사업자등록증')+': '+(e.message||e));}}}finally{window.liveBusy(false);}}
+  vendorView(vid);if(bad.length)alertBox('거래처는 저장했지만 일부 서류를 올리지 못했습니다',bad);else if(ks.length)toast('서류까지 첨부했습니다.');}
+/* 거래처 등록·수정 창에서 바로 사업자등록증·통장사본 올리기 (📷 촬영 또는 PC 파일) — 저장할 때 함께 올라감 */
+var VD_PEND={};
+function vdDocBox(v){const vf=v.vfiles||{};const row=(k,n)=>{const p=VD_PEND[k],cur=vf[k];return `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:6px"><b style="min-width:84px">${n}</b><span id="vd_st_${k}" style="flex:1;min-width:120px;font-size:12.5px">${p?'📎 '+esc(p.name)+' <span class="mute">(저장 시 올라감)</span>':cur?'✅ 첨부됨 <span class="mute">'+esc(String(cur.at||'').slice(0,10))+'</span>':'<span class="mute">없음</span>'}</span><label class="btn sm pri" style="cursor:pointer">📷 촬영<input type="file" accept="image/*" capture="environment" style="display:none" onchange="vdPick('${k}',this)"></label><label class="btn sm" style="cursor:pointer">💻 파일 올리기<input type="file" accept="image/*,application/pdf" style="display:none" onchange="vdPick('${k}',this)"></label>${p?`<button type="button" class="btn sm" onclick="vdPick('${k}',null)">취소</button>`:''}</div>`;};
+  return `<div class="f" style="margin-top:6px"><span>서류 첨부 <span class="mute" style="font-size:12px">(사진 또는 PDF, 「저장」을 누르면 함께 올라갑니다${vf.biz||vf.bank?' · 새로 고르면 기존 파일을 바꿉니다':''})</span></span>${row('biz','사업자등록증')}${row('bank','통장사본')}</div>`;}
+function vdPick(k,inp){if(inp){const f=(inp.files||[])[0];inp.value='';if(!f)return;if(f.size>15*1024*1024){toast('15MB 이하 파일만 됩니다.');return;}VD_PEND[k]=f;}else delete VD_PEND[k];
+  const e=document.getElementById('vd_st_'+k);if(e){const p=VD_PEND[k];e.innerHTML=p?'📎 '+esc(p.name)+' <span class="mute">(저장 시 올라감)</span>':'<span class="mute">선택 취소</span>';}}
 async function vendorDel(id){if(!(await confirmBox('이 거래처를 삭제할까요? (거래 기록이 있으면 「거래 안 함」으로만 바뀝니다)','삭제')))return;liveOnly('vendor_del',{id});}
 async function vendorUp(id,k,inp){const f=(inp.files||[])[0];inp.value='';if(!f)return;if(!LIVE){toast('시제품에서는 올릴 수 없습니다.');return;}
   try{if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const q=await qImg(f);const r=await window.liveRun('vendor_fileUp',{id,k,name:f.name,mime:q.mime,b64:q.b64});if(r)vendorView(id);}catch(e){window.liveFail(e);}}
@@ -4596,8 +4604,8 @@ function vendorView(id){const v=vById(id);if(!v)return;const vf=v.vfiles||{},pur
   <div class="tbl-wrap" style="max-height:260px;overflow:auto"><table class="nw"><tr><th>일자</th><th>구분</th><th>수주처</th><th>내용</th><th style="text-align:right">합계</th><th>지급</th></tr>${st.length?st.map(x=>`<tr class="click" onclick="${x.kind==='선지급'?`prqForm('${x.id}')`:`stmtForm('${x.id}')`}"><td>${esc(x.date)}</td><td>${esc(x.kind)}</td><td>${esc(x.ctr)}</td><td style="white-space:normal;max-width:260px">${esc(x.desc||x.pname||'')}</td><td style="text-align:right">${won((Number(x.supply)||0)+(Number(x.vat)||0))}</td><td>${x.paid?`<span class="chip st-ok">지급 ${esc(String(x.paidAt).slice(5))}</span>`:'<span class="chip st-pend">미지급</span>'}</td></tr>`).join(''):'<tr><td colspan="6" class="mute">기록이 없습니다.</td></tr>'}</table></div>`:''}
   ${cards.length||pos.length?`<h3 style="margin:12px 0 4px">법인카드·발주 <span class="mute" style="font-weight:400;font-size:13px">(사용처명·업체명이 같은 기록)</span></h3><div class="tbl-wrap" style="max-height:200px;overflow:auto"><table class="nw"><tr><th>일자</th><th>구분</th><th>내용</th><th style="text-align:right">금액 (VAT별도)</th></tr>${cards.concat(pos).sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<tr><td>${esc(x.date)}</td><td>${esc((BUY_K.find(k=>k[0]===x.kind)||[])[1]||x.kind)}</td><td style="white-space:normal;max-width:300px">${esc(x.title||((x.items||[])[0]||{}).name||'')}</td><td style="text-align:right">${won(buyAmt(x))}</td></tr>`).join('')}</table></div>`:''}</div>`);}
 function vendorExport(){const L=(S.vendors||[]).slice().sort((a,b)=>String(a.cat).localeCompare(String(b.cat),'ko')||String(a.name).localeCompare(String(b.name),'ko'));
-  xlsxSave('거래처목록_'+today(),{title:'거래처 목록',sheet:'거래처',stamp:today()+' 출력',freezeCol:2,head:['업종','상호','수주처','사업자등록번호','대표자','담당자','연락처','이메일','주소','사업자등록증','통장사본','거래','메모'],types:'ttttttttttttt'.split(''),widths:[12,24,22,14,9,14,16,24,30,10,10,8,24],
-    rows:L.map(v=>[v.cat||'',v.name,(v.vctr||[]).join(', '),v.bizNo||'',v.ceo||'',v.mgr||'',v.tel||'',v.mail||'',v.addr||'',(v.vfiles||{}).biz?'있음':'',(v.vfiles||{}).bank?'있음':'',v.active==='N'?'안 함':'거래 중',v.memo||''])});}
+  xlsxSave('거래처목록_'+today(),{title:'거래처 목록',sheet:'거래처',stamp:today()+' 출력',freezeCol:2,head:['업종','상호','사업자등록번호','대표자','담당자','연락처','이메일','주소','사업자등록증','통장사본','거래','메모'],types:'tttttttttttt'.split(''),widths:[12,24,14,9,14,16,24,30,10,10,8,24],
+    rows:L.map(v=>[v.cat||'',v.name,v.bizNo||'',v.ceo||'',v.mgr||'',v.tel||'',v.mail||'',v.addr||'',(v.vfiles||{}).biz?'있음':'',(v.vfiles||{}).bank?'있음':'',v.active==='N'?'안 함':'거래 중',v.memo||''])});}
 /* ===================== 매입: 거래명세표·세금계산서 (경리 수기 입력) ===================== */
 const stTot=x=>x.kind==='선지급'?Math.round(((Number(x.supply)||0)+(Number(x.vat)||0))*(Number(x.rate)||100)/100):(Number(x.supply)||0)+(Number(x.vat)||0);
 function stmtFilt(){const f=ui.sf||(ui.sf={mon:today().slice(0,7),kind:'',ctr:'',vid:'',paid:'',q:''});
