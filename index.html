@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22ah-->
+<!DOCTYPE html><!--v:2026.11.22ai-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -104,6 +104,7 @@ label.f>span{display:block;margin-bottom:4px}
 .month th,.month td{padding:4px 3px;text-align:center;border:1px solid var(--line);white-space:nowrap}
 .month td.nm{text-align:left;position:sticky;left:0;background:#fff;z-index:1}
 .month th.nm{position:sticky;left:0;z-index:2}
+.mfrz{max-height:72vh;overflow:auto}.mfrz .month{border-collapse:separate;border-spacing:0}.mfrz .month tr:first-child th{position:sticky;top:0;z-index:3;background:#f3f5f8}.mfrz .month tr:first-child th.nm{z-index:4;left:0}.mfrz .month td.nm{box-shadow:inset -2px 0 0 #c9d0da}
 .cell-ot{background:#fff1dc}.cell-lv{background:#eaf6ee;color:var(--ok);font-weight:700}.cell-pend{color:var(--mute);font-style:italic;background:#f4f7fb}
 .sun{color:var(--bad)}.sat{color:var(--pri2)}
 .warnbox{background:#fff6e8;border:1px solid #f2c98a;color:#6e4500;padding:10px 12px;border-radius:8px;font-size:14px;margin:8px 0}
@@ -2761,7 +2762,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22ah';
+const APP_VER='2026.11.22ai';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5207,16 +5208,16 @@ function monthData(){
   return{y,m,nd,days,rows,recs,proj};
 }
 function monthTable(D,forPrint){
-  let h=`<table class="month"><tr><th class="nm">이름</th><th>소속</th><th>형태</th>${D.days.map(ds=>{const w=dow(ds);return `<th class="${w===0?'sun':w===6?'sat':''}">${+ds.slice(8)}<br>${WEEK[w]}</th>`;}).join('')}<th>출근일</th><th>휴가<br>(일)</th><th>총공수</th>${forPrint?'<th>확인</th>':''}</tr>`;
-  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>{h+=`<tr><td class="nm">${esc(w.name)}${w.status==='퇴사'?' <span class="mute">(퇴사)</span>':''}</td><td>${esc(w.aff==='협력업체'?(w.partner||'협력'):w.aff)}</td><td>${w.type==='일용직'?'일용':'상용'}</td>${cells.map(c=>!c?'<td></td>':c.leave?`<td class="cell-lv">${lvShort(c.leave)}</td>`:`<td class="${c.pend?'cell-pend':''}">${c.mn?fmtG(c.mn):''}${c.half?'<sup>반</sup>':''}</td>`).join('')}<td>${cnt}</td><td>${lvd?fmtD(lvd):''}</td><td><b>${fmtG(tot)}</b></td>${forPrint?'<td></td>':''}</tr>`;});
+  let h=`<table class="month"><tr><th>소속</th><th>형태</th><th class="nm">이름</th>${D.days.map(ds=>{const w=dow(ds);return `<th class="${w===0?'sun':w===6?'sat':''}">${+ds.slice(8)}<br>${WEEK[w]}</th>`;}).join('')}<th>출근일</th><th>휴가<br>(일)</th><th>총공수</th>${forPrint?'<th>확인</th>':''}</tr>`;
+  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>{h+=`<tr><td>${esc(w.aff==='협력업체'?(w.partner||'협력'):w.aff)}</td><td>${w.type==='일용직'?'일용':'상용'}</td><td class="nm">${esc(w.name)}${w.status==='퇴사'?' <span class="mute">(퇴사)</span>':''}</td>${cells.map(c=>!c?'<td></td>':c.leave?`<td class="cell-lv">${lvShort(c.leave)}</td>`:`<td class="${c.pend?'cell-pend':''}">${c.mn?fmtG(c.mn):''}${c.half?'<sup>반</sup>':''}</td>`).join('')}<td>${cnt}</td><td>${lvd?fmtD(lvd):''}</td><td><b>${fmtG(tot)}</b></td>${forPrint?'<td></td>':''}</tr>`;});
   const X=extShow()?extList(ui.month):null,xg=Array.isArray(X)?extGroup(X):[],ed=!forPrint&&(canM('month')||canM('appr'));
   if(extShow()){const span=D.days.length+6+(forPrint?1:0);
     h+=`<tr><td colspan="${span}" style="background:#f3f4f6;text-align:left;font-weight:700">👷 외부 인원 (투입명단 기준)${X===undefined?' <span class="mute" style="font-weight:400">— 불러오는 중…</span>':X&&X.err?` <span style="color:var(--bad);font-weight:400">— ${esc(X.err)}</span>`:!xg.length?' <span class="mute" style="font-weight:400">— 이 달에 공개된 투입명단의 외부 인원이 없습니다</span>':''}</td></tr>`;
     xg.forEach((g,gi)=>{const k=g.co+'\u0001'+g.name,sel=ui.extSel&&ui.extSel[k];
-      h+=`<tr${sel?' style="background:#fff8d6"':''}><td class="nm">${ed?`<input type="checkbox" style="width:auto;margin-right:4px" ${sel?'checked':''} onchange="extTick(${JSON.stringify(k).replace(/"/g,'&quot;')},this.checked)">`:''}${esc(g.name)}</td><td>${g.co?esc(g.co):`<span style="color:var(--bad)">${forPrint?'':'소속 미입력'}</span>`}</td><td>일용</td>${D.days.map(ds=>{const a=g.by[ds];if(!a)return '<td></td>';const t=a.reduce((s2,x)=>s2+Number(x.gs||0),0),tip=a.map(x=>x.pname+' · '+x.role+' · '+x.t).join('\n');
+      h+=`<tr${sel?' style="background:#fff8d6"':''}><td>${g.co?esc(g.co):`<span style="color:var(--bad)">${forPrint?'':'소속 미입력'}</span>`}</td><td>일용</td><td class="nm">${ed?`<input type="checkbox" style="width:auto;margin-right:4px" ${sel?'checked':''} onchange="extTick(${JSON.stringify(k).replace(/"/g,'&quot;')},this.checked)">`:''}${esc(g.name)}</td>${D.days.map(ds=>{const a=g.by[ds];if(!a)return '<td></td>';const t=a.reduce((s2,x)=>s2+Number(x.gs||0),0),tip=a.map(x=>x.pname+' · '+x.role+' · '+x.t).join('\n');
         return `<td title="${esc(tip)}"${ed?` style="cursor:pointer" onclick="extEdit(${gi},'${ds}')"`:''}>${t===0?'<span style="color:var(--bad);font-size:11px">불참</span>':fmtG(t)}</td>`;}).join('')}<td>${g.days}</td><td></td><td><b>${fmtG(g.tot)}</b></td>${forPrint?'<td></td>':''}</tr>`;});
-    if(xg.length)h+=`<tr><td class="nm"><b>외부 소계</b></td><td></td><td></td>${D.days.map(ds=>{const n=xg.filter(g=>g.by[ds]&&g.by[ds].some(x=>x.gs>0)).length;return `<td>${n||''}</td>`;}).join('')}<td>${xg.reduce((a,g)=>a+g.days,0)}</td><td></td><td><b>${fmtG(xg.reduce((a,g)=>a+g.tot,0))}</b></td>${forPrint?'<td></td>':''}</tr>`;}
-  h+=`<tr><td class="nm"><b>일별 인원${xg.length?' (전체)':''}</b></td><td></td><td></td>${D.days.map((ds,i)=>`<td>${(D.rows.filter(r=>r.cells[i]&&r.cells[i].mn>0).length+xg.filter(g=>g.by[ds]&&g.by[ds].some(x=>x.gs>0)).length)||''}</td>`).join('')}<td></td><td>${fmtD(D.rows.reduce((a,r)=>a+r.lvd,0))||''}</td><td><b>${fmtG(D.rows.reduce((a,r)=>a+r.tot,0)+xg.reduce((a,g)=>a+g.tot,0))}</b></td>${forPrint?'<td></td>':''}</tr></table>`;
+    if(xg.length)h+=`<tr><td></td><td></td><td class="nm"><b>외부 소계</b></td>${D.days.map(ds=>{const n=xg.filter(g=>g.by[ds]&&g.by[ds].some(x=>x.gs>0)).length;return `<td>${n||''}</td>`;}).join('')}<td>${xg.reduce((a,g)=>a+g.days,0)}</td><td></td><td><b>${fmtG(xg.reduce((a,g)=>a+g.tot,0))}</b></td>${forPrint?'<td></td>':''}</tr>`;}
+  h+=`<tr><td></td><td></td><td class="nm"><b>일별 인원${xg.length?' (전체)':''}</b></td>${D.days.map((ds,i)=>`<td>${(D.rows.filter(r=>r.cells[i]&&r.cells[i].mn>0).length+xg.filter(g=>g.by[ds]&&g.by[ds].some(x=>x.gs>0)).length)||''}</td>`).join('')}<td></td><td>${fmtD(D.rows.reduce((a,r)=>a+r.lvd,0))||''}</td><td><b>${fmtG(D.rows.reduce((a,r)=>a+r.tot,0)+xg.reduce((a,g)=>a+g.tot,0))}</b></td>${forPrint?'<td></td>':''}</tr></table>`;
   return h;
 }
 function projTable(D){const ks=Object.keys(D.proj);if(!ks.length)return '<p class="mute">해당 월 기록이 없습니다.</p>';
@@ -5229,7 +5230,7 @@ function aMonth(){
   <label class="row" style="margin-top:18px"><input type="checkbox" ${ui.inclPend?'checked':''} onchange="ui.inclPend=this.checked;render()"> 승인대기 포함</label><span class="sp"></span>
   <button class="btn" onclick="expMonthCsv()">출근부 CSV</button><button class="btn" onclick="expDetailCsv()">작업상세 CSV</button><button class="btn pri" onclick="expPrint()">인쇄용 파일</button></div>
   <p class="mute" style="margin:8px 0 0">단위: 공수 (근로자가 입력하고 관리자가 승인한 값) · <span class="chip cell-pend">기울임</span> 승인대기 · <span class="chip cell-lv">연/반/병/기</span> 승인된 휴가</p></div>`;
-  h+=`<div class="card"><h3>${String(D.y).slice(2)}년 ${D.m}월 출근표</h3><div class="tbl-wrap">${monthTable(D,false)}</div>${extBar()}</div>`;
+  h+=`<div class="card"><h3>${String(D.y).slice(2)}년 ${D.m}월 출근표</h3><div class="tbl-wrap mfrz">${monthTable(D,false)}</div>${extBar()}</div>`;
   h+=`<div class="card"><h3>공사별 투입 집계</h3><div class="tbl-wrap">${projTable(D)}</div></div>`;
   return h+extCard(D);
 }
