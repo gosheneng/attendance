@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.23a-->
+<!DOCTYPE html><!--v:2026.11.23b-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2618,6 +2618,9 @@ const rrnShow=v=>!v?'-':(v.length>=14?esc(v):esc(v)+'****** <span class="chip" t
 const fmtPhone=v=>{const d=String(v||'').replace(/\D/g,'');return d.length===11?d.replace(/^(\d{3})(\d{4})(\d{4})$/,'$1-$2-$3'):d.length===10?d.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/,'$1-$2-$3'):d;};
 const rateShow=v=>(v===''||v==null)?'-':Number(v).toLocaleString('ko-KR')+'원';
 const affLabel=w=>w.aff==='협력업체'?('협력업체 · '+(w.partner||'')):w.aff;
+/* 협력업체명 이력: 그 날짜에 쓰던 업체명 (지난 달 출근부·노무비는 바꾸기 전 이름으로) */
+function ptnAt(w,d){const ds=String(d||'').slice(0,10),H=[].concat((w&&w.ptnHist)||[]).filter(h=>h&&h.until).sort((a,b)=>String(a.until).localeCompare(String(b.until)));for(const h of H)if(ds<String(h.until))return h.name||'';return (w&&w.partner)||'';}
+const mEnd=(y,m)=>y+'-'+String(m).padStart(2,'0')+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');
 function logG(by,kind,text){S.log.push({at:stamp(),by,kind,text});}
 
 /* ---------- 계산 ---------- */
@@ -2769,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.23a';
+const APP_VER='2026.11.23b';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5413,7 +5416,7 @@ function monthData(){
 }
 function monthTable(D,forPrint){
   let h=`<table class="month"><tr><th>소속</th><th>형태</th><th class="nm">이름</th>${D.days.map(ds=>{const w=dow(ds);return `<th class="${w===0?'sun':w===6?'sat':''}">${+ds.slice(8)}<br>${WEEK[w]}</th>`;}).join('')}<th>출근일</th><th>휴가<br>(일)</th><th>총공수</th>${forPrint?'<th>확인</th>':''}</tr>`;
-  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>{h+=`<tr><td>${esc(w.aff==='협력업체'?(w.partner||'협력'):w.aff)}</td><td>${w.type==='일용직'?'일용':'상용'}</td><td class="nm">${esc(w.name)}${w.status==='퇴사'?' <span class="mute">(퇴사)</span>':''}</td>${cells.map(c=>!c?'<td></td>':c.leave?`<td class="cell-lv">${lvShort(c.leave)}</td>`:`<td class="${c.pend?'cell-pend':''}">${c.mn?fmtG(c.mn):''}${c.half?'<sup>반</sup>':''}</td>`).join('')}<td>${cnt}</td><td>${lvd?fmtD(lvd):''}</td><td><b>${fmtG(tot)}</b></td>${forPrint?'<td></td>':''}</tr>`;});
+  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>{h+=`<tr><td>${esc(w.aff==='협력업체'?(ptnAt(w,mEnd(D.y,D.m))||'협력'):w.aff)}</td><td>${w.type==='일용직'?'일용':'상용'}</td><td class="nm">${esc(w.name)}${w.status==='퇴사'?' <span class="mute">(퇴사)</span>':''}</td>${cells.map(c=>!c?'<td></td>':c.leave?`<td class="cell-lv">${lvShort(c.leave)}</td>`:`<td class="${c.pend?'cell-pend':''}">${c.mn?fmtG(c.mn):''}${c.half?'<sup>반</sup>':''}</td>`).join('')}<td>${cnt}</td><td>${lvd?fmtD(lvd):''}</td><td><b>${fmtG(tot)}</b></td>${forPrint?'<td></td>':''}</tr>`;});
   const X=extShow()?extList(ui.month):null,xg=Array.isArray(X)?extGroup(X):[],ed=!forPrint&&(canM('month')||canM('appr'));
   if(extShow()){const span=D.days.length+6+(forPrint?1:0);
     h+=`<tr><td colspan="${span}" style="background:#f3f4f6;text-align:left;font-weight:700">👷 외부 인원 (투입명단 기준)${X===undefined?' <span class="mute" style="font-weight:400">— 불러오는 중…</span>':X&&X.err?` <span style="color:var(--bad);font-weight:400">— ${esc(X.err)}</span>`:!xg.length?' <span class="mute" style="font-weight:400">— 이 달에 공개된 투입명단의 외부 인원이 없습니다</span>':''}</td></tr>`;
@@ -5495,7 +5498,7 @@ const csvE=v=>{v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+
 const csv=rows=>'﻿'+rows.map(r=>r.map(csvE).join(',')).join('\r\n');
 function expMonthCsv(){const D=monthData();
   const rows=[['이름','소속','협력업체명','근로형태',...D.days.map(d=>+d.slice(8)+'일'),'출근일수','휴가(일)','총공수']];
-  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>rows.push([w.name,w.aff,w.partner||'',w.type,...cells.map(c=>!c?'':c.leave?c.leave:(c.mn?fmtG(c.mn):'')),cnt,fmtD(lvd),fmtG(tot)]));
+  D.rows.forEach(({w,cells,tot,cnt,ot,lvd})=>rows.push([w.name,w.aff,ptnAt(w,mEnd(D.y,D.m)),w.type,...cells.map(c=>!c?'':c.leave?c.leave:(c.mn?fmtG(c.mn):'')),cnt,fmtD(lvd),fmtG(tot)]));
   const X=extShow()?extList(ui.month):null;if(Array.isArray(X))extGroup(X).forEach(g=>rows.push([g.name,'외부(투입명단)',g.co,'일용직',...D.days.map(ds=>{const a=g.by[ds];if(!a)return '';const t=a.reduce((s2,x)=>s2+Number(x.gs||0),0);return t===0?'불참':fmtG(t);}),g.days,'',fmtG(g.tot)]));
   saveFile(`출근부_${ui.month}${ui.mAff?'_'+ui.mAff:''}.csv`,csv(rows));}
 function expDetailCsv(){const D=monthData();
@@ -5543,7 +5546,7 @@ function wFilt(v,keep){if(!keep)ui.wf.q=v;const q=String(v||'').trim().toLowerCa
 /* 협력업체 인원 소속 업체명 일괄 변경: 사람을 골라 거래처관리의 협력업체 이름으로 한 번에 맞춤 */
 function ptnBulk(){const W2=S.workers.filter(w=>w.aff==='협력업체').sort((a,b)=>String(a.partner||'').localeCompare(String(b.partner||''),'ko')||String(a.name).localeCompare(String(b.name),'ko')),reg=ptnNames(),G={};W2.forEach(w=>{const k=w.partner||'(업체명 없음)';(G[k]=G[k]||[]).push(w);});
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h3 style="margin:0">🤝 협력업체명 일괄 변경</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <p class="mute" style="font-size:12.5px;margin:6px 0">사람을 골라 소속 업체명을 한 번에 바꿉니다. ✅ = 거래처관리에 등록된 협력업체 이름과 같음, ⚠ = 등록 이름과 다름 (노무비 직불 대조 때 안 맞을 수 있음). 1년이 지나 보관한 노무비 기록(신고분)은 바뀌지 않습니다.</p>
+  <p class="mute" style="font-size:12.5px;margin:6px 0">사람을 골라 소속 업체명을 한 번에 바꿉니다. ✅ = 거래처관리에 등록된 협력업체 이름과 같음, ⚠ = 등록 이름과 다름 (노무비 직불 대조 때 안 맞을 수 있음). 바꾸기 전 이름은 이력으로 남아, <b>오늘 이전 달의 출근부·노무비·손익표는 예전 이름 그대로</b> 보입니다 (노무비 신고 기록 보존).</p>
   <div style="max-height:45vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px">${Object.keys(G).length?Object.keys(G).map(k=>`<div style="margin:6px 0"><label class="row" style="gap:6px;font-weight:700"><input type="checkbox" style="width:auto" onchange="document.querySelectorAll('.pb_w[data-g=&quot;${esc(k)}&quot;]').forEach(e=>e.checked=this.checked);ptnCnt()">${reg.indexOf(k)>=0?'✅':'⚠'} ${esc(k)} <span class="mute" style="font-weight:400">${G[k].length}명</span></label><div style="display:flex;flex-wrap:wrap;gap:4px 14px;padding-left:22px">${G[k].map(w=>`<label class="row" style="gap:4px;font-size:13px"><input type="checkbox" class="pb_w" data-g="${esc(k)}" value="${w.id}" style="width:auto" onchange="ptnCnt()">${esc(w.name)}${w.status!=='재직'?' <span class="mute">('+esc(w.status)+')</span>':''}</label>`).join('')}</div></div>`).join(''):'<p class="mute">협력업체 소속 근로자가 없습니다.</p>'}</div>
   <label class="f" style="margin-top:10px"><span>바꿀 업체명 <span class="mute" style="font-size:12px">(거래처관리 협력업체 ${reg.length}곳 — 목록에서 고르는 것을 권장)</span></span><input id="pb_to" list="pb_dl" placeholder="예: ㈜한빛기계" autocomplete="off"><datalist id="pb_dl">${reg.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></label>
   <div class="row" style="margin-top:8px"><span id="pb_n" class="mute">0명 선택</span><span class="sp"></span><button class="btn pri" onclick="ptnBulkGo()">선택한 사람 바꾸기</button></div></div>`);}
