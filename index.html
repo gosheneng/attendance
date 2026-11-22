@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22au-->
+<!DOCTYPE html><!--v:2026.11.22av-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -91,7 +91,7 @@ label.f>span{display:block;margin-bottom:4px}
 .frz tr.tot td{background:#f7f8fa}.frz2 tr.tot td:first-child[colspan]{position:sticky;left:0;max-width:none}
 .frz tr.click:hover td{background:#f6f9ff}
 @media(max-width:640px){.frz td:first-child,.frz th:first-child{min-width:62px;max-width:62px;font-size:12px}.frz2 td:nth-child(2),.frz2 th:nth-child(2){left:62px;max-width:170px;overflow:hidden;text-overflow:ellipsis;font-size:12px}.frz1 td:first-child,.frz1 th:first-child{min-width:96px;max-width:120px}}
-.modal{position:fixed;inset:0;background:rgba(10,20,35,.45);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:28px 10px}
+details[open] .agarr{display:none}.modal{position:fixed;inset:0;background:rgba(10,20,35,.45);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:28px 10px}
 .modal.hidden{display:none}
 .mbox{background:#fff;border-radius:14px;max-width:820px;width:100%;padding:18px}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1c2430;color:#fff;padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;max-width:90vw}
@@ -2762,7 +2762,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22au';
+const APP_VER='2026.11.22av';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -2987,7 +2987,7 @@ function vWorker(me){
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
   h+=tabs([['today','출퇴근']].concat(todoOk(me)?[['todo','업무 체크리스트',(S.todos||[]).filter(x=>!x.done&&x.due&&x.due<=today()).length||'']]:[]).concat([['crew','투입명단'],['hist','근무기록',rej||''],['leave','연차·휴가'],['docs','내 서류',((me.hreq||[]).some(r=>r.status==='반려')?'!':'')||((S.payslips||[]).some(x=>x.wid===me.id&&!x.seen)?'N':'')],['board','건의함'],['help','사용방법']]),ui.wTab==='past'?'today':ui.wTab,'wTab');
-  if(ui.wTab==='today')h+=noticeBanner()+appGuideCard()+bdayWorker(me)+pushCard(0)+todoDash()+qualBanner(me)+myRosterBanner()+vDay(true);
+  if(ui.wTab==='today')h+=wGuideCard()+noticeBanner()+bdayWorker(me)+todoDash()+qualBanner(me)+myRosterBanner()+vDay(true);
   else if(ui.wTab==='crew')h+=vCrew();
   else if(ui.wTab==='todo')h+=vTodo();
   else if(ui.wTab==='board')h+=vBoard();
@@ -5423,6 +5423,20 @@ function brEnv(){const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua
 function agSteps(e){const A=`<div style="margin-top:8px"><b>🤖 안드로이드 — 크롬</b><ol style="margin:4px 0 0;padding-left:20px"><li>크롬 앱으로 이 사이트를 엽니다.</li><li>오른쪽 위 ⋮ 메뉴 → 「설치 및 바로가기」를 누르고 안내에 따라 설치합니다.</li><li>다음부터는 홈 화면의 「고센이엔지」 아이콘으로 엽니다.</li></ol></div>`,
   I=`<div style="margin-top:8px"><b>🍎 아이폰 — 사파리</b><ol style="margin:4px 0 0;padding-left:20px"><li>사파리 앱으로 이 사이트를 엽니다.</li><li>아래쪽 공유 버튼(네모 위 화살표)을 누릅니다.</li><li>「홈 화면에 추가」 → 오른쪽 위 「추가」를 누릅니다.</li><li>다음부터는 홈 화면의 「고센이엔지」 아이콘으로 엽니다. (아이폰은 이렇게 해야 휴대폰 알림을 받을 수 있습니다. iOS 16.4 이상)</li></ol></div>`;
   return e.ios?I+A:e.and?A+I:A+I;}
+/* 근로자 출퇴근 화면 맨 위 (항상): 「앱 설치 · 휴대폰 알림 방법」 — 처음엔 접혀 있고 누르면 펼침. 잘못된 브라우저 경고는 접지 않고 바로 보임 */
+function wGuideCard(){const e=brEnv(),L=LANG==='vi'?'vi':LANG==='en'?'en':'ko',T=o=>o[L]||o.ko,mob=isMobileDev();
+  if(LIVE&&mob&&!ui.pushChk){ui.pushChk=1;setTimeout(pushRefresh,0);}
+  const st=ui.pushSt||'',E=pushEnv();
+  const warn=e.inapp?`<div class="badbox" style="margin:0 0 8px">⚠ ${T({ko:'카카오톡·네이버 같은 앱 안의 브라우저로 열려 있습니다. ⋮(또는 공유) 메뉴의 「다른 브라우저로 열기」로 '+(e.ios?'사파리':'크롬')+'에서 여세요. 위치 기록과 알림이 제대로 되지 않습니다.',vi:'Đang mở trong trình duyệt của ứng dụng (KakaoTalk…). Hãy chọn «Mở bằng trình duyệt khác» ('+(e.ios?'Safari':'Chrome')+').',en:'Opened inside an app browser (KakaoTalk etc.). Use “Open in another browser” ('+(e.ios?'Safari':'Chrome')+').'})}</div>`
+    :!e.good?`<div class="warnbox" style="margin:0 0 8px">⚠ ${T({ko:(e.ios?'아이폰은 사파리':'안드로이드는 크롬')+'에서 써야 출퇴근 위치와 알림이 제대로 됩니다.',vi:(e.ios?'iPhone dùng Safari':'Android dùng Chrome')+' để định vị và thông báo hoạt động đúng.',en:(e.ios?'Use Safari on iPhone':'Use Chrome on Android')+' for location and alerts to work.'})}</div>`:'';
+  const pst=!mob?'':st==='on'?`<span class="chip st-ok">🔔 ${T({ko:'알림 켜짐',vi:'Đã bật',en:'Alerts on'})}</span>`:st==='denied'?`<span class="chip st-bad">🔕 ${T({ko:'알림 차단됨',vi:'Bị chặn',en:'Blocked'})}</span>`:`<span class="chip st-pend">🔕 ${T({ko:'알림 꺼짐',vi:'Chưa bật',en:'Alerts off'})}</span>`;
+  const btn=!LIVE||!mob?`<div class="mute" style="font-size:12.5px">${T({ko:'휴대폰 알림은 휴대폰에서 켤 수 있습니다.',vi:'Bật thông báo trên điện thoại.',en:'Turn on alerts on your phone.'})}</div>`
+    :st==='on'?`<button class="btn sm" onclick="pushTest()">${T({ko:'테스트',vi:'Thử',en:'Test'})}</button> <button class="btn sm" onclick="pushOff()">${T({ko:'끄기',vi:'Tắt',en:'Turn off'})}</button>`
+    :st==='denied'?`<button class="btn sm" onclick="pushHelp('denied')">${T({ko:'푸는 방법',vi:'Cách mở chặn',en:'How to unblock'})}</button>`
+    :st==='nosup'?`<button class="btn sm pri" onclick="pushHelp()">${T({ko:'알림 켜는 방법',vi:'Cách bật',en:'How to enable'})}</button>`:`<button class="btn sm pri" onclick="pushOn()">${T({ko:'알림 켜기',vi:'Bật thông báo',en:'Turn on alerts'})}</button>`;
+  return warn+`<details class="card" style="padding:10px 14px;border-left:4px solid var(--pri2)" ${ui.agOpen?'open':''} ontoggle="ui.agOpen=this.open"><summary style="cursor:pointer;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap" data-notr="1">📲 ${T({ko:'앱 설치 · 휴대폰 알림 방법',vi:'Cài ứng dụng · bật thông báo',en:'Install app · phone alerts'})} ${e.sa?`<span class="chip st-ok">${T({ko:'앱 설치됨',vi:'Đã cài',en:'Installed'})}</span>`:''}${pst}<span class="sp"></span><span class="mute agarr" style="font-size:12px;font-weight:400;white-space:nowrap">${T({ko:'펼치기',vi:'Mở',en:'Open'})} ▼</span></summary>
+  <div style="margin-top:8px;line-height:1.6" data-notr="1"><b>① ${T({ko:'앱으로 설치 (처음 한 번)',vi:'Cài như ứng dụng (một lần)',en:'Install as an app (once)'})}</b>${agSteps(e)}
+  <div style="margin-top:10px"><b>② ${T({ko:'휴대폰 알림 켜기',vi:'Bật thông báo điện thoại',en:'Turn on phone alerts'})}</b><div class="mute" style="font-size:12.5px">${T({ko:'반려·승인·투입명단·연차 결과·공지를 휴대폰 알림으로 받습니다.',vi:'Nhận thông báo duyệt/từ chối, danh sách, nghỉ phép, thông báo.',en:'Get alerts for approvals, rejections, crew lists, leave and notices.'})}${E.ios&&!e.sa?' '+T({ko:'(아이폰은 홈 화면에 추가한 앱으로 열어야 켤 수 있습니다)',vi:'(iPhone: phải mở từ biểu tượng trên màn hình chính)',en:'(iPhone: open from the Home-screen icon first)'}):''}</div><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${btn}</div></div></div></details>`;}
 function appGuideCard(){const e=brEnv();if(e.sa&&e.good)return '';let hid=0;try{hid=Number(localStorage.getItem('agHide')||0);}catch(x){}
   const warn=e.inapp?`<div class="badbox" style="margin:6px 0">⚠ 지금 <b>카카오톡·네이버 같은 앱 안의 브라우저</b>로 열려 있습니다. 위치 기록과 알림이 제대로 되지 않습니다. 화면 오른쪽 위나 아래의 ⋮(또는 공유) 메뉴에서 「다른 브라우저로 열기」를 눌러 ${e.ios?'사파리':'크롬'}으로 여세요.</div>`
     :!e.good?`<div class="warnbox" style="margin:6px 0">⚠ 이 사이트는 <b>${e.ios?'아이폰은 사파리':'안드로이드는 크롬'}</b>에서 써야 출퇴근 위치와 알림이 제대로 됩니다. ${e.ios?'사파리':'크롬'}으로 다시 열어 주세요.</div>`:'';
