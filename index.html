@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22av-->
+<!DOCTYPE html><!--v:2026.11.22aw-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2744,6 +2744,11 @@ window.addEventListener('popstate',function(){
   if(NAV_ST.length){const o=JSON.parse(NAV_ST.pop());ui.asWorker=o.w;ui.aTab=o.a;ui.wTab=o.t;if(o.d)ui.pastDate=o.d;NAV_RS=true;render();window.scrollTo(0,0);navGuard();return;}
   if(Date.now()-NAV_EXIT<2500){history.back();return;}
   NAV_EXIT=Date.now();toast('뒤로 버튼을 한 번 더 누르면 닫힙니다.');navGuard();});
+function navKeep(sel,sv){const L=[...document.querySelectorAll(sel)];L.forEach((e,i)=>{const o=sv[i];if(o){e.scrollTop=o[0];e.scrollLeft=o[1];}});
+  /* 선택된 메뉴가 목록 밖에 있으면 보이는 곳까지만 살짝 이동 (페이지 전체는 움직이지 않음) */
+  L.forEach(c=>{const on=c.querySelector('button.on,.stab.on,.tab.on,.gtab.on');if(!on)return;const cr=c.getBoundingClientRect(),r=on.getBoundingClientRect();
+    if(c.scrollHeight>c.clientHeight+2){if(r.top<cr.top)c.scrollTop-=cr.top-r.top+8;else if(r.bottom>cr.bottom)c.scrollTop+=r.bottom-cr.bottom+8;}
+    if(c.scrollWidth>c.clientWidth+2){if(r.left<cr.left)c.scrollLeft-=cr.left-r.left+8;else if(r.right>cr.right)c.scrollLeft+=r.right-cr.right+8;}});}
 function render(){
   const app=document.getElementById('app');document.body.classList.remove('adminView');
   let h=LIVE?'':`<div class="demo-banner"><b>시제품(데모)</b> · 데이터는 이 브라우저에만 임시 저장됩니다 · <button class="linkbtn" onclick="resetDemo()">데모 데이터 초기화</button></div>`;
@@ -2756,13 +2761,15 @@ function render(){
   if(!me.consent){app.innerHTML=h+vConsent(me);return;}
   if(qr&&qr.spot){app.innerHTML=h+vQR(me);return;}
   const av=isStaff(me)&&!ui.asWorker;document.body.classList.toggle('adminView',av);document.title=av?'고센이엔지 통합업무시스템':'고센이엔지 통합근무시스템';
+  const NAVSEL='.snav,.gnav,.subtabs,.tabs',sv=[...document.querySelectorAll(NAVSEL)].map(e=>[e.scrollTop,e.scrollLeft]);   /* 메뉴 목록 스크롤 위치 기억 → 메뉴를 눌러도 목록이 맨 위로 튀지 않게 */
   app.innerHTML=h+(av?vAdmin(me):vWorker(me));
+  navKeep(NAVSEL,sv);
   setTimeout(ntUrgentPop,0);
   navTrack();if(av&&(ui.aTab==='gisung'||ui.aTab==='safety'))requestAnimationFrame(ledFreeze);
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22av';
+const APP_VER='2026.11.22aw';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
