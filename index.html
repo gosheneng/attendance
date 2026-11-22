@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bj-->
+<!DOCTYPE html><!--v:2026.11.22bk-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bj';
+const APP_VER='2026.11.22bk';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4716,14 +4716,21 @@ async function bfRcpt(inp){let fs=[...(inp.files||[])];inp.value='';if(!fs.lengt
   bfRender(1);hl.forEach(id=>{const e=document.getElementById(id);if(e)e.style.background='#fff3c4';});{const e=document.getElementById('bf_title');if(e&&hl.length&&!e.value.trim())e.focus();}}
 /* 자재·소모품 발주: 거래처 견적서 첨부 (📷 촬영 또는 PC에서 사진·PDF 올리기, 최대 5개) */
 function bfQuoteBox(x,ro){const qf=String((x.doc||{}).qf||'').split(',').filter(Boolean);
-  return `<div class="infobox" style="margin:8px 0"><div class="row" style="gap:6px;flex-wrap:wrap"><b>📎 거래처 견적서</b>${qf.length?`<span class="chip st-ok">${qf.length}개 첨부</span>`:'<span class="chip">없음</span>'}<span class="sp"></span>${!ro&&qf.length<5?`<label class="btn pri sm" style="cursor:pointer">📷 촬영<input type="file" accept="image/*" capture="environment" style="display:none" onchange="bfQuote(this)"></label><label class="btn sm" style="cursor:pointer">💻 사진·PDF 올리기<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="bfQuote(this)"></label>`:''}${qf.length?(x.id&&!BF._qnew?`<button type="button" class="btn sm" onclick="photoView('거래처 견적서','buy_fileGet',{id:'${x.id}',k:'q'})">보기·내려받기</button>`:'<span class="mute" style="font-size:12px">(저장 후 볼 수 있음)</span>'):''}${!ro&&qf.length?`<button type="button" class="btn sm" onclick="bfQuoteClr()">빼기</button>`:''}</div>
+  return `<div class="infobox" style="margin:8px 0"><div class="row" style="gap:6px;flex-wrap:wrap"><b>📎 거래처 견적서</b>${qf.length?`<span class="chip st-ok">${qf.length}개 첨부</span>`:'<span class="chip">없음</span>'}<span class="sp"></span>${!ro&&qf.length<5?`<label class="btn pri sm" style="cursor:pointer">📷 촬영<input type="file" accept="image/*" capture="environment" style="display:none" onchange="bfQuote(this)"></label><label class="btn sm" style="cursor:pointer">💻 사진·PDF 올리기<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="bfQuote(this)"></label>`:''}${qf.length?`<button type="button" class="btn sm" onclick="bfQuoteView()">👁 미리보기</button>`:''}${!ro&&qf.length?`<button type="button" class="btn sm" onclick="bfQuoteClr()">빼기</button>`:''}</div>
   <div class="mute" style="font-size:12px;margin-top:4px">휴대폰은 「📷 촬영」, 컴퓨터는 「💻 사진·PDF 올리기」(여러 개 한 번에, 최대 5개). 대표이사가 결재할 때 함께 봅니다. <b>저장(또는 결재요청)</b>해야 첨부가 보관됩니다.</div></div>`;}
 async function bfQuote(inp){let fs=[...(inp.files||[])];inp.value='';if(!fs.length||!BF)return;if(!LIVE){toast('시제품에서는 올릴 수 없습니다.');return;}
   bfSync();const qf=String(BF.doc.qf||'').split(',').filter(Boolean);if(qf.length+fs.length>5){toast('견적서는 최대 5개까지입니다.');fs=fs.slice(0,5-qf.length);}if(!fs.length)return;
   const bad=[];window.liveBusy(true);
-  try{for(const f of fs){try{if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const q=await qImg(f);if(q.b64.length>11e6)throw new Error('파일이 너무 큽니다 (8MB 이하).');const r=await window.liveCall('buy_quoteUp',{name:f.name,mime:q.mime,b64:q.b64});if(!r||r.error)throw new Error((r&&r.error)||'올리기 실패');qf.push(r.fileId);BF._qnew=1;}catch(e){bad.push(f.name+': '+(e.message||e));}}}
+  try{for(const f of fs){try{if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const q=await qImg(f);if(q.b64.length>11e6)throw new Error('파일이 너무 큽니다 (8MB 이하).');const r=await window.liveCall('buy_quoteUp',{name:f.name,mime:q.mime,b64:q.b64});if(!r||r.error)throw new Error((r&&r.error)||'올리기 실패');qf.push(r.fileId);BF._qnew=1;(BF._qloc=BF._qloc||{})[r.fileId]={url:URL.createObjectURL(f),name:f.name,mime:f.type||q.mime};}catch(e){bad.push(f.name+': '+(e.message||e));}}}
   finally{window.liveBusy(false);}
   BF.doc.qf=qf.join(',');bfRender(1);if(bad.length)alertBox('일부 파일을 올리지 못했습니다',bad);else toast('견적서를 붙였습니다. 저장하면 보관됩니다.');}
+/* 견적서 미리보기: 방금 올린 파일은 이 기기에서 바로, 저장된 파일은 서버에서 */
+async function bfQuoteView(){bfSync();const x=BF,qf=String((x.doc||{}).qf||'').split(',').filter(Boolean),loc=x._qloc||{};
+  const sv=(S.buys||[]).find(o=>o.id===x.id),old=String(((sv||{}).doc||{}).qf||'').split(',').filter(Boolean);let U=qf.filter(id=>loc[id]).map(id=>loc[id]);
+  if(x.id&&old.length){try{window.liveBusy(true);for(let i=0;i<old.length;i++){if(qf.indexOf(old[i])<0||loc[old[i]])continue;const r=await window.liveCall('buy_fileGet',{id:x.id,k:'q',i});if(r&&!r.error){const bin=atob(r.b64),u8=new Uint8Array(bin.length);for(let j=0;j<bin.length;j++)u8[j]=bin.charCodeAt(j);U.push({url:URL.createObjectURL(new Blob([u8],{type:r.mime})),name:r.name,mime:r.mime});}}}catch(e){}finally{window.liveBusy(false);}}
+  if(!U.length){toast('볼 수 있는 견적서가 없습니다.');return;}
+  openTop(`<div class="mbox" style="max-width:720px"><div class="row" style="gap:6px"><h3 style="margin:0">거래처 견적서 미리보기 <span class="mute" style="font-weight:400;font-size:13px">${U.length}개</span></h3><span class="sp"></span><button class="btn sm" onclick="closeTop()">닫기 ✕</button></div>
+  ${U.map((u,i)=>`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px"><div class="row" style="gap:6px"><b>${i+1}/${U.length}</b><span class="mute" style="font-size:12px">${esc(u.name||'')}</span><span class="sp"></span><a class="btn sm" href="${u.url}" download="${esc(u.name||'견적서')}">⬇ 내려받기</a><a class="btn sm" href="${u.url}" target="_blank" rel="noopener">크게 보기</a></div>${/^image/.test(u.mime||'')?`<img src="${u.url}" style="max-width:100%;margin-top:6px;border:1px solid #ddd;border-radius:8px">`:'<p class="mute">PDF 파일 — 「크게 보기」로 여세요.</p>'}</div>`).join('')}</div>`);}
 async function bfQuoteClr(){if(!(await confirmBox('붙인 견적서를 모두 뺄까요? (저장해야 반영됩니다)','빼기')))return;bfSync();BF.doc.qf='';BF._qnew=1;bfRender(1);}
 async function bfRcptClr(){if(!(await confirmBox('붙인 영수증 사진을 모두 뺄까요? (저장해야 반영됩니다)','빼기')))return;bfSync();BF.doc.rf='';BF._rnew=1;BF._rmsg='';bfRender(1);}
 function bfVatShow(){const e=document.getElementById('bf_amt'),v=document.getElementById('bf_vat');if(!e||!v)return;const n=Number(e.value.replace(/[^\d.-]/g,''))||0;v.innerHTML=n?`공급가 ${won(n)}원 + 부가세 ${won(Math.round(n*0.1))}원 = <b>${won(Math.round(n*1.1))}원</b>`:'금액을 넣으면 보입니다.';}
