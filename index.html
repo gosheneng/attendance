@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bm-->
+<!DOCTYPE html><!--v:2026.11.22bn-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bm';
+const APP_VER='2026.11.22bn';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3927,7 +3927,7 @@ function bfRender(fresh){if(!fresh)bfSync();const x=BF,me=W(ses.uid),adm=me&&me.
     <label class="f"><span>VAT 포함 금액으로 입력할 때</span><div class="row" style="gap:4px;flex-wrap:nowrap"><input id="bf_inc" inputmode="numeric" placeholder="영수증 합계" ${ro} style="flex:1"><button type="button" class="btn sm" ${ro} onclick="bfFromInc()">÷1.1 적용</button></div></label></div>
     <details style="margin:-4px 0 8px"><summary class="mute" style="font-size:12.5px;cursor:pointer">VAT 포함 금액 확인</summary><div id="bf_vat" style="font-size:13px;margin-top:4px"></div></details>
     ${x.id?`<div class="grid2" style="margin:6px 0">${[['stmt','카드 사용내역과 대조'],['rcpt','실물 영수증 확인']].map(([kk,n])=>{const on=!!(d[kk+'At']);return `<label class="row" style="gap:6px;border:1px solid var(--line);border-radius:8px;padding:8px"><input type="checkbox" style="width:auto" ${on?'checked':''} ${canM('card')?'':'disabled'} onchange="bCheck('${x.id}','${kk}',this.checked)"><span><b>${n}</b>${on?`<br><span class="mute" style="font-size:12px">${esc(((W(d[kk+'By'])||{}).name||'')+' · '+d[kk+'At'])}</span>`:''}</span></label>`;}).join('')}</div>`:''}`;}
-  else{h+=`<h4 style="margin:8px 0 4px">거래처</h4><div class="grid2"><label class="f"><span>회사명</span>${I('bf_vendor',x.vendor,'예: ㈜서울엔지니어링 가좌공장')}</label><label class="f"><span>담당자</span>${I('bf_vmgr',d.vMgr,'예: 박길영 부장')}</label>
+  else{h+=`<h4 style="margin:8px 0 4px">거래처</h4><div class="grid2"><label class="f"><span>회사명</span>${x.kind==='자재'?bfVendSel(x,ro):I('bf_vendor',x.vendor,'예: ㈜서울엔지니어링 가좌공장')}</label><label class="f"><span>담당자</span>${I('bf_vmgr',d.vMgr,'예: 박길영 부장')}</label>
     <label class="f"><span>전화번호</span>${I('bf_vtel',d.vTel)}</label><label class="f"><span>이메일</span>${I('bf_vmail',d.vMail)}</label></div>${x.kind==='자재'?bfQuoteBox(x,ro):''}
     <label class="f"><span>발주내용</span>${I('bf_content',d.content,'예: 8/20 견적서 참조')}</label>
     <h4 style="margin:8px 0 4px">품목 <span class="mute" style="font-size:12px">(최대 10개 · 금액 = 수량 × 단가)</span></h4><div class="tbl-wrap"><table class="nw"><tr><th>품명 및 사양</th><th>단위</th><th>수량</th><th>단가</th><th style="text-align:right">금액</th><th>비고</th><th></th></tr>
@@ -4565,7 +4565,7 @@ function aVendor(){const L=(S.vendors||[]),f=ui.vf||(ui.vf={ctr:'',cat:'',q:'',o
   return h;}
 function vfCtr(c){ui.vf.ctr=c;render();}
 function vfRefresh(){const q=document.getElementById('vf_q'),pos=q?q.selectionStart:0;render();const e=document.getElementById('vf_q');if(e){e.focus();try{e.setSelectionRange(pos,pos);}catch(x){}}}
-function vendorForm(id){VD_PEND={};const v=id?vById(id):{name:'',cat:'',vctr:[],bizNo:'',ceo:'',mgr:'',tel:'',mail:'',addr:'',memo:'',active:'Y'};if(!v)return;
+function vendorForm(id){VD_PEND={};ui._bfBack=null;const v=id?vById(id):{name:'',cat:'',vctr:[],bizNo:'',ceo:'',mgr:'',tel:'',mail:'',addr:'',memo:'',active:'Y'};if(!v)return;
   const cats=[...new Set(V_CATS.concat((S.vendors||[]).map(x=>x.cat).filter(Boolean)))];
   openModal(`<div class="mbox" style="max-width:600px"><div class="row"><h2 style="margin:0">${id?'거래처 수정':'거래처 등록'}</h2><span class="sp"></span>${id?`<button class="btn sm" onclick="vendorView('${id}')">← 거래처 보기</button>`:''}<button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:10px"><label class="f"><span>상호 *</span><input id="vd_name" value="${esc(v.name)}" placeholder="예: ㈜○○철강"></label>
@@ -4584,6 +4584,7 @@ async function vendorSave(id){const g=k=>(document.getElementById(k)||{}).value|
   const r=await window.liveRun('vendor_save',{id,data});const vid=(r&&r.id)||id;if(!r||!vid)return;
   const P=VD_PEND||{},ks=Object.keys(P).filter(k=>P[k]),bad=[];VD_PEND={};
   if(ks.length){window.liveBusy(true);try{for(const k of ks){try{const f=P[k];if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const q=await qImg(f);const r2=await window.liveCall('vendor_fileUp',{id:vid,k,name:f.name,mime:q.mime,b64:q.b64});if(r2&&r2.error)throw new Error(r2.error);if(r2&&r2.state)window.liveApply(r2.state);}catch(e){bad.push((k==='bank'?'통장사본':'사업자등록증')+': '+(e.message||e));}}}finally{window.liveBusy(false);}}
+  if(ui._bfBack){BF=ui._bfBack;ui._bfBack=null;BF.vendor=data.name.trim();const d=BF.doc;if(data.mgr)d.vMgr=data.mgr;if(data.tel)d.vTel=data.tel;if(data.mail)d.vMail=data.mail;bfRender(1);toast('거래처를 등록하고 발주서로 돌아왔습니다.');return;}
   vendorView(vid);if(bad.length)alertBox('거래처는 저장했지만 일부 서류를 올리지 못했습니다',bad);else if(ks.length)toast('서류까지 첨부했습니다.');}
 /* 거래처 등록·수정 창에서 바로 사업자등록증·통장사본 올리기 (📷 촬영 또는 PC 파일) — 저장할 때 함께 올라감 */
 var VD_PEND={};
@@ -4733,6 +4734,11 @@ function bfAdvBox(x,ro){const d=x.doc||{},on=d.adv==='1'||d.adv===true,sum=(x.it
   ${x.vendor&&!vid?`<div class="badbox" style="margin-top:6px">「${esc(x.vendor)}」이(가) 거래처관리에 없습니다. 선지급하려면 거래처를 먼저 등록하세요 (경리에게 요청).</div>`:''}
   <div class="mute" style="font-size:12px;margin-top:6px">✅ 따로 선지급 요청을 올리지 않아도 됩니다. 대표이사가 이 발주를 <b>승인하면 선지급도 함께 승인</b>되어 경리에게 「이체 대기」 알림이 가고, 월말 세금계산서가 오면 선지급한 만큼 빼고 잔금만 20일에 지급합니다.</div>`:`<input type="hidden" id="bf_advtxt" value="${esc(d.advTxt||'')}">`}</div>`;}
 function bfAdvVat(){const e=document.getElementById('bf_advamt'),o=document.getElementById('bf_advvat');if(!e||!o)return;const sum=(BF.items||[]).reduce((a,it)=>a+Math.round((Number(it.qty)||0)*(Number(it.price)||0)),0),v=Number(e.value.replace(/[^\d]/g,''))||sum;o.textContent=won(Math.round(v*0.1))+'원 · 합계 '+won(Math.round(v*1.1))+'원';}
+/* 자재·소모품 발주: 거래처는 거래처관리에 등록된 곳에서 고름 → 담당자·전화·메일 자동 채움 */
+function bfVendSel(x,ro){const L=(S.vlite||S.vendors||[]).filter(v=>v.active!=='N').slice().sort((a,b)=>String(a.cat||'').localeCompare(String(b.cat||''),'ko')||String(a.name).localeCompare(String(b.name),'ko'));const cur=x.vendor||'',has=!cur||L.some(v=>v.name===cur);
+  return `<div class="row" style="gap:6px;flex-wrap:nowrap"><select id="bf_vendor" ${ro} onchange="bfVendPick(this.value)" style="flex:1"><option value="">— 거래처 선택 (${L.length}곳) —</option>${has?'':`<option value="${esc(cur)}" selected>⚠ ${esc(cur)} (미등록)</option>`}${L.map(v=>`<option value="${esc(v.name)}" ${v.name===cur?'selected':''}>${v.cat?'['+esc(v.cat)+'] ':''}${esc(v.name)}${v.pay==='선지급'?' ⚡선지급':''}</option>`).join('')}</select>${!ro&&canM('vendor')?`<button type="button" class="btn sm" onclick="bfVendNew()">+ 거래처 등록</button>`:''}</div>${ro?'':`<div class="mute" style="font-size:12px;margin-top:2px">목록에 없으면 ${canM('vendor')?'「+ 거래처 등록」으로 먼저 등록하세요':'경리(거래처관리 담당)에게 등록을 요청하세요'}.</div>`}`;}
+function bfVendPick(name){bfSync();const v=(S.vlite||S.vendors||[]).find(o=>o.name===name);if(v){const d=BF.doc;if(v.mgr)d.vMgr=v.mgr;if(v.tel)d.vTel=v.tel;if(v.mail)d.vMail=v.mail;if(v.pay==='선지급'&&d.adv!=='1')toast('이 거래처는 「선지급」 거래처입니다. 필요하면 아래 ⚡ 선급금을 체크하세요.');}BF.vendor=name;bfRender(1);}
+function bfVendNew(){bfSync();const keep=JSON.parse(JSON.stringify(BF));vendorForm('');ui._bfBack=keep;toast('새 거래처를 저장하면 발주서로 자동으로 돌아갑니다.');}
 function bfQuoteBox(x,ro){const qf=String((x.doc||{}).qf||'').split(',').filter(Boolean);
   return `<div class="infobox" style="margin:8px 0"><div class="row" style="gap:6px;flex-wrap:wrap"><b>📎 거래처 견적서</b>${qf.length?`<span class="chip st-ok">${qf.length}개 첨부</span>`:'<span class="chip">없음</span>'}<span class="sp"></span>${!ro&&qf.length<5?`<label class="btn pri sm" style="cursor:pointer">📷 촬영<input type="file" accept="image/*" capture="environment" style="display:none" onchange="bfQuote(this)"></label><label class="btn sm" style="cursor:pointer">💻 사진·PDF 올리기<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="bfQuote(this)"></label>`:''}${qf.length?`<button type="button" class="btn sm" onclick="bfQuoteView()">👁 미리보기</button>`:''}${!ro&&qf.length?`<button type="button" class="btn sm" onclick="bfQuoteClr()">빼기</button>`:''}</div>
   <div class="mute" style="font-size:12px;margin-top:4px">휴대폰은 「📷 촬영」, 컴퓨터는 「💻 사진·PDF 올리기」(여러 개 한 번에, 최대 5개). 대표이사가 결재할 때 함께 봅니다. <b>저장(또는 결재요청)</b>해야 첨부가 보관됩니다.</div></div>`;}
@@ -4769,7 +4775,8 @@ function bfCheck(x){const e=[],d=x.doc||{},n=v=>Number(String(v==null?'':v).repl
   if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||''))e.push({f:'bf_date',m:'발주일자를 입력하세요.'});
   else{const y=+x.date.slice(0,4),ty=+today().slice(0,4);if(y<ty-1||y>ty+1)e.push({f:'bf_date',m:`발주일자 연도(${y})를 확인하세요.`});}
   if(x.kind==='공사'&&!x.projectId)e.push({f:'bf_pj',m:'공사발주는 공사명을 선택해야 합니다.'});
-  if(!String(x.vendor||'').trim())e.push({f:'bf_vendor',m:'거래처 회사명을 입력하세요.'});
+  if(!String(x.vendor||'').trim())e.push({f:'bf_vendor',m:x.kind==='자재'?'거래처를 목록에서 고르세요.':'거래처 회사명을 입력하세요.'});
+  else if(x.kind==='자재'&&!(S.vlite||S.vendors||[]).some(v=>v.active!=='N'&&v.name===x.vendor))e.push({f:'bf_vendor',m:'「'+x.vendor+'」은(는) 거래처관리에 없습니다. 먼저 등록한 뒤 목록에서 고르세요.'});
   if(d.vMail&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(d.vMail).trim()))e.push({f:'bf_vmail',m:'이메일 형식이 맞지 않습니다. (예: name@company.com)'});
   if(d.vTel&&!/^[\d\-()+ ~]{7,}$/.test(String(d.vTel).trim()))e.push({f:'bf_vtel',m:'전화번호는 숫자와 - 만 넣으세요.'});
   let named=0;(x.items||[]).forEach((it,i)=>{const nm=String(it.name||'').trim(),q=String(it.qty==null?'':it.qty).trim(),pr=String(it.price==null?'':it.price).trim();
