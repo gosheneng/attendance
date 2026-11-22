@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22ba-->
+<!DOCTYPE html><!--v:2026.11.22bb-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22ba';
+const APP_VER='2026.11.22bb';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3251,7 +3251,7 @@ function histHtml(r){if(!r.history||!r.history.length)return '';return `<details
    ========================================================= */
 /* 화면 메뉴 → 권한 키 (발주 = buy, 매입 = purch) */
 const TAB_PERM={po_mat:'buy',po_con:'buy',notes:'bank'};
-const ADMIN_GROUPS=[['g_home','오늘 업무',['dash','sign','todo']],['g_ceo','경영 현황',['ceoviz','ceo','ceotodo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','pre','tax','notes']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['card','stmt','bank','vendor']],['g_board','소통',['notice','board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','next']]];
+const ADMIN_GROUPS=[['g_home','오늘 업무',['dash','sign','todo','ceotodo']],['g_ceo','경영 현황',['ceoviz','ceo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','pre','tax','notes']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['card','stmt','bank','vendor']],['g_board','소통',['notice','board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','next']]];
 /* 회사 로고 누르면 처음 화면: 관리자 = 오늘 업무, 근로자 = 오늘 출퇴근 */
 function goHome(adm){closeModal();if(adm)aTab('dash');else{ui.wTab='today';render();}try{window.scrollTo(0,0);}catch(e){}}
 function aTab(k){ui.aTab=k;const g=ADMIN_GROUPS.find(x=>x[2].indexOf(k)>=0);if(g){ui.gLast=ui.gLast||{};ui.gLast[g[0]]=k;}render();}
