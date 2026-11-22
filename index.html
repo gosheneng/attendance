@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.23b-->
+<!DOCTYPE html><!--v:2026.11.23c-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.23b';
+const APP_VER='2026.11.23c';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3618,7 +3618,7 @@ async function calDelGo(cal,id){const e=calFind(cal,id);if(!(await confirmBox(`<
 /* ===== 🔔 알림함 (휴대폰 알림을 지워도 30일 동안 다시 보기) ===== */
 function bellBtn(){const n=(S.notis||[]).filter(x=>!x.read).length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge();}}catch(e){}   /* 지원되는 기기(아이폰 홈 화면 앱·PC 앱)에서 앱 아이콘에 숫자 */
   return `<button class="btn sm bell" onclick="notiBox()" title="알림함">🔔${n?`<b class="bdg">${n>99?'99+':n}</b>`:''}</button>`;}
-const NOTI_TAB={paydue:'paydue',signup:'workers',lvreq:'leave',hq:'quals',inj:'dash',sign:'sign',note:'notes',cal:'cal',prq:'prq',todo:'todo',appr:'appr',leave:'leave',notice:'notice',buy:'po_mat',tax:'tax',board:'board',roster:'roster'};
+const NOTI_TAB={cardask:'card',paydue:'paydue',signup:'workers',lvreq:'leave',hq:'quals',inj:'dash',sign:'sign',note:'notes',cal:'cal',prq:'prq',todo:'todo',appr:'appr',leave:'leave',notice:'notice',buy:'po_mat',tax:'tax',board:'board',roster:'roster'};
 function notiBox(){const L=S.notis||[],un=L.filter(x=>!x.read).length;
   openModal(`<div class="mbox" style="max-width:520px"><div class="row" style="gap:6px"><h3 style="margin:0">🔔 알림함</h3><span class="mute" style="font-size:12.5px">최근 30일</span><span class="sp"></span>${un?`<button class="btn sm" onclick="notiRead('',1)">모두 읽음</button>`:''}<button class="btn sm" onclick="closeModal()">닫기</button></div>
   <div style="max-height:65vh;overflow:auto;margin-top:8px">${L.length?L.map(x=>`<div class="click" onclick="notiGo('${x.id}')" style="padding:8px 6px;border-top:1px solid var(--line);${x.read?'opacity:.65':'background:#fbf5f5'}"><div class="row" style="gap:6px">${x.read?'':'<i style="width:8px;height:8px;border-radius:50%;background:#c62828;flex:none"></i>'}<b style="flex:1">${esc(x.t)}</b><span class="mute" style="font-size:11.5px">${esc(String(x.at).slice(5,16))}</span></div>${x.b?`<div style="font-size:13px;margin-top:2px;white-space:pre-line">${esc(x.b)}</div>`:''}</div>`).join(''):'<p class="mute">받은 알림이 없습니다.</p>'}</div></div>`);}
@@ -4253,7 +4253,48 @@ function bkCtrCard(banks,I,stOf,from,f,canEdit,cOf){const C={};banks.filter(b=>S
   const un=[...new Set(banks.filter(b=>!b.ctr).map(b=>b.acct))],ks=Object.keys(C).sort((a,b)=>(a[0]==='('?1:0)-(b[0]==='('?1:0)||a.localeCompare(b,'ko'));
   return `<div style="margin:8px 0"><div class="mute" style="font-size:12.5px;margin-bottom:4px">🏢 회사(수주처)별 통장 — 누르면 그 회사만 봅니다 (최근 ${f.d}일)</div><div class="row" style="gap:8px;flex-wrap:wrap">${ks.map(k=>{const o=C[k],on=f.ctr===k;return `<div class="click" onclick="ui.bkF.ctr=ui.bkF.ctr===${JSON.stringify(k).replace(/"/g,'&quot;')}?'':${JSON.stringify(k).replace(/"/g,'&quot;')};ui.bkF.acct='';render()" style="flex:1;min-width:180px;border:2px solid ${on?'#8d2d30':'var(--line)'};border-radius:10px;padding:10px;${on?'background:#fbf2f2':''}"><b>${esc(k)}</b> <span class="mute" style="font-size:12px">통장 ${o.ac.size}개</span><div style="font-size:13px;margin-top:4px">출금 <b>${won(o.out)}</b>원 (${o.n}건) · 입금 ${won(o.inn)}원</div><div style="font-size:12.5px">${o.dup?`<span style="color:var(--bad);font-weight:700">⚠ 이중이체 의심 ${o.dup}</span> · `:''}${o.none?`<span style="color:var(--warn);font-weight:700">❓ 미확인 ${o.none}</span>`:'<span class="mute">미확인 없음</span>'}</div><div class="mute" style="font-size:11.5px;margin-top:2px">${[...o.ac].map(esc).join(' · ')}</div></div>`;}).join('')}</div>
   ${un.length?`<div class="infobox" style="border-color:var(--warn);margin-top:6px"><b>어느 회사 통장인지 정해지지 않은 통장</b> — 정하면 그 회사 매입하고만 맞춰 봅니다.${un.map(a=>`<div class="row" style="gap:6px;margin-top:4px"><span>${esc(a)}</span>${canEdit?`<select style="width:auto" onchange="bkSetCtr(${JSON.stringify(a).replace(/"/g,'&quot;')},this.value)"><option value="">— 회사 고르기 —</option>${CTR_BASE.map(c=>`<option>${c}</option>`).join('')}</select>`:''}</div>`).join('')}</div>`:''}</div>`;}
-function aBank(){bkXLoad();return bankView(S.bank||[],S.stmts||[],true);}
+function aBank(){bkXLoad();return cmCard()+bankView(S.bank||[],S.stmts||[],true);}
+/* ===== 법인카드: 카드사 이용내역 엑셀 → 지출 기록과 자동 대조 (통장 대조 메뉴) ===== */
+function cmGuess(H){const f=(re,not)=>H.findIndex((h,i)=>re.test(h)&&!(not||[]).includes(i));const m={};m.dt=f(/이용\s*일|승인\s*일|사용\s*일|매출\s*일|거래\s*일|일자|일시/);m.amt=f(/이용\s*금액|승인\s*금액|매출\s*금액|사용\s*금액|결제\s*금액/);if(m.amt<0)m.amt=f(/금액/,[m.dt]);
+  m.mer=f(/가맹점|이용처|사용처|상호|이용\s*내역/);m.card=f(/카드\s*번호|카드\s*No|이용\s*카드|카드$/i,[m.dt,m.amt,m.mer]);m.st=f(/취소|상태|승인\s*구분|매출\s*구분|구분/,[m.dt,m.amt,m.mer,m.card]);return m;}
+function cmRows(A,hi,m){let R=A.slice(hi+1).map(r=>{const dt=bkDate(r[m.dt],'').slice(0,10);let amt=m.amt>=0?bkNum(r[m.amt]):0;const st=m.st>=0?String(r[m.st]||''):'',cn=String(m.card>=0?r[m.card]:'').replace(/\D/g,'');if(/취소/.test(st)&&amt>0)amt=-amt;
+  return {dt,amt,mer:String(m.mer>=0?r[m.mer]:'').trim(),l4:cn.length>=4?cn.slice(-4):''};}).filter(r=>r.dt&&r.amt);
+  /* 취소 건은 같은 가맹점·같은 금액 승인 1건과 함께 뺌 */
+  R.filter(r=>r.amt<0).forEach(c=>{const i=R.findIndex(r=>r.amt===-c.amt&&r.mer===c.mer&&!r._x);if(i>=0)R[i]._x=1;c._x=1;});return R.filter(r=>!r._x);}
+function cmMatch(T){const CB=(S.buys||[]).filter(x=>x.kind==='카드'),cl=id=>((S.cards||[]).find(c=>c.id===id)||{}).l4||'',used={},dd=(a,b)=>Math.abs((Date.parse(a)-Date.parse(b))/864e5);
+  const M=[],NX=[];T.slice().sort((a,b)=>a.dt.localeCompare(b.dt)).forEach(t=>{let best=null,bs=1e9;CB.forEach(x=>{if(used[x.id])return;const l=cl((x.doc||{}).card);if(t.l4&&l&&t.l4!==l)return;const d=dd(t.dt,x.date);if(d>2)return;const s=buyAmt(x),ad=Math.min(Math.abs(t.amt-Math.round(s*1.1)),Math.abs(t.amt-s));if(ad>10)return;const sc=d*100+ad;if(sc<bs){bs=sc;best=x;}});
+    if(best){used[best.id]=1;M.push({t,x:best});}else NX.push(t);});
+  const ds=T.map(t=>t.dt).sort(),from=ds[0]||'',to=ds[ds.length-1]||'',L4=[...new Set(T.map(t=>t.l4).filter(Boolean))];
+  const NR=CB.filter(x=>!used[x.id]&&x.date>=from&&x.date<=to&&(!L4.length||L4.indexOf(cl((x.doc||{}).card))>=0));return {M,NX,NR,from,to};}
+async function cmFile(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;window.liveBusy(true);
+  try{await xlsxLib();const buf=await f.arrayBuffer();let wb;
+    if(/\.(csv|txt)$/i.test(f.name)){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('euc-kr').decode(buf);}wb=XLSX.read(t,{type:'string',raw:true});}
+    else wb=XLSX.read(new Uint8Array(buf),{type:'array',raw:true});
+    let A=[];wb.SheetNames.forEach(n=>{const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});if(a.length>A.length)A=a;});
+    let hi=-1;for(let i=0;i<Math.min(A.length,40);i++){const j=A[i].map(c=>String(c)).join('|');if(/이용\s*일|승인\s*일|사용\s*일|매출\s*일|거래\s*일|일자/.test(j)&&/금액/.test(j)){hi=i;break;}}
+    if(hi<0)throw new Error('표의 제목 줄(이용일·이용금액·가맹점 등)을 찾지 못했습니다. 카드사 홈페이지에서 「이용내역 → 엑셀 저장」으로 받은 파일인지 확인하세요.');
+    const H=A[hi].map(h=>String(h).replace(/\s+/g,' ').trim());ui.cmPrev={name:f.name,A,hi,H,m:cmGuess(H)};cmShow();}
+  catch(e){alertBox('파일을 읽지 못했습니다',[String(e.message||e)]);}finally{window.liveBusy(false);}}
+function cmMap(k,sel){ui.cmPrev.m[k]=Number(sel.value);cmShow();}
+function cmShow(){const P=ui.cmPrev;if(!P)return;const T=cmRows(P.A,P.hi,P.m),R=cmMatch(T),own=l4=>{const c=(S.cards||[]).find(c=>c.l4===l4);return c?((W(c.owner)||{}).name||''):'';};
+  const opt=k=>`<select onchange="cmMap('${k}',this)" style="width:auto;max-width:150px"><option value="-1">— 없음 —</option>${P.H.map((h,i)=>`<option value="${i}" ${P.m[k]===i?'selected':''}>${esc(h||'(열 '+(i+1)+')')}</option>`).join('')}</select>`;
+  const newOk=R.M.filter(p=>!(p.x.doc||{}).stmtAt).length;ui._cmR=R;
+  openModal(`<div class="mbox" style="max-width:900px"><div class="row"><h2 style="margin:0">💳 카드사 이용내역 대조</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
+  <div class="mute" style="margin:4px 0 8px">${esc(P.name)} · 읽은 사용 <b>${T.length}</b>건 (${esc(R.from)} ~ ${esc(R.to)}, 취소 건은 승인과 함께 뺌). 칸이 맞지 않으면 아래에서 고르세요. 카드번호는 끝 4자리만 씁니다.</div>
+  <div class="row" style="gap:10px;flex-wrap:wrap;font-size:13px;margin:6px 0"><label>이용일 ${opt('dt')}</label><label>금액 ${opt('amt')}</label><label>가맹점 ${opt('mer')}</label><label>카드번호 ${opt('card')}</label><label>취소 구분 ${opt('st')}</label></div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0"><span class="chip st-ok">✅ 일치 ${R.M.length}건${newOk<R.M.length?' (이미 대조 '+(R.M.length-newOk)+')':''}</span><span class="chip ${R.NX.length?'st-bad':''}">⚠ 지출 기록 없음 ${R.NX.length}건</span><span class="chip ${R.NR.length?'st-pend':''}">❓ 카드내역에 없는 기록 ${R.NR.length}건</span></div>
+  <p class="mute" style="font-size:12px;margin:0 0 6px">맞추는 기준: 같은 카드(끝 4자리) · 날짜 ±2일 · 금액 (카드 결제액 = 기록 공급가 × 1.1, 면세는 공급가와 같음, 10원 이내 차이 허용).</p>
+  <div style="max-height:42vh;overflow:auto">
+  ${R.NX.length?`<h4 style="margin:6px 0;color:var(--bad)">⚠ 카드는 썼는데 지출 기록이 없음</h4><table class="nw"><tr><th>이용일</th><th>카드</th><th>가맹점</th><th style="text-align:right">금액</th><th>카드 주인</th></tr>${R.NX.map(t=>`<tr><td>${esc(t.dt)}</td><td>${t.l4?'****'+esc(t.l4):'-'}</td><td>${esc(t.mer)}</td><td style="text-align:right">${won(t.amt)}</td><td>${esc(own(t.l4)||'-')}</td></tr>`).join('')}</table>`:''}
+  ${R.NR.length?`<h4 style="margin:10px 0 6px;color:var(--warn)">❓ 지출 기록은 있는데 카드내역에 없음 (날짜·금액·카드 확인)</h4><table class="nw"><tr><th>사용일자</th><th>사용자</th><th>사용처</th><th style="text-align:right">공급가</th><th style="text-align:right">VAT포함</th></tr>${R.NR.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc((x.doc||{}).user||'')}</td><td>${esc(x.vendor||'')}</td><td style="text-align:right">${won(buyAmt(x))}</td><td style="text-align:right">${won(buyVat(x))}</td></tr>`).join('')}</table>`:''}
+  ${R.M.length?`<h4 style="margin:10px 0 6px">✅ 일치</h4><table class="nw"><tr><th>이용일</th><th>가맹점</th><th style="text-align:right">결제액</th><th>↔ 기록</th><th>사용자</th><th style="text-align:right">공급가</th><th></th></tr>${R.M.map(p=>`<tr><td>${esc(p.t.dt)}</td><td>${esc(p.t.mer)}</td><td style="text-align:right">${won(p.t.amt)}</td><td>${esc(p.x.date)} ${esc(p.x.vendor||'')}</td><td>${esc((p.x.doc||{}).user||'')}</td><td style="text-align:right">${won(buyAmt(p.x))}</td><td>${(p.x.doc||{}).stmtAt?'<span class="chip">이미 대조</span>':''}</td></tr>`).join('')}</table>`:''}</div>
+  <label class="row" style="gap:6px;margin-top:10px;font-size:13px"><input type="checkbox" id="cm_ask" style="width:auto" ${R.NX.length?'checked':''} ${R.NX.length?'':'disabled'}> 기록 없는 ${R.NX.length}건은 카드 주인에게 「지출 기록 입력 요청」 휴대폰 알림 보내기</label>
+  <div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn pri" onclick="cmGo()" ${newOk||R.NX.length?'':'disabled'}>✅ 일치 ${newOk}건 「카드 사용내역과 대조」 체크${R.NX.length?' + 요청':''}</button></div></div>`);}
+function cmGo(){const R=ui._cmR;if(!R)return;const ids=R.M.filter(p=>!(p.x.doc||{}).stmtAt).map(p=>p.x.id),ask=(document.getElementById('cm_ask')||{}).checked?R.NX.map(t=>({dt:t.dt,amt:t.amt,mer:t.mer.slice(0,40),l4:t.l4})):[];ui.cmPrev=null;liveOnly('card_match',{ids,ask});}
+function cmCard(){const can=canM('card')||canM('stmt');const L=(S.buys||[]).filter(x=>x.kind==='카드'),n=L.filter(x=>!(x.doc||{}).stmtAt).length;
+  return `<div class="card" style="border-left:4px solid var(--pri2)"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">💳 법인카드 이용내역 대조</h3>${can?`<span class="chip ${n?'st-pend':'st-ok'}">대조 안 된 지출 기록 ${n}건</span>`:''}<span class="sp"></span>${can?`<label class="btn pri" style="cursor:pointer">📤 카드사 이용내역 올리기<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="cmFile(this)"></label>`:''}</div>
+  <p class="mute" style="font-size:12.5px;margin:6px 0 0">${can?'카드사 홈페이지에서 이용내역(승인내역)을 <b>엑셀</b>로 받아 올리면, 법인카드 지출 기록과 날짜·금액·카드로 자동으로 짝지어 「카드 사용내역과 대조」를 체크합니다. 기록이 없는 사용분은 카드 주인에게 입력 요청 알림을 보냅니다. 여러 카드를 한 파일로 올려도 됩니다.':'법인카드 지출 권한이 있어야 대조할 수 있습니다.'}</p></div>`;}
+
 /* 통장 대조 확장 후보 (서버 계산): 카드대금·급여 출금, 세금계산서 발행분·받을어음·선작업 미수금 입금 */
 function bkXLoad(){if(!LIVE)return;const B=S.bank||[],sig=B.length+':'+B.filter(b=>!b.match).length+':'+B.map(b=>b.match||'').join('').length;if(ui.bkXsig===sig||ui._bkXld)return;ui._bkXld=1;
   window.liveCall('bank_cands',{}).then(r=>{ui.bkX=(r&&r.c)||{};ui.bkXsig=sig;}).catch(()=>{ui.bkX=ui.bkX||{};ui.bkXsig=sig;}).finally(()=>{ui._bkXld=0;if(ui.aTab==='bank')render();});}
