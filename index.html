@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22ak-->
+<!DOCTYPE html><!--v:2026.11.22al-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2762,7 +2762,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22ak';
+const APP_VER='2026.11.22al';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4383,7 +4383,7 @@ function ceoXlsx(){const v=ui.ceoV||'pj',f=ui.ceoF||{},fr=(a,b)=>b?a/b:'',st=tod
   const VN={pj:'공사별',plant:'공장별',ctr:'우리 회사별',client:'발주처별',period:'기간별',labcmp:'노무비 비교'}[v]||v;
   if(v==='pj'){const L=ui._ceoShown||[];if(!L.length){toast('내보낼 내용이 없습니다.');return;}const TX=ceoTax(L);
     const pm=id=>((S.projects||[]).find(x=>x.id===id)||{}).mgrName||'';
-    const rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.plant,P.name,pm(P.id),P.client,P.code,P.ctr,P.done?'완료':'진행',P.amount,P.gisung,fr(P.gisung,P.amount),P.mat,P.sub,P.exp,ceoLab(P),c,p,fr(p,P.gisung),on,p-on,tx,p-on-tx];});
+    const rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.plant,P.name,pm(P.id),P.client,P.code,P.ctr||'(미입력)',P.done?'완료':'진행',P.amount,P.gisung,fr(P.gisung,P.amount),P.mat,P.sub,P.exp,ceoLab(P),c,p,fr(p,P.gisung),on,p-on,tx,p-on-tx];});
     const sum=i=>rows.reduce((a,r)=>a+(Number(r[i])||0),0),Tg=sum(8),Tp=sum(15);
     xlsxSave('실시간손익표_공사별_'+today(),{title:'실시간 손익표 — 공사별',sheet:'공사별',stamp:st,freezeCol:2,
       head:['공장명','공사명','PM(공사담당)','발주처','발주번호','수주처','상태','수주금액','기성금액','진행률','재료비','외주비','경비','노무비','원가 합계','이윤','이윤율','예상 부담금','부담금 반영 이윤','세금 예상','세후 이윤'],
@@ -4401,7 +4401,7 @@ function ceoXlsx(){const v=ui.ceoV||'pj',f=ui.ceoF||{},fr=(a,b)=>b?a/b:'',st=tod
     head,types,widths:[22,8].concat(D.hasAmt?[15,8]:[],[15,14,14,14,14,15,15,8,13,15],D.taxCol?[13,15]:[]),rows:D.rows.map(r=>one(r)),total:one(D.T,1)});}
 function ceoCsv(){const L=ui.ceoL||[];if(!L.length){toast('내보낼 내용이 없습니다.');return;}
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"',H=['공사명','발주처','공장','발주번호','수주처','상태','수주금액','기성금액','진행률','재료비','외주비','경비','노무비','원가합계','이윤','이윤율','예상부담금','부담금반영이윤','부담금반영이윤율','세금예상','세후이윤'];
-  const TX=ceoTax(L),rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.name,P.client,P.plant,P.code,P.ctr,P.done?'완료':'진행',P.amount,P.gisung,pct(P.gisung,P.amount),P.mat,P.sub,P.exp,ceoLab(P),c,p,P.gisung?pct(p,P.gisung):'',on,p-on,P.gisung?pct(p-on,P.gisung):'',tx,p-on-tx];});
+  const TX=ceoTax(L),rows=L.map(P=>{const c=ceoCost(P),p=P.gisung-c,on=ceoOn(P),tx=TX.per[P.id]||0;return [P.name,P.client,P.plant,P.code,P.ctr||'(미입력)',P.done?'완료':'진행',P.amount,P.gisung,pct(P.gisung,P.amount),P.mat,P.sub,P.exp,ceoLab(P),c,p,P.gisung?pct(p,P.gisung):'',on,p-on,P.gisung?pct(p-on,P.gisung):'',tx,p-on-tx];});
   const b=new Blob(['﻿'+[H].concat(rows).map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='실시간손익표_'+today()+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
 function aVault(){if(!isSuper())return '<div class="card"><p class="mute">전체 관리자만 볼 수 있습니다.</p></div>';
   if(!ui.vaultL&&!ui._vaultLd&&LIVE){ui._vaultLd=1;window.liveCall('vault_list',{}).then(r=>{if(r&&r.error)throw new Error(r.error);ui.vaultL=r.list||[];}).catch(e=>{ui.vaultL=[];window.liveFail(e);}).finally(()=>{ui._vaultLd=0;if(ui.aTab==='vault')render();});}
