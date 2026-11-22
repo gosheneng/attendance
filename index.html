@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bc-->
+<!DOCTYPE html><!--v:2026.11.22bd-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bc';
+const APP_VER='2026.11.22bd';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4423,6 +4423,15 @@ function aCeoViz(){if(!ceoIs())return `<div class="card"><p class="mute" style="
   <div class="row" style="gap:14px;margin:8px 0;font-size:12.5px"><span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${VZC.g};vertical-align:-1px"></span> 기성금액</span><span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${VZC.c};vertical-align:-1px"></span> 원가 합계</span><span class="mute">오른쪽 = 이윤 (이윤율)</span></div>
   <div style="display:grid;grid-template-columns:minmax(90px,30%) 1fr auto;gap:8px 10px;align-items:center">${R.map(o=>`<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.k)} · ${o.n}개 공사">${esc(o.k)}</div><div title="기성 ${esc(full(o.g))} / 원가 ${esc(full(o.c))}" style="display:flex;flex-direction:column;gap:3px">${bar(o.g,VZC.g)}${bar(o.c,VZC.c)}</div><div style="text-align:right;font-size:12.5px;white-space:nowrap;color:${pcol(o.p)}" title="${esc(full(o.p))}"><b>${vzK(o.p)}</b> <span style="font-size:11.5px">(${o.g?pct(o.p,o.g):'-'})</span></div>`).join('')}</div>
   ${more?`<p class="mute" style="font-size:12px;margin:8px 0 0">기성금액이 큰 10곳만 보여 줍니다 (나머지 ${more}곳은 손익표에서 확인).</p>`:''}</div>`;
+  /* 발주처(공장·회사)별 발주금액(=우리 수주금액)과 비율 */
+  { const A={};L.forEach(P=>{const k=gk==='ctr'?(P.ctr||'고센이엔지'):gk==='plant'?(String(P.plant||'').trim()||'(공장명 없음)'):(P.client||'(발주처 없음)'),o=A[k]||(A[k]={k,n:0,a:0});o.n++;o.a+=P.amount;});
+    let AR=Object.values(A).filter(o=>o.a).sort((a,b)=>b.a-a.a);const tot=AR.reduce((t,o)=>t+o.a,0);
+    if(AR.length>10){const rest=AR.slice(9);AR=AR.slice(0,9).concat([{k:'그 밖 '+rest.length+'곳',n:rest.reduce((t,o)=>t+o.n,0),a:rest.reduce((t,o)=>t+o.a,0),etc:1}]);}
+    const PAL=['#1f5fa8','#2f7d4f','#a56609','#6b0660','#c0392b','#06606b','#4a8fd6','#7a8b2f','#b0567d','#9aa3b2'],amx=Math.max(1,...AR.map(o=>o.a)),gn=gk==='plant'?'공장별':gk==='ctr'?'우리 회사별':'발주처별';
+    h+=`<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><h3 style="margin:0">💰 ${gn} 발주금액 · 비율</h3><span class="mute" style="font-size:12.5px">합계 ${vzK(tot)} (${L.filter(P=>P.amount).length}개 공사)</span><span class="sp"></span>${vzBtn('g','client','발주처별')}${vzBtn('g','plant','공장별')}${vzBtn('g','ctr','우리 회사별')}</div>
+    ${tot?`<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;margin:10px 0 4px">${AR.map((o,i)=>`<div title="${esc(o.k)} ${esc(full(o.a))} (${pct(o.a,tot)})" style="width:${(o.a/tot*100).toFixed(2)}%;background:${PAL[i%PAL.length]}"></div>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:minmax(90px,30%) 1fr auto;gap:7px 10px;align-items:center;margin-top:10px">${AR.map((o,i)=>`<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(o.k)} · ${o.n}개 공사"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PAL[i%PAL.length]};margin-right:5px"></span>${esc(o.k)}</div><div title="${esc(full(o.a))}"><div style="height:14px;border-radius:6px;background:${PAL[i%PAL.length]};width:${Math.max(1,o.a/amx*100).toFixed(1)}%"></div></div><div style="text-align:right;font-size:12.5px;white-space:nowrap" title="${esc(full(o.a))}"><b>${vzK(o.a)}</b> <span style="display:inline-block;min-width:44px;font-weight:700;color:${PAL[i%PAL.length]}">${pct(o.a,tot)}</span></div>`).join('')}</div>`:'<p class="mute">수주(발주)금액이 입력된 공사가 없습니다.</p>'}
+    <p class="mute" style="font-size:12px;margin:8px 0 0">발주금액 = 발주처가 우리에게 발주한 금액(기성준공 대장의 수주금액, VAT 별도). 비율 = 전체 발주금액 중 차지하는 몫. 큰 순서로 9곳까지 보이고 나머지는 「그 밖」으로 묶었습니다.</p></div>`; }
   /* 원가 구성 */
   const CC=[['mat','재료비'],['sub','외주비'],['exp','경비'],['lab','노무비']],stack=o=>{const t=o.c||0;return `<div style="display:flex;height:18px;border-radius:6px;overflow:hidden;background:#eef1f5">${t>0?CC.filter(x=>o[x[0]]>0).map(x=>`<div title="${x[1]} ${esc(full(o[x[0]]))} (${pct(o[x[0]],t)})" style="width:${(o[x[0]]/t*100).toFixed(2)}%;background:${VZC[x[0]]}"></div>`).join(''):''}</div>`;};
   h+=`<div class="card"><h3 style="margin:0 0 6px">🧱 원가 구성 비율</h3>
