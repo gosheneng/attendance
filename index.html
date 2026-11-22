@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22bt-->
+<!DOCTYPE html><!--v:2026.11.23a-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2769,7 +2769,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22bt';
+const APP_VER='2026.11.23a';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5543,7 +5543,7 @@ function wFilt(v,keep){if(!keep)ui.wf.q=v;const q=String(v||'').trim().toLowerCa
 /* 협력업체 인원 소속 업체명 일괄 변경: 사람을 골라 거래처관리의 협력업체 이름으로 한 번에 맞춤 */
 function ptnBulk(){const W2=S.workers.filter(w=>w.aff==='협력업체').sort((a,b)=>String(a.partner||'').localeCompare(String(b.partner||''),'ko')||String(a.name).localeCompare(String(b.name),'ko')),reg=ptnNames(),G={};W2.forEach(w=>{const k=w.partner||'(업체명 없음)';(G[k]=G[k]||[]).push(w);});
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h3 style="margin:0">🤝 협력업체명 일괄 변경</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <p class="mute" style="font-size:12.5px;margin:6px 0">사람을 골라 소속 업체명을 한 번에 바꿉니다. ✅ = 거래처관리에 등록된 협력업체 이름과 같음, ⚠ = 등록 이름과 다름 (노무비 직불 대조 때 안 맞을 수 있음). 지난 달 노무비 보관 기록의 업체명도 함께 바뀝니다.</p>
+  <p class="mute" style="font-size:12.5px;margin:6px 0">사람을 골라 소속 업체명을 한 번에 바꿉니다. ✅ = 거래처관리에 등록된 협력업체 이름과 같음, ⚠ = 등록 이름과 다름 (노무비 직불 대조 때 안 맞을 수 있음). 1년이 지나 보관한 노무비 기록(신고분)은 바뀌지 않습니다.</p>
   <div style="max-height:45vh;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px">${Object.keys(G).length?Object.keys(G).map(k=>`<div style="margin:6px 0"><label class="row" style="gap:6px;font-weight:700"><input type="checkbox" style="width:auto" onchange="document.querySelectorAll('.pb_w[data-g=&quot;${esc(k)}&quot;]').forEach(e=>e.checked=this.checked);ptnCnt()">${reg.indexOf(k)>=0?'✅':'⚠'} ${esc(k)} <span class="mute" style="font-weight:400">${G[k].length}명</span></label><div style="display:flex;flex-wrap:wrap;gap:4px 14px;padding-left:22px">${G[k].map(w=>`<label class="row" style="gap:4px;font-size:13px"><input type="checkbox" class="pb_w" data-g="${esc(k)}" value="${w.id}" style="width:auto" onchange="ptnCnt()">${esc(w.name)}${w.status!=='재직'?' <span class="mute">('+esc(w.status)+')</span>':''}</label>`).join('')}</div></div>`).join(''):'<p class="mute">협력업체 소속 근로자가 없습니다.</p>'}</div>
   <label class="f" style="margin-top:10px"><span>바꿀 업체명 <span class="mute" style="font-size:12px">(거래처관리 협력업체 ${reg.length}곳 — 목록에서 고르는 것을 권장)</span></span><input id="pb_to" list="pb_dl" placeholder="예: ㈜한빛기계" autocomplete="off"><datalist id="pb_dl">${reg.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></label>
   <div class="row" style="margin-top:8px"><span id="pb_n" class="mute">0명 선택</span><span class="sp"></span><button class="btn pri" onclick="ptnBulkGo()">선택한 사람 바꾸기</button></div></div>`);}
