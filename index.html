@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22x-->
+<!DOCTYPE html><!--v:2026.11.22y-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2739,7 +2739,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22x';
+const APP_VER='2026.11.22y';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3523,8 +3523,8 @@ function calDash(){const td=today(),tm=addDaysC(td,1),k=td+'_'+tm,D=ui.calDashD&
   const tmOf=(e,d)=>{if(e.allDay)return '종일';const s=String(e.start),t=String(e.end);return (s.slice(0,10)===d?s.slice(11,16):'~')+(t.slice(0,10)===d?'–'+t.slice(11,16):'~');};
   const day=(d,lb)=>{const L=evs.filter(e=>on(e,d)).sort((a,b)=>(b.allDay?1:0)-(a.allDay?1:0)||String(a.start).localeCompare(String(b.start)));
     return `<div style="flex:1;min-width:240px"><div style="font-weight:700;margin-bottom:6px">${lb} <span class="mute" style="font-weight:400;font-size:12px">${esc(fmtDayS(d))}</span></div>${L.length?L.map(e=>{const c=col[e.cal]||{};return `<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #eef0f3"><span style="flex:none;width:8px;height:8px;border-radius:50%;margin-top:6px;background:${esc(c.color||'#999')}"></span><span style="flex:none;min-width:74px;font-size:13px" class="mute">${esc(tmOf(e,d))}</span><span style="font-size:14px"><b>${esc(e.title||'(제목 없음)')}</b>${e.loc?` <span class="mute" style="font-size:12px">· ${esc(e.loc)}</span>`:''}<br><span class="mute" style="font-size:11px">${esc(c.name||'')}</span></span></div>`;}).join(''):'<div class="mute" style="padding:6px 0;border-top:1px solid #eef0f3">일정이 없습니다.</div>'}</div>`;};
-  return `<div class="card"><div class="row" style="gap:6px"><h3 style="margin:0">📅 회사 일정 · 오늘/내일</h3><span class="sp"></span><button class="btn sm" onclick="ui.calDashD=null;render()" title="새로 불러오기">↻</button><button class="btn sm" onclick="aTab('cal')">달력 보기</button></div>
-  ${!D?'<div class="mute" style="margin-top:8px">일정을 불러오는 중…</div>':D.err?`<div class="warnbox" style="margin-top:8px">일정을 불러오지 못했습니다: ${esc(D.err)}</div>`:`<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:8px">${day(td,'오늘')}${day(tm,'내일')}</div>`}</div>`;}
+  return `<div class="card"><div class="row" style="gap:6px"><h3 style="margin:0">📅 회사 일정 · 오늘/내일</h3><span class="sp"></span><button class="btn sm" onclick="ui.calDashD=null;render()" title="새로 불러오기">↻</button><a class="btn sm" href="https://calendar.google.com/" target="_blank" rel="noopener">구글 캘린더 열기</a></div>
+  ${!D?'<div class="mute" style="margin-top:8px">구글 캘린더에서 불러오는 중…</div>':D.err?`<div class="warnbox" style="margin-top:8px">일정을 불러오지 못했습니다: ${esc(D.err)}</div>`:`<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:8px">${day(td,'오늘')}${day(tm,'내일')}</div>`}</div>`;}
 function aCal(){ui.cY=ui.cY||+today().slice(0,4);ui.cM=ui.cM||+today().slice(5,7);
   const [a,b]=calRange(),k=a+'_'+b,D=ui.calData&&ui.calData[k];
   if(!D&&!ui.calBusy&&!ui.calErr)setTimeout(()=>calLoad(false),0);
@@ -3532,13 +3532,12 @@ function aCal(){ui.cY=ui.cY||+today().slice(0,4);ui.cM=ui.cM||+today().slice(5,7
   const evs=D?D.events.filter(e=>hid.indexOf(e.cal)<0):[];
   const onD=d=>evs.filter(e=>{const s=e.start.slice(0,10),en=e.allDay?addDaysC(e.end,-1):e.end.slice(0,10);return s<=d&&en>=d;});
   const items=d=>{const es=onD(d);if(!es.length)return '';return es.slice(0,4).map(e=>`<div class="evi" style="background:${esc((cols[e.cal]||{}).color||'#7a8ca6')}" title="${esc(e.title)}" onclick="event.stopPropagation();calOpen('${esc(e.cal)}','${esc(e.id)}','${d}')">${e.allDay?'':esc(e.start.slice(11,16))+' '}${esc(e.title)}</div>`).join('')+(es.length>4?`<div class="evi more">+${es.length-4}</div>`:'');};
-  let h=`<div class="card"><div class="row" style="flex-wrap:wrap;gap:8px"><h3 style="margin:0">회사 일정</h3><span class="sp"></span>${calNav(ui.cY,ui.cM,'calMove')}<button class="btn sm" onclick="calLoad(true)">↻ 새로고침</button><button class="btn sm" onclick="calCats()">🏷 분류 관리</button><button class="btn pri sm" onclick="calForm('')">+ 일정 추가</button></div>`;
-  if(D&&!D.imported&&W(ses.uid).role==='admin')h+=`<div class="infobox" style="margin-top:8px"><b>구글 캘린더 일정 옮기기</b> — 지금까지 구글 캘린더에 쓴 일정(지난 1년 ~ 앞으로 2년, 캘린더 이름은 분류로)을 한 번에 가져옵니다. 몇 분 걸릴 수 있습니다. <button class="btn pri sm" onclick="evImport()">📥 가져오기</button>${ui.evImp?`<div style="margin-top:6px"><b>${esc(ui.evImp)}</b></div>`:''}</div>`;
-  if(ui.calErr)h+=`<div class="badbox" style="margin-top:8px">일정을 불러오지 못했습니다: ${esc(ui.calErr)}</div>`;
-  if(ui.calBusy)h+=`<p class="mute">일정을 불러오는 중…</p>`;
+  let h=`<div class="card"><div class="row" style="flex-wrap:wrap;gap:8px"><h3 style="margin:0">회사 일정 <span class="mute" style="font-size:13px;font-weight:400">구글 캘린더 실시간 연동</span></h3><span class="sp"></span>${calNav(ui.cY,ui.cM,'calMove')}<button class="btn sm" onclick="calLoad(true)">↻ 새로고침</button><button class="btn pri sm" onclick="calForm('')">+ 일정 추가</button></div>`;
+  if(ui.calErr)h+=`<div class="badbox" style="margin-top:8px">구글 캘린더를 불러오지 못했습니다: ${esc(ui.calErr)}</div>`;
+  if(ui.calBusy)h+=`<p class="mute">구글 캘린더에서 일정을 불러오는 중… (캘린더가 많아 몇 초 걸릴 수 있습니다)</p>`;
   if(D)h+=`<div class="calchips">${D.cals.map(c=>`<button class="calchip ${hid.indexOf(c.id)>=0?'off':''}" onclick="calToggle('${esc(c.id)}')"><i style="background:${esc(c.color)}"></i>${esc(c.name)}</button>`).join('')}</div>`;
   h+=calGrid(ui.cY,ui.cM,items,'calDayList');
-  h+=`<p class="mute" style="margin:6px 0 0">${D?`${esc(D.at)} 기준 · `:''}분류 이름을 누르면 숨기기/보이기. 날짜를 누르면 그날 일정 목록, 일정을 누르면 상세·수정. 알림을 정한 일정은 그 시간에 회사 일정을 보는 관리자 전원에게 휴대폰 알림이 가고 🔔 알림함에도 남습니다.</p></div>`;
+  h+=`<p class="mute" style="margin:6px 0 0">${D?`${esc(D.at)} 기준 · `:''}캘린더 이름을 누르면 숨기기/보이기. 날짜를 누르면 그날 일정 목록, 일정을 누르면 상세·수정. 구글 캘린더에서 고친 내용은 ↻ 새로고침(또는 1분 뒤)에 반영됩니다.</p></div>`;
   return h;}
 function addDaysC(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return ymd(d);}
 function calFind(cal,id){const [a,b]=calRange(),D=ui.calData&&ui.calData[a+'_'+b];return D?D.events.find(e=>e.cal===cal&&e.id===id):null;}
@@ -3551,51 +3550,27 @@ function calOpen(cal,id,d){const e=calFind(cal,id);if(!e)return;const [a,b]=calR
   openModal(`<div class="mbox" style="max-width:520px"><div class="row"><h3 style="margin:0">${esc(e.title)}</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기</button></div>
   <p style="margin:8px 0"><span class="calchip" style="cursor:default"><i style="background:${esc(c.color||'#999')}"></i>${esc(c.name||'')}</span></p>
   <p>🕒 ${esc(when)}${e.loc?`<br>📍 ${esc(e.loc)}`:''}</p>${e.desc?`<div class="consent" style="white-space:pre-wrap;max-height:220px">${esc(e.desc)}</div>`:''}
-  <p class="mute">🔔 알림: ${(e.rem||[]).length?(e.rem||[]).map(remLb).join(', '):'없음'}</p>
-  <div class="row" style="justify-content:flex-end;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="calIcs('${esc(cal)}','${esc(id)}')" title="휴대폰 기본 캘린더에 넣으면 휴대폰 시계로 정확히 알림">📲 내 휴대폰 캘린더에 추가</button><button class="btn bad" onclick="calDelGo('${esc(cal)}','${esc(id)}')">삭제</button><button class="btn pri" onclick="calForm('${esc(id)}','','${esc(cal)}')">수정</button></div></div>`);}
-/* 내 휴대폰 캘린더(삼성·구글·아이폰)에 넣기: .ics 파일 — 알림이 휴대폰 시계로 정확히 울림 */
-function calIcs(cal,id){const e=calFind(cal,id);if(!e)return;const b=new Blob([calIcsText(e)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(e.title||'일정').replace(/[\\/:*?"<>|]/g,'').slice(0,40)+'.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
-  toast('파일을 열면 휴대폰 캘린더에 들어갑니다. (삼성 캘린더·구글 캘린더 선택)');}
-function calIcsText(e){const z=s=>String(s||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n'),d=s=>s.slice(0,10).replace(/-/g,''),dt=s=>new Date(s.slice(0,10)+'T'+s.slice(11,16)+':00+09:00').toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
-  const rem=(e.rem&&e.rem.length?e.rem:[30]);const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//GOSHEN//CAL//KO','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+e.id+'@goshen','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
-    e.allDay?'DTSTART;VALUE=DATE:'+d(e.start):'DTSTART:'+dt(e.start),e.allDay?'DTEND;VALUE=DATE:'+d(e.end):'DTEND:'+dt(e.end),'SUMMARY:'+z(e.title)];
-  if(e.loc)L.push('LOCATION:'+z(e.loc));if(e.desc)L.push('DESCRIPTION:'+z(e.desc));
-  rem.forEach(m=>L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+z(e.title),'TRIGGER:'+(e.allDay?((480-m)>=0?'PT'+(480-m)+'M':'-PT'+(m-480)+'M'):'-PT'+m+'M'),'END:VALARM'));
-  L.push('END:VEVENT','END:VCALENDAR');return L.join('\r\n');}
-const REM_K=[[1440,'하루 전'],[60,'1시간 전'],[30,'30분 전'],[10,'10분 전']];
-const remLb=m=>(REM_K.find(r=>r[0]===m)||[0,m>=60?Math.round(m/60)+'시간 전':m+'분 전'])[1];
+  ${e.rec?'<p class="mute">반복 일정은 구글 캘린더에서 수정하세요.</p>':''}
+  <div class="row" style="justify-content:flex-end;gap:6px;margin-top:10px"><a class="btn" target="_blank" rel="noopener" href="https:${SL2}calendar.google.com/calendar/r/day/${e.start.slice(0,4)}/${+e.start.slice(5,7)}/${+e.start.slice(8,10)}">구글 캘린더에서 보기</a>${e.rec?'':`<button class="btn bad" onclick="calDelGo('${esc(cal)}','${esc(id)}')">삭제</button><button class="btn pri" onclick="calForm('${esc(id)}','','${esc(cal)}')">수정</button>`}</div></div>`);}
 function calForm(id,day,cal){const [a,b]=calRange(),D=ui.calData&&ui.calData[a+'_'+b];if(!D){toast('일정을 불러온 뒤 추가할 수 있습니다.');return;}
   const e=id?calFind(cal,id):null,d0=e?e.start.slice(0,10):(day||today()),ad=e?e.allDay:true,ed=e?(e.allDay?addDaysC(e.end,-1):e.end.slice(0,10)):d0;
   const cals=D.cals,last=(()=>{try{return localStorage.getItem('goshen_cal_last')||'';}catch(x){return '';}})();
   openModal(`<div class="mbox" style="max-width:560px"><div class="row"><h3 style="margin:0">${e?'일정 수정':'일정 추가'}</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <label class="f" style="margin-top:10px"><span>분류 *</span><select id="cf_cal">${cals.map(c=>`<option value="${esc(c.id)}" ${(e?e.cal:last)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+  <label class="f" style="margin-top:10px"><span>캘린더 *</span><select id="cf_cal" ${e?'disabled':''}>${cals.map(c=>`<option value="${esc(c.id)}" ${(e?e.cal:last)===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
   <label class="f"><span>제목 *</span><input id="cf_t" value="${esc(e?e.title:'')}" placeholder="예: 1냉연 현장설명회"></label>
   <label class="row" style="margin-bottom:8px"><input type="checkbox" id="cf_ad" style="width:auto" ${ad?'checked':''} onchange="document.getElementById('cf_tm').style.display=this.checked?'none':'grid'"> 종일</label>
   <div class="grid2"><label class="f"><span>시작일 *</span><input id="cf_d" type="date" value="${d0}"></label><label class="f"><span>종료일</span><input id="cf_ed" type="date" value="${ed}"></label></div>
   <div class="grid2" id="cf_tm" style="display:${ad?'none':'grid'}"><label class="f"><span>시작 시각</span><input id="cf_st" type="time" value="${e&&!e.allDay?e.start.slice(11,16):'09:00'}"></label><label class="f"><span>종료 시각</span><input id="cf_et" type="time" value="${e&&!e.allDay?e.end.slice(11,16):'10:00'}"></label></div>
   <label class="f"><span>장소</span><input id="cf_loc" value="${esc(e?e.loc:'')}"></label>
-  <div class="f"><span>🔔 알림 <span class="mute" style="font-size:12px">(회사 일정 보는 관리자 전원 · 종일 일정은 그날 오전 8시 기준)</span></span><div class="row" style="gap:10px;flex-wrap:wrap;margin-top:4px">${REM_K.map(([m,l])=>`<label class="row" style="gap:4px"><input type="checkbox" class="cf_rem" value="${m}" style="width:auto" ${(e?(e.rem||[]):[30]).indexOf(m)>=0?'checked':''}> ${l}</label>`).join('')}</div></div>
   <label class="f"><span>메모</span><textarea id="cf_desc" rows="3">${esc(e?e.desc:'')}</textarea></label>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="calSaveGo('${esc(id||'')}','${esc(cal||'')}')">저장</button></div></div>`);}
-async function calSaveGo(id,cal){const g=k=>document.getElementById(k).value;const p={rem:[...document.querySelectorAll('.cf_rem:checked')].map(x=>+x.value),id:id||'',cal:g('cf_cal'),title:g('cf_t').trim(),date:g('cf_d'),endDate:g('cf_ed'),allDay:document.getElementById('cf_ad').checked,st:g('cf_st'),et:g('cf_et'),loc:g('cf_loc').trim(),desc:g('cf_desc')};
+async function calSaveGo(id,cal){const g=k=>document.getElementById(k).value;const p={id:id||'',cal:id?cal:g('cf_cal'),title:g('cf_t').trim(),date:g('cf_d'),endDate:g('cf_ed'),allDay:document.getElementById('cf_ad').checked,st:g('cf_st'),et:g('cf_et'),loc:g('cf_loc').trim(),desc:g('cf_desc')};
   if(!p.title){toast('일정 제목을 입력하세요.');return;}if(!p.date){toast('시작일을 입력하세요.');return;}
   if(!p.allDay&&(p.endDate||p.date)===p.date&&p.et<=p.st){toast('종료 시각이 시작 시각보다 늦어야 합니다.');return;}
   try{localStorage.setItem('goshen_cal_last',p.cal);}catch(e){}
   try{const r=await calDo('save',p);closeModal();toast(r.msg||'저장했습니다.');calLoad(true);}catch(e){alertBox('처리하지 못했습니다',[String(e&&e.message||e)]);}}
-async function calDelGo(cal,id){const e=calFind(cal,id);if(!(await confirmBox(`<b>${esc(e?e.title:'')}</b> 일정을 삭제할까요?\n\n삭제하면 모든 사람의 회사 일정에서 사라집니다.`,'삭제')))return;
+async function calDelGo(cal,id){const e=calFind(cal,id);if(!(await confirmBox(`<b>${esc(e?e.title:'')}</b> 일정을 구글 캘린더에서 삭제할까요?\n\n삭제하면 공유된 모든 사람의 캘린더에서 사라집니다.`,'삭제')))return;
   try{const r=await calDo('del',{cal,id});toast(r.msg||'삭제했습니다.');calLoad(true);}catch(x){alertBox('처리하지 못했습니다',[String(x&&x.message||x)]);}}
-/* 구글 캘린더 → 자체 일정 옮기기 (서버 시간 제한 때문에 캘린더 몇 개씩 나눠서) */
-async function evImport(){if(!(await confirmBox('구글 캘린더 일정을 이 시스템으로 가져올까요?\n\n· 지난 1년 ~ 앞으로 2년 일정\n· 캘린더 이름은 일정 분류로\n· 이미 가져온 일정은 다시 넣지 않음\n· 구글 캘린더 쪽 일정은 지우지 않음','가져오기')))return;
-  let i=0,n=0;try{for(let k=0;k<40;k++){ui.evImp=`가져오는 중… (${i}개 캘린더 완료, 일정 ${n}건)`;render();const r=await calDo('imp',{i});n+=r.n||0;i=r.i;if(r.done){ui.evImp='';ui.calData={};ui.calDashD=null;toast(`가져왔습니다: 캘린더 ${r.total}개 · 일정 ${n}건`);calLoad(true);return;}}}
-  catch(e){ui.evImp='';render();alertBox('가져오지 못했습니다',[String(e&&e.message||e),'다시 누르면 끝난 곳 다음부터 이어서 가져옵니다.']);}}
-function calCats(){const [a,b]=calRange(),D=ui.calData&&ui.calData[a+'_'+b];if(!D){toast('일정을 불러온 뒤 다시 누르세요.');return;}
-  openModal(`<div class="mbox" style="max-width:520px"><div class="row"><h3 style="margin:0">🏷 일정 분류</h3><span class="sp"></span><button class="btn pri sm" onclick="calCatForm('')">+ 분류 추가</button><button class="btn sm" onclick="closeModal()">닫기</button></div>
-  <div style="max-height:60vh;overflow:auto;margin-top:8px">${D.cals.map(c=>`<div class="row" style="gap:8px;padding:6px 0;border-top:1px solid var(--line)"><i style="width:14px;height:14px;border-radius:50%;background:${esc(c.color)}"></i><span>${esc(c.name)}</span><span class="sp"></span><button class="btn sm" onclick="calCatForm('${esc(c.id)}')">고치기</button><button class="btn sm bad" onclick="calCatDel('${esc(c.id)}')">삭제</button></div>`).join('')||'<p class="mute">분류가 없습니다.</p>'}</div></div>`);}
-function calCatForm(id){const [a,b]=calRange(),D=ui.calData&&ui.calData[a+'_'+b],c=id?(D.cals.find(x=>x.id===id)||{}):{name:'',color:'#039be5'};
-  openModal(`<div class="mbox" style="max-width:400px"><h3 style="margin:0 0 8px">${id?'분류 고치기':'분류 추가'}</h3><label class="f"><span>이름</span><input id="cc_n" value="${esc(c.name)}" placeholder="예: 냉연3"></label><label class="f"><span>색</span><input id="cc_c" type="color" value="${esc(c.color||'#039be5')}" style="height:40px"></label>
-  <div class="row" style="gap:6px"><span class="sp"></span><button class="btn" onclick="calCats()">취소</button><button class="btn pri" onclick="calCatSave('${esc(id)}')">저장</button></div></div>`);}
-async function calCatSave(id){try{const r=await calDo('cat',{id,name:document.getElementById('cc_n').value,color:document.getElementById('cc_c').value});toast(r.msg||'저장했습니다.');ui.calData={};await calLoad(true);calCats();}catch(e){alertBox('저장하지 못했습니다',[String(e&&e.message||e)]);}}
-async function calCatDel(id){if(!(await confirmBox('이 분류를 지울까요? (일정이 남아 있으면 지울 수 없습니다)','삭제'))){calCats();return;}try{const r=await calDo('cat',{id,del:1});toast(r.msg);ui.calData={};await calLoad(true);calCats();}catch(e){alertBox('지우지 못했습니다',[String(e&&e.message||e)]);}}
 /* ===== 🔔 알림함 (휴대폰 알림을 지워도 30일 동안 다시 보기) ===== */
 function bellBtn(){const n=(S.notis||[]).filter(x=>!x.read).length;try{if(navigator.setAppBadge){if(n)navigator.setAppBadge(n);else navigator.clearAppBadge();}}catch(e){}   /* 지원되는 기기(아이폰 홈 화면 앱·PC 앱)에서 앱 아이콘에 숫자 */
   return `<button class="btn sm bell" onclick="notiBox()" title="알림함">🔔${n?`<b class="bdg">${n>99?'99+':n}</b>`:''}</button>`;}
@@ -6802,7 +6777,7 @@ aRoleSave=function(id){const role=(document.querySelector('input[name=rl]:checke
 aSignApprove=function(id){const d=signForm();run('signupApprove',{id,data:d},null,true).then(r=>{if(r)closeModal(),render();});};
 aSignRejectDo=function(id){const r=document.getElementById('sr_r').value.trim();if(!r){toast('반려 사유를 입력하세요.');return;}run('signupReject',{id,reason:r});};
 /* ----- 연차 ----- */
-calDo=async function(op,p){return await call({list:'ev_list',save:'ev_save',del:'ev_del',cat:'ev_cat',imp:'ev_import'}[op],p);};
+calDo=async function(op,p){return await call({list:'calList',save:'calSave',del:'calDel'}[op],p);};
 window.liveRun=run;window.liveApply=applyState;window.liveCall=call;window.liveBusy=busy;window.liveFail=failMsg;
 window.fillMgrLive=async function(){return await run('fillMgrPhones',{},null);};
 window.gDoneLive=async function(pid,on){return await run('projectDone',{id:pid,on},null);};
