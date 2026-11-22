@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.22w-->
+<!DOCTYPE html><!--v:2026.11.22x-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2739,7 +2739,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.22w';
+const APP_VER='2026.11.22x';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3552,7 +3552,16 @@ function calOpen(cal,id,d){const e=calFind(cal,id);if(!e)return;const [a,b]=calR
   <p style="margin:8px 0"><span class="calchip" style="cursor:default"><i style="background:${esc(c.color||'#999')}"></i>${esc(c.name||'')}</span></p>
   <p>🕒 ${esc(when)}${e.loc?`<br>📍 ${esc(e.loc)}`:''}</p>${e.desc?`<div class="consent" style="white-space:pre-wrap;max-height:220px">${esc(e.desc)}</div>`:''}
   <p class="mute">🔔 알림: ${(e.rem||[]).length?(e.rem||[]).map(remLb).join(', '):'없음'}</p>
-  <div class="row" style="justify-content:flex-end;gap:6px;margin-top:10px"><button class="btn bad" onclick="calDelGo('${esc(cal)}','${esc(id)}')">삭제</button><button class="btn pri" onclick="calForm('${esc(id)}','','${esc(cal)}')">수정</button></div></div>`);}
+  <div class="row" style="justify-content:flex-end;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn" onclick="calIcs('${esc(cal)}','${esc(id)}')" title="휴대폰 기본 캘린더에 넣으면 휴대폰 시계로 정확히 알림">📲 내 휴대폰 캘린더에 추가</button><button class="btn bad" onclick="calDelGo('${esc(cal)}','${esc(id)}')">삭제</button><button class="btn pri" onclick="calForm('${esc(id)}','','${esc(cal)}')">수정</button></div></div>`);}
+/* 내 휴대폰 캘린더(삼성·구글·아이폰)에 넣기: .ics 파일 — 알림이 휴대폰 시계로 정확히 울림 */
+function calIcs(cal,id){const e=calFind(cal,id);if(!e)return;const b=new Blob([calIcsText(e)],{type:'text/calendar;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(e.title||'일정').replace(/[\\/:*?"<>|]/g,'').slice(0,40)+'.ics';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);
+  toast('파일을 열면 휴대폰 캘린더에 들어갑니다. (삼성 캘린더·구글 캘린더 선택)');}
+function calIcsText(e){const z=s=>String(s||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n'),d=s=>s.slice(0,10).replace(/-/g,''),dt=s=>new Date(s.slice(0,10)+'T'+s.slice(11,16)+':00+09:00').toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const rem=(e.rem&&e.rem.length?e.rem:[30]);const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//GOSHEN//CAL//KO','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+e.id+'@goshen','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
+    e.allDay?'DTSTART;VALUE=DATE:'+d(e.start):'DTSTART:'+dt(e.start),e.allDay?'DTEND;VALUE=DATE:'+d(e.end):'DTEND:'+dt(e.end),'SUMMARY:'+z(e.title)];
+  if(e.loc)L.push('LOCATION:'+z(e.loc));if(e.desc)L.push('DESCRIPTION:'+z(e.desc));
+  rem.forEach(m=>L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+z(e.title),'TRIGGER:'+(e.allDay?((480-m)>=0?'PT'+(480-m)+'M':'-PT'+(m-480)+'M'):'-PT'+m+'M'),'END:VALARM'));
+  L.push('END:VEVENT','END:VCALENDAR');return L.join('\r\n');}
 const REM_K=[[1440,'하루 전'],[60,'1시간 전'],[30,'30분 전'],[10,'10분 전']];
 const remLb=m=>(REM_K.find(r=>r[0]===m)||[0,m>=60?Math.round(m/60)+'시간 전':m+'분 전'])[1];
 function calForm(id,day,cal){const [a,b]=calRange(),D=ui.calData&&ui.calData[a+'_'+b];if(!D){toast('일정을 불러온 뒤 추가할 수 있습니다.');return;}
