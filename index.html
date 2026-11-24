@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24p-->
+<!DOCTYPE html><!--v:2026.11.24q-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2797,7 +2797,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24p';
+const APP_VER='2026.11.24q';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3032,7 +3032,7 @@ function vWorker(me){
   }
   else if(ui.wTab==='hist')h+=vMyHist(me);
   else if(ui.wTab==='leave')h+=vMyLeave(me);
-  else h+=myPayCard(me)+myHealthCard(me)+`<div class="card"><h3>근로계약서</h3><div class="infobox">준비 중입니다. 곧 휴대폰에서 계약서를 보고 서명할 수 있습니다.</div></div>`;
+  else h+=vMyDocs(me);
   return h+'</div>';
 }
 /* 출근 시각 = 작업내역 첫 작업 시작 (실제 QR·버튼 시각은 real 에 보관) — 서버 startFromEntries 와 같은 규칙 */
@@ -3664,7 +3664,7 @@ function notiDest(x){const tg=String(x.tag||''),me=W(ses.uid)||{};
   const k=Object.keys(NOTI_W).sort((a,b)=>b.length-a.length).find(k=>tg.indexOf(k)===0&&!(k==='lv'&&tg.indexOf('lvreq')===0));return k?{w:NOTI_W[k]}:null;}
 function notiGo(id){const x=(S.notis||[]).find(o=>o.id===id);if(!x)return;if(!x.read)notiRead(id,0);const d=notiDest(x);
   if(d&&d.a){ui.asWorker=false;closeModal();aTab(d.a);return;}
-  if(d&&d.w){closeModal();if(isStaff(W(ses.uid)||{}))ui.asWorker=true;if(d.w==='crew'){const m=/^ros(\d{4}-\d{2}-\d{2})/.exec(String(x.tag||''));ui.crewDate=m?m[1]:'';}ui.wTab=d.w;window.scrollTo(0,0);render();return;}
+  if(d&&d.w){closeModal();if(isStaff(W(ses.uid)||{}))ui.asWorker=true;if(d.w==='crew'){const m=/^ros(\d{4}-\d{2}-\d{2})/.exec(String(x.tag||''));ui.crewDate=m?m[1]:'';}if(d.w==='docs')ui.docTab=/^hq/.test(String(x.tag||''))?'health':'pay';ui.wTab=d.w;window.scrollTo(0,0);render();return;}
   notiBox();toast('이 알림은 이동할 메뉴가 없습니다.');}
 /* 시제품: 예시 일정 (운영판에서는 구글 캘린더) */
 async function calDo(op,p){if(op==='list'){const cals=[{id:'c1',name:'1. 현장설명회',color:'#e67c73'},{id:'c2',name:'냉연1',color:'#33b679'},{id:'c3',name:'3. 휴가',color:'#8e24aa'}];
@@ -3727,6 +3727,11 @@ function rosterCard(r,opt){opt=opt||{};const p=P(r.projectId)||{name:r.projectId
 /* ---------- 근로자: 투입현황 ---------- */
 function qualBanner(w){const L=qualAlerts(w);if(!L.length)return '';
   return `<div class="card" style="border-left:4px solid ${L.some(x=>x.lv!=='soon')?'var(--bad)':'var(--warn)'}"><h3 style="margin:0 0 6px">🔔 자격·교육·검진 알림</h3>${L.map(x=>`<div style="margin:3px 0">${x.lv==='soon'?'⏰':'⚠'} ${esc(x.t)}</div>`).join('')}<p class="mute" style="margin:6px 0 0;font-size:12.5px">${L.some(x=>!x.h)?'갱신 교육을 받고 이수증을 관리자에게 제출하세요. ':''}${L.some(x=>x.h)?'기한 안에 건강검진을 받고, 받은 날짜를 관리자에게 알려 주세요.':''}</p>${L.some(x=>x.h)&&LIVE&&w.id===ses.uid?`<button class="btn sm pri" style="margin-top:6px" onclick="myHealthUp()">📷 건강검진표 올리기</button>`:''}</div>`;}
+/* 내 서류: 급여명세서 · 건강검진 · 근로계약서 를 나눠서 봄 */
+function vMyDocs(me){const dt=ui.docTab||'pay',payN=(S.payslips||[]).filter(x=>x.wid===me.id&&!x.seen).length,hRej=(me.hreq||[]).some(r=>r.status==='반려');
+  const T=[['pay','💰 급여명세서',payN?'N':''],['health','🩺 건강검진',hRej?'!':''],['ctr','📄 근로계약서','']];
+  return `<div class="card" style="padding:10px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${T.map(([k,l,b])=>`<button class="btn${dt===k?' pri':''}" style="position:relative;padding:10px 4px;white-space:normal" onclick="ui.docTab='${k}';render()">${l}${b?`<span style="position:absolute;top:-6px;right:-4px;background:var(--bad);color:#fff;border-radius:9px;font-size:11px;padding:1px 6px">${b}</span>`:''}</button>`).join('')}</div></div>`
+    +(dt==='health'?myHealthCard(me):dt==='ctr'?`<div class="card"><h3>근로계약서</h3><div class="infobox">준비 중입니다. 곧 휴대폰에서 계약서를 보고 서명할 수 있습니다.</div></div>`:myPayCard(me));}
 /* 작업 배치 확인 (근로자 본인) — 확인할 때까지 약 1시간마다 재알림, 최대 5번 */
 function myAck(r){const m=r&&r.status!=='임시'&&(r.members||[]).find(x=>x.wid===ses.uid);return m&&m.ack!==undefined?m:null;}
 function ackBtn(r,small){const m=myAck(r);if(!m)return '';if(m.ack)return `<span class="chip st-ok" style="margin-top:4px">✔ 확인함 ${esc(String(m.ack).slice(5,16))}</span>`;
@@ -6925,6 +6930,7 @@ const I18=[
 ['퇴근 시각은 마지막 작업의 종료 시각으로 저장됩니다. (종료 시각을 비워 두면 퇴근 버튼을 누른 시각이 들어갑니다)','Giờ tan ca được lưu bằng giờ kết thúc của công việc cuối. (Để trống thì lấy giờ bấm nút tan ca)','Clock-out time is saved as the last task\'s end time. (If left blank, the time you press clock-out is used.)'],
 ['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
+['💰 급여명세서','💰 Phiếu lương','💰 Payslips'],['🩺 건강검진','🩺 Khám sức khỏe','🩺 Health checkup'],['📄 근로계약서','📄 Hợp đồng','📄 Contract'],
 ['공사를 선택하세요. 공사를 고르지 않으면 임시저장·공개할 수 없습니다.','Hãy chọn công trình.','Select a project first.'],
 ['최근 60일 동안 받은 공지가 없습니다.','Không có thông báo trong 60 ngày qua.','No notices in the last 60 days.'],
 ['— 읽고 「확인했습니다」를 눌러 주세요.','— Hãy đọc và bấm «Đã xác nhận».','— Read it and press “Confirmed”.'],
