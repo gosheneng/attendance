@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24i-->
+<!DOCTYPE html><!--v:2026.11.24j-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -11,6 +11,9 @@
 :root{--bg:#f3f5f8;--card:#fff;--ink:#1c2430;--mute:#6b7685;--line:#e1e5eb;--pri:#8d2d30;--pri2:#1b786e;--brand-r:#8d2d30;--brand-g:#1b786e;--ok:#1f8a4c;--warn:#b86e00;--bad:#c23b3b;--chip:#eef2f7}
 *{box-sizing:border-box}
 body{margin:0;font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+/* 한글 줄바꿈: 단어 중간에서 끊지 않음 (긴 영문·번호만 넘칠 때 끊음) */
+body{word-break:keep-all;overflow-wrap:break-word}
+.chip,.tab,.btn,th{word-break:keep-all}
 .demo-banner{background:#fff4d6;color:#6d4a00;font-size:13px;padding:6px 16px;border-bottom:1px solid #f0dca0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .linkbtn{background:none;border:none;color:var(--pri2);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
 .top{background:#fff;color:var(--ink);padding:9px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;border-bottom:3px solid transparent;border-image:linear-gradient(90deg,var(--brand-r) 0 62%,var(--brand-g) 62% 100%) 1;box-shadow:0 1px 6px rgba(0,0,0,.06)}
@@ -2772,7 +2775,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24i';
+const APP_VER='2026.11.24j';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
