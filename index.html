@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24f-->
+<!DOCTYPE html><!--v:2026.11.24g-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24f';
+const APP_VER='2026.11.24g';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3703,7 +3703,7 @@ function myRosterBanner(){const me=ses.uid,t=today(),n=nextWork(t);const a=myRos
   const line=(r,lab)=>{const p=P(r.projectId)||{};const v=r.vehicles.filter(x=>x.driver===me);const mates=r.members.filter(m=>m.wid!==me).map(m=>m.name);
     return `<div style="margin:4px 0"><b>${lab}</b> ${esc(p.name||'')} <span class="mute">${esc(r.tStart)}~${esc(r.tEnd)}${r.location?' · '+esc(r.location):''}</span>${mates.length?`<div class="mute" style="font-size:12.5px">함께: ${esc(mates.join(', '))}</div>`:''}${v.length?`<div style="font-size:12.5px">🚚 운전: ${esc(v.map(x=>(x.model||'')+' '+x.plate).join(', '))}</div>`:''}${r.note?`<div style="font-size:12.5px">📌 ${esc(r.note.split('\n')[0])}${r.note.indexOf('\n')>0?' …':''}</div>`:''}${r.permit?`<button class="btn sm pri" style="margin-top:4px" onclick="event.stopPropagation();rPermitView('${r.id}')">📋 안전작업허가서 보기</button>`:''}</div>`;};
   return `<div class="card" style="border-left:4px solid var(--pri2);cursor:pointer" onclick="wTab('crew')"><div class="row"><h3 style="margin:0">🗓 내 작업 배치</h3><span class="sp"></span><span class="mute" style="font-size:12px">전체 보기 ›</span></div>${a?line(a,'오늘'):''}${b?line(b,fmtDayS(n)):''}</div>`;}
-function vCrew(){const t=today();const d=ui.crewDate||nextWork(t);const rs=rostersPub(d);
+function vCrew(){const t=today();const d=ui.crewDate||t;const rs=rostersPub(d);
   let h=`<div class="card"><div style="display:flex;gap:6px;align-items:center"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',-1);render()">◀</button><input type="date" value="${d}" style="flex:1;min-width:0;width:auto" onchange="ui.crewDate=this.value;render()"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',1);render()">▶</button></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button class="btn sm${d===t?' pri':''}" onclick="ui.crewDate='${t}';render()">오늘</button><button class="btn sm${d===nextWork(t)?' pri':''}" onclick="ui.crewDate='${nextWork(t)}';render()">다음 근무일</button></div>
   <p class="mute" style="margin:8px 0 0">${fmtDay(d)} · 공사 ${rs.length}건 · ${rs.reduce((a,r)=>a+r.members.length,0)}명 투입. 서로 어디서 일하는지 보고 필요하면 도와주세요.</p></div>`;
