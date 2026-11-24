@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24e-->
+<!DOCTYPE html><!--v:2026.11.24f-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24e';
+const APP_VER='2026.11.24f';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -2997,12 +2997,12 @@ function vWorker(me){
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
   h+=tabs([['today','출퇴근']].concat([['crew','작업 배치'],['hist','출근부',rej||''],['leave','연차·휴가'],['docs','내 서류',((me.hreq||[]).some(r=>r.status==='반려')?'!':'')||((S.payslips||[]).some(x=>x.wid===me.id&&!x.seen)?'N':'')],['board','건의함'],['help','사용방법']]),(ui.wTab==='past'||ui.wTab==='todo')?'today':ui.wTab,'wTab');
-  if(ui.wTab==='today'||ui.wTab==='todo')h+=wGuideCard()+noticeBanner()+bdayWorker(me)+qualBanner(me)+myRosterBanner()+vDay(true);
+  if(ui.wTab==='today'||ui.wTab==='todo')h+=wGuideCard()+noticeBanner()+bdayWorker(me)+qualBanner(me)+vDay(true);
   else if(ui.wTab==='crew')h+=vCrew();
   else if(ui.wTab==='board')h+=vBoard();
   else if(ui.wTab==='help')h+=vHelp(me);
   else if(ui.wTab==='past'){
-    if(!ui.pastDate||ui.pastDate===today()){ui.wTab='today';h+=qualBanner(me)+myRosterBanner()+vDay(true);}else h+=vDay(false);
+    if(!ui.pastDate||ui.pastDate===today()){ui.wTab='today';h+=qualBanner(me)+vDay(true);}else h+=vDay(false);
   }
   else if(ui.wTab==='hist')h+=vMyHist(me);
   else if(ui.wTab==='leave')h+=vMyLeave(me);
