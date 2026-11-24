@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24o-->
+<!DOCTYPE html><!--v:2026.11.24p-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2797,7 +2797,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24o';
+const APP_VER='2026.11.24p';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3807,7 +3807,7 @@ function rForm(id,d){const r=id?(S.rosters||[]).find(x=>x.id===id):null;
   const cos=[...new Set([DEF_CO].concat((S.rosters||[]).map(x=>x.company).filter(Boolean)))];
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h2 style="margin:0">${id?'작업 배치 수정':'공사 투입 추가'}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <label class="f" style="margin-top:12px"><span>투입일</span><input id="rf_date" type="date" value="${RF.date}" onchange="RF.date=this.value;rfRender()"></label>
-  <label class="f"><span>공사</span><select id="rf_p"><option value="">— 공사를 선택하세요 —</option>${act.map(p=>`<option value="${p.id}" ${p.id===RF.projectId?'selected':''}>${esc(pFull(p))}</option>`).join('')}</select></label>
+  <label class="f"><span>공사 <b style="color:var(--bad)">*필수</b></span><select id="rf_p" onchange="this.style.borderColor=''"><option value="">— 공사를 선택하세요 —</option>${act.map(p=>`<option value="${p.id}" ${p.id===RF.projectId?'selected':''}>${esc(pFull(p))}</option>`).join('')}</select></label>
   <div class="grid2"><label class="f"><span>업체명 (다른 업체 발주면 바꾸세요)</span><input id="rf_co" list="rf_codl" value="${esc(RF.company)}"><datalist id="rf_codl">${cos.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
   <label class="f"><span>작업위치</span><input id="rf_loc" value="${esc(RF.location)}" placeholder="예: 소결공장 3층"></label></div>
   <label class="f" style="margin-top:0"><span>👷 외부 인원 공수 담당 <span class="mute" style="font-size:12px">(이 공사 외부 인원의 공수를 확인·수정하는 관리자 1명)</span></span><select id="rf_gsm"><option value="">— 지정 안 함 (월간 출근부 담당자) —</option>${S.workers.filter(w=>w.role!=='worker'&&w.status!=='퇴사').sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')).map(w=>`<option value="${w.id}" ${w.id===RF.gsMgr?'selected':''}>${esc(w.name)}${w.rank?' '+esc(w.rank):''}</option>`).join('')}</select></label>
@@ -3817,7 +3817,7 @@ function rForm(id,d){const r=id?(S.rosters||[]).find(x=>x.id===id):null;
   <h4 style="margin:10px 0 6px">차량</h4><div id="rf_veh"></div>
   <label class="f" style="margin-top:8px"><span>전달내용 (준비물·주의사항)</span><textarea id="rf_note" rows="3" placeholder="예: M24 스패너 필요">${esc(RF.note)}</textarea></label>
   <h4 style="margin:12px 0 6px">📋 안전작업허가서</h4><div id="rf_permit" tabindex="0" style="border:2px dashed var(--line,#ccc);border-radius:10px;padding:10px;outline:none"></div>
-  <p class="mute" style="font-size:12.5px;margin:6px 0 0"><b>임시저장</b>은 관리자만 보이고 근로자에게는 공개되지 않습니다. 공사가 아직 안 정해졌어도 저장할 수 있습니다.</p>
+  <p class="mute" style="font-size:12.5px;margin:6px 0 0"><b>임시저장</b>은 관리자만 보이고 근로자에게는 공개되지 않습니다. 임시저장·공개 모두 <b>공사를 먼저 선택</b>해야 합니다.</p>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn" onclick="rSave('임시')">임시저장</button><button class="btn pri" onclick="rSave('확정')">저장 후 공개</button></div></div>`);
   rfRender();rfPermitRender();}
 function rfSync(){const g=k=>{const e=document.getElementById(k);return e?e.value:'';};if(document.getElementById('rf_ts')){RF.tStart=g('rf_ts');RF.tEnd=g('rf_te');}RF.projectId=g('rf_p');RF.company=g('rf_co').trim();RF.location=g('rf_loc').trim();RF.note=g('rf_note').trim();if(document.getElementById('rf_gsm'))RF.gsMgr=g('rf_gsm');}
@@ -3862,7 +3862,7 @@ async function rPermitView(id){if(!LIVE){toast('시제품에서는 볼 수 없�
     const back=document.getElementById('rf_permit')?RF:null;
     openModal(`<div class="mbox" style="max-width:900px"><div class="row"><h3 style="margin:0">📋 안전작업허가서</h3><span class="sp"></span><a class="btn sm" href="${url}" target="_blank" rel="noopener">크게 보기</a><button class="btn sm" onclick="${back?'rForm(RF.id)':'closeModal()'}">닫기 ✕</button></div><p class="mute" style="margin:4px 0 8px;font-size:12.5px">${esc(fmtDay(ro.date||''))} ${esc(pname(ro.projectId)||'')} · 등록 ${esc(r.at||'')}</p><img src="${url}" style="width:100%;border:1px solid #ddd;border-radius:8px"></div>`);}
   catch(e){window.liveFail(e);}finally{window.liveBusy(false);}}
-async function rSave(st){rfSync();if(!RF.projectId&&st!=='임시'){toast('공사를 선택하세요. 아직 정해지지 않았으면 「임시저장」을 누르세요.');return;}
+async function rSave(st){rfSync();if(!RF.projectId){toast('공사를 선택하세요. 공사를 고르지 않으면 임시저장·공개할 수 없습니다.');const e=document.getElementById('rf_p');if(e){e.focus();e.style.borderColor='var(--bad)';e.scrollIntoView({block:'center'});}return;}
   if(RF.permitNew&&!RF.permitNew.fileId&&LIVE){window.liveBusy(true);   /* 허가서 이미지를 먼저 올림 */
     try{const r=await window.liveCall('roster_permitUp',{b64:RF.permitNew.b64,mime:RF.permitNew.mime,date:RF.date,pname:(P(RF.projectId)||{}).name||''});RF.permitNew.fileId=r.fileId;}
     catch(e){window.liveBusy(false);toast('허가서 이미지를 올리지 못했습니다: '+(e.message||e)+' — 다시 저장을 눌러 주세요.');return;}
@@ -6925,6 +6925,7 @@ const I18=[
 ['퇴근 시각은 마지막 작업의 종료 시각으로 저장됩니다. (종료 시각을 비워 두면 퇴근 버튼을 누른 시각이 들어갑니다)','Giờ tan ca được lưu bằng giờ kết thúc của công việc cuối. (Để trống thì lấy giờ bấm nút tan ca)','Clock-out time is saved as the last task\'s end time. (If left blank, the time you press clock-out is used.)'],
 ['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
+['공사를 선택하세요. 공사를 고르지 않으면 임시저장·공개할 수 없습니다.','Hãy chọn công trình.','Select a project first.'],
 ['최근 60일 동안 받은 공지가 없습니다.','Không có thông báo trong 60 ngày qua.','No notices in the last 60 days.'],
 ['— 읽고 「확인했습니다」를 눌러 주세요.','— Hãy đọc và bấm «Đã xác nhận».','— Read it and press “Confirmed”.'],
 ['지난 공지','Thông báo cũ','Earlier notices'],
