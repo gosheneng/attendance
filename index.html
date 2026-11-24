@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24x-->
+<!DOCTYPE html><!--v:2026.11.25a-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24x';
+const APP_VER='2026.11.25a';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -6955,6 +6955,7 @@ const I18=[
 ['퇴근 시각은 마지막 작업의 종료 시각으로 저장됩니다. (종료 시각을 비워 두면 퇴근 버튼을 누른 시각이 들어갑니다)','Giờ tan ca được lưu bằng giờ kết thúc của công việc cuối. (Để trống thì lấy giờ bấm nút tan ca)','Clock-out time is saved as the last task\'s end time. (If left blank, the time you press clock-out is used.)'],
 ['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
+['아무것도 누르지 마세요','Đừng bấm gì cả','Do not tap anything'],['화면을 끄거나 앱을 닫지 마세요','Đừng tắt màn hình hay đóng ứng dụng','Do not turn off the screen or close the app'],['완료 표시가 나올 때까지 기다려 주세요','Vui lòng chờ đến khi hiện hoàn tất','Please wait until it shows complete'],['화면을 누르면 닫힙니다','Chạm vào màn hình để đóng','Tap the screen to close'],
 ['↩ 진행 중으로','↩ Mở lại','↩ Reopen'],['+ 체크 항목 추가','+ Thêm mục','+ Add item'],
 ['+ 추가','+ Thêm','+ Add'],
 ['오늘 이후(미래) 날짜는 입력할 수 없습니다.','Không thể nhập ngày trong tương lai.','Future dates cannot be entered.'],['최근 14일 이내 날짜만 입력할 수 있습니다.','Chỉ nhập được trong 14 ngày gần đây.','Only the last 14 days can be entered.'],
@@ -7298,7 +7299,15 @@ function getPos0(){return new Promise(res=>{
 qrUse=async function(raw){busy(true);try{const r=await call('qrInfo',{qr:raw});qr=r.bad?{bad:true}:{spot:r.spot,raw};}catch(e){busy(false);failMsg(e);return;}busy(false);ui.wTab='today';render();window.scrollTo(0,0);};
 /* 출퇴근 진행 표시: 화면을 가리지 않는 위쪽 띠 (누르자마자 반응) */
 var CK_ON=false;
-function ckBar(t,kind){let b=document.getElementById('ckbar');if(!t){if(b)b.remove();return;}if(!b){b=document.createElement('div');b.id='ckbar';b.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:90;background:#1f2937;color:#fff;border-radius:999px;padding:10px 18px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:92vw;text-align:center';document.body.appendChild(b);}b.style.background=kind==='ok'?'#15803d':kind==='bad'?'#b91c1c':'#1f2937';b.textContent=t;}
+function ckBar(t,kind){let b=document.getElementById('ckbar');if(!t){if(b)b.remove();return;}
+  if(!b){b=document.createElement('div');b.id='ckbar';b.style.cssText='position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px';document.body.appendChild(b);}
+  const wait=!kind,col=kind==='ok'?'#15803d':kind==='bad'?'#b91c1c':'#1f2937';
+  b.onclick=wait?null:function(){ckBar('');};
+  b.innerHTML='<div style="background:#fff;border-radius:16px;padding:24px 22px;max-width:360px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35);border-top:6px solid '+col+'">'
+   +(wait?'<div class="spin" style="width:42px;height:42px;border-width:4px;margin:0 auto 14px"></div>':'<div style="font-size:44px;line-height:1;margin-bottom:10px">'+(kind==='ok'?'✅':'⚠️')+'</div>')
+   +'<div class="ckmsg" style="font-size:19px;font-weight:700;color:'+col+';line-height:1.45"></div>'
+   +(wait?'<div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:#fff4e5;color:#9a3412;font-weight:700;font-size:15px;line-height:1.45">아무것도 누르지 마세요<br>화면을 끄거나 앱을 닫지 마세요</div><div style="margin-top:8px;font-size:13px;color:#666">완료 표시가 나올 때까지 기다려 주세요</div>':'<div style="margin-top:12px;font-size:13px;color:#666">화면을 누르면 닫힙니다</div>')+'</div>';
+  b.querySelector('.ckmsg').textContent=String(t).replace(/^[📍📤✅⚠]\uFE0F?\s*/u,'').replace(' (화면을 닫지 마세요)','');}
 doCheck=async function(kind,dateArg,noConf){
   if(CK_ON){toast('보내는 중입니다. 잠시만 기다려 주세요.');return;}
   let sf=null;if(kind==='out'&&!noConf){sf=await outConfirm();if(!sf)return;}   /* 잘못 눌러 퇴근되는 것 방지 + 무사고 확인 */
