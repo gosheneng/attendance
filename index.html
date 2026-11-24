@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24k-->
+<!DOCTYPE html><!--v:2026.11.24l-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2786,7 +2786,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24k';
+const APP_VER='2026.11.24l';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3795,22 +3795,21 @@ function rForm(id,d){const r=id?(S.rosters||[]).find(x=>x.id===id):null;
   const act=S.projects.filter(p=>p.active&&!p.done||p.id===RF.projectId).sort((a,b)=>pFull(a).localeCompare(pFull(b),'ko'));
   const cos=[...new Set([DEF_CO].concat((S.rosters||[]).map(x=>x.company).filter(Boolean)))];
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h2 style="margin:0">${id?'작업 배치 수정':'공사 투입 추가'}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
-  <div class="grid2" style="margin-top:12px"><label class="f"><span>투입일</span><input id="rf_date" type="date" value="${RF.date}" onchange="RF.date=this.value;rfRender()"></label>
-  <label class="f"><span>작업시간</span><div class="row" style="gap:4px;flex-wrap:nowrap"><input id="rf_ts" type="time" value="${RF.tStart}"><span>~</span><input id="rf_te" type="time" value="${RF.tEnd}"></div></label></div>
+  <label class="f" style="margin-top:12px"><span>투입일</span><input id="rf_date" type="date" value="${RF.date}" onchange="RF.date=this.value;rfRender()"></label>
   <label class="f"><span>공사</span><select id="rf_p"><option value="">— 공사를 선택하세요 —</option>${act.map(p=>`<option value="${p.id}" ${p.id===RF.projectId?'selected':''}>${esc(pFull(p))}</option>`).join('')}</select></label>
   <div class="grid2"><label class="f"><span>업체명 (다른 업체 발주면 바꾸세요)</span><input id="rf_co" list="rf_codl" value="${esc(RF.company)}"><datalist id="rf_codl">${cos.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
   <label class="f"><span>작업위치</span><input id="rf_loc" value="${esc(RF.location)}" placeholder="예: 소결공장 3층"></label></div>
+  <label class="f" style="margin-top:0"><span>👷 외부 인원 공수 담당 <span class="mute" style="font-size:12px">(이 공사 외부 인원의 공수를 확인·수정하는 관리자 1명)</span></span><select id="rf_gsm"><option value="">— 지정 안 함 (월간 출근부 담당자) —</option>${S.workers.filter(w=>w.role!=='worker'&&w.status!=='퇴사').sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')).map(w=>`<option value="${w.id}" ${w.id===RF.gsMgr?'selected':''}>${esc(w.name)}${w.rank?' '+esc(w.rank):''}</option>`).join('')}</select></label>
   <h4 style="margin:6px 0">투입인원 <span id="rf_cnt" class="mute"></span></h4><div id="rf_mem"></div>
   <div class="row" style="gap:6px;margin:4px 0 0;flex-wrap:wrap"><input id="rf_xn" placeholder="외부 인원 이름" style="width:130px"><input id="rf_xc" placeholder="소속(선택)" style="width:120px"><select id="rf_xr" style="width:auto" onchange="document.getElementById('rf_xqw').style.display=RQ.indexOf(this.value)>=0?'':'none'">${ROLES.map(r=>`<option ${r==='작업'?'selected':''}>${r}</option>`).join('')}</select><button type="button" class="btn sm" onclick="rfExt()">+ 외부 인원</button></div>
   <label class="row" id="rf_xqw" style="gap:6px;display:none;font-size:13px;margin-top:4px"><input type="checkbox" id="rf_xq" style="width:auto"> 이 외부 인원의 해당 자격(자격증·교육 이수)을 확인했습니다</label>
-  <label class="f" style="margin-top:8px"><span>👷 외부 인원 공수 담당 <span class="mute" style="font-size:12px">(이 공사 외부 인원의 공수를 확인·수정하는 관리자 1명)</span></span><select id="rf_gsm"><option value="">— 지정 안 함 (월간 출근부 담당자) —</option>${S.workers.filter(w=>w.role!=='worker'&&w.status!=='퇴사').sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')).map(w=>`<option value="${w.id}" ${w.id===RF.gsMgr?'selected':''}>${esc(w.name)}${w.rank?' '+esc(w.rank):''}</option>`).join('')}</select></label>
   <h4 style="margin:10px 0 6px">차량</h4><div id="rf_veh"></div>
+  <label class="f" style="margin-top:8px"><span>전달내용 (준비물·주의사항)</span><textarea id="rf_note" rows="3" placeholder="예: M24 스패너 필요">${esc(RF.note)}</textarea></label>
   <h4 style="margin:12px 0 6px">📋 안전작업허가서</h4><div id="rf_permit" tabindex="0" style="border:2px dashed var(--line,#ccc);border-radius:10px;padding:10px;outline:none"></div>
   <p class="mute" style="font-size:12.5px;margin:6px 0 0"><b>임시저장</b>은 관리자만 보이고 근로자에게는 공개되지 않습니다. 공사가 아직 안 정해졌어도 저장할 수 있습니다.</p>
-  <label class="f" style="margin-top:8px"><span>전달내용 (준비물·주의사항)</span><textarea id="rf_note" rows="3" placeholder="예: M24 스패너 필요">${esc(RF.note)}</textarea></label>
   <div class="row" style="justify-content:flex-end"><button class="btn" onclick="closeModal()">취소</button><button class="btn" onclick="rSave('임시')">임시저장</button><button class="btn pri" onclick="rSave('확정')">저장 후 공개</button></div></div>`);
   rfRender();rfPermitRender();}
-function rfSync(){const g=k=>{const e=document.getElementById(k);return e?e.value:'';};RF.tStart=g('rf_ts');RF.tEnd=g('rf_te');RF.projectId=g('rf_p');RF.company=g('rf_co').trim();RF.location=g('rf_loc').trim();RF.note=g('rf_note').trim();if(document.getElementById('rf_gsm'))RF.gsMgr=g('rf_gsm');}
+function rfSync(){const g=k=>{const e=document.getElementById(k);return e?e.value:'';};if(document.getElementById('rf_ts')){RF.tStart=g('rf_ts');RF.tEnd=g('rf_te');}RF.projectId=g('rf_p');RF.company=g('rf_co').trim();RF.location=g('rf_loc').trim();RF.note=g('rf_note').trim();if(document.getElementById('rf_gsm'))RF.gsMgr=g('rf_gsm');}
 function rfRender(){const box=document.getElementById('rf_mem');if(!box)return;
   const others={},oRole={};(S.rosters||[]).filter(x=>x.date===RF.date&&x.id!==RF.id).forEach(x=>x.members.forEach(m=>{if(!others[m.wid]||m.role!=='관리'){others[m.wid]=P(x.projectId)?P(x.projectId).name:'다른 공사';}(oRole[m.wid]=oRole[m.wid]||[]).push(m.role);}));
   const blocked=(wid,ro)=>oRole[wid]&&!(ro==='관리'&&oRole[wid].every(x=>x==='관리'));
