@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24c-->
+<!DOCTYPE html><!--v:2026.11.24e-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24c';
+const APP_VER='2026.11.24e';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3694,19 +3694,22 @@ function qualBanner(w){const L=qualAlerts(w);if(!L.length)return '';
 function myAck(r){const m=r&&r.status!=='임시'&&(r.members||[]).find(x=>x.wid===ses.uid);return m&&m.ack!==undefined?m:null;}
 function ackBtn(r,small){const m=myAck(r);if(!m)return '';if(m.ack)return `<span class="chip st-ok" style="margin-top:4px">✔ 확인함 ${esc(String(m.ack).slice(5,16))}</span>`;
   return `<button class="btn ok ${small?'sm':''}" style="margin-top:6px" onclick="event.stopPropagation();rAck('${r.id}')">✔ 작업 배치 확인했습니다</button>`;}
+function ackBox(r){const m=myAck(r);if(!m)return '';
+  if(m.ack)return `<div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#e8f5ec;color:var(--ok);font-weight:700;text-align:center">✔ 작업 배치 확인 완료 <span style="font-weight:400">· ${esc(String(m.ack).slice(5,16))}</span></div>`;
+  return `<div style="margin-top:12px;padding-top:12px;border-top:2px dashed var(--bad)"><button class="btn ok big" style="width:100%" onclick="event.stopPropagation();rAck('${r.id}')">✔ 작업 배치 확인했습니다</button><p style="margin:6px 0 0;text-align:center;color:var(--bad);font-size:13px">누르지 않으면 1시간마다 다시 알림이 갑니다 (최대 5번)</p></div>`;}
 async function rAck(id){if(!LIVE){const r=(S.rosters||[]).find(x=>x.id===id),m=r&&r.members.find(x=>x.wid===ses.uid);if(m)m.ack=stamp();render();toast('확인했습니다.');return;}await window.liveRun('roster_ack',{id});}
 function ackSum(rs){let a=0,n=0;const miss=[];rs.forEach(r=>{if(r.status==='임시')return;r.members.forEach(m=>{if(m.ack===undefined)return;n++;if(m.ack)a++;else miss.push(m.name);});});return {a,n,miss};}
 function myRosterBanner(){const me=ses.uid,t=today(),n=nextWork(t);const a=myRoster(me,t),b=myRoster(me,n);if(!a&&!b)return '';
   const line=(r,lab)=>{const p=P(r.projectId)||{};const v=r.vehicles.filter(x=>x.driver===me);const mates=r.members.filter(m=>m.wid!==me).map(m=>m.name);
-    return `<div style="margin:4px 0"><b>${lab}</b> ${esc(p.name||'')} <span class="mute">${esc(r.tStart)}~${esc(r.tEnd)}${r.location?' · '+esc(r.location):''}</span>${mates.length?`<div class="mute" style="font-size:12.5px">함께: ${esc(mates.join(', '))}</div>`:''}${v.length?`<div style="font-size:12.5px">🚚 운전: ${esc(v.map(x=>(x.model||'')+' '+x.plate).join(', '))}</div>`:''}${r.note?`<div style="font-size:12.5px">📌 ${esc(r.note.split('\n')[0])}${r.note.indexOf('\n')>0?' …':''}</div>`:''}${r.permit?`<button class="btn sm pri" style="margin-top:4px" onclick="event.stopPropagation();rPermitView('${r.id}')">📋 안전작업허가서 보기</button>`:''}<div>${ackBtn(r,true)}</div></div>`;};
-  const un=[a,b].some(r=>{const m=myAck(r);return m&&!m.ack;});
-  return `<div class="card" style="border-left:4px solid ${un?'var(--bad)':'var(--pri2)'};cursor:pointer" onclick="wTab('crew')">${un?'<div class="warnbox" style="margin:0 0 8px">새 작업 배치가 있습니다. 내용을 보고 「✔ 작업 배치 확인했습니다」를 눌러 주세요. 누르지 않으면 1시간마다 다시 알림이 갑니다.</div>':''}<div class="row"><h3 style="margin:0">🗓 내 작업 배치</h3><span class="sp"></span><span class="mute" style="font-size:12px">전체 보기 ›</span></div>${a?line(a,'오늘'):''}${b?line(b,fmtDayS(n)):''}</div>`;}
+    return `<div style="margin:4px 0"><b>${lab}</b> ${esc(p.name||'')} <span class="mute">${esc(r.tStart)}~${esc(r.tEnd)}${r.location?' · '+esc(r.location):''}</span>${mates.length?`<div class="mute" style="font-size:12.5px">함께: ${esc(mates.join(', '))}</div>`:''}${v.length?`<div style="font-size:12.5px">🚚 운전: ${esc(v.map(x=>(x.model||'')+' '+x.plate).join(', '))}</div>`:''}${r.note?`<div style="font-size:12.5px">📌 ${esc(r.note.split('\n')[0])}${r.note.indexOf('\n')>0?' …':''}</div>`:''}${r.permit?`<button class="btn sm pri" style="margin-top:4px" onclick="event.stopPropagation();rPermitView('${r.id}')">📋 안전작업허가서 보기</button>`:''}</div>`;};
+  return `<div class="card" style="border-left:4px solid var(--pri2);cursor:pointer" onclick="wTab('crew')"><div class="row"><h3 style="margin:0">🗓 내 작업 배치</h3><span class="sp"></span><span class="mute" style="font-size:12px">전체 보기 ›</span></div>${a?line(a,'오늘'):''}${b?line(b,fmtDayS(n)):''}</div>`;}
 function vCrew(){const t=today();const d=ui.crewDate||nextWork(t);const rs=rostersPub(d);
-  let h=`<div class="card"><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',-1);render()">◀</button><input type="date" value="${d}" style="width:auto" onchange="ui.crewDate=this.value;render()"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',1);render()">▶</button><span class="sp"></span><button class="btn sm" onclick="ui.crewDate='${t}';render()">오늘</button><button class="btn sm" onclick="ui.crewDate='${nextWork(t)}';render()">다음 근무일</button></div>
+  let h=`<div class="card"><div style="display:flex;gap:6px;align-items:center"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',-1);render()">◀</button><input type="date" value="${d}" style="flex:1;min-width:0;width:auto" onchange="ui.crewDate=this.value;render()"><button class="btn sm" onclick="ui.crewDate=addDaysC('${d}',1);render()">▶</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px"><button class="btn sm${d===t?' pri':''}" onclick="ui.crewDate='${t}';render()">오늘</button><button class="btn sm${d===nextWork(t)?' pri':''}" onclick="ui.crewDate='${nextWork(t)}';render()">다음 근무일</button></div>
   <p class="mute" style="margin:8px 0 0">${fmtDay(d)} · 공사 ${rs.length}건 · ${rs.reduce((a,r)=>a+r.members.length,0)}명 투입. 서로 어디서 일하는지 보고 필요하면 도와주세요.</p></div>`;
   const mine=rs.filter(r=>r.members.some(m=>m.wid===ses.uid)),others=rs.filter(r=>!r.members.some(m=>m.wid===ses.uid));
   if(!rs.length)h+=`<div class="card"><p class="mute" style="margin:0">이 날짜에 등록된 작업 배치가 없습니다.</p></div>`;
-  return h+mine.map(r=>{const m=myAck(r);return (m?`<div class="card" style="border-left:4px solid ${m.ack?'var(--ok)':'var(--bad)'};padding:10px 14px"><div class="row" style="gap:8px;flex-wrap:wrap"><b>${m.ack?'확인 완료':'아래 작업 배치를 확인해 주세요'}</b><span class="sp"></span>${ackBtn(r)}</div></div>`:'')+rosterCard(r);}).join('')+others.map(r=>rosterCard(r)).join('');}
+  return h+mine.map(r=>{const c=rosterCard(r),b=ackBox(r);return b?c.replace(/<\/div>\s*$/,b+'</div>'):c;}).join('')+others.map(r=>rosterCard(r)).join('');}
 
 /* ---------- 관리자: 작업 배치 (끌어서 놓기 보드) ---------- */
 function rChipM(m,rid,q,extra){rid=rid||'';const sel=ui.rSel&&ui.rSel.k==='m'&&ui.rSel.id===m.wid&&(ui.rSel.from||'')===rid;const qs=String(q||'').split(',').filter(Boolean);return `<span class="dchip m${sel?' sel':''}" draggable="true" data-k="m" data-id="${m.wid}" data-from="${rid}" onclick="rTap(event,'m','${m.wid}','${rid}')">${extra||''}${esc(m.name)}${m.ack===undefined?'':m.ack?`<small title="확인 ${esc(m.ack)}" style="color:var(--ok);margin-left:2px">✔</small>`:`<small title="미확인 · 재알림 ${m.ackN||0}/5회" style="color:var(--bad);margin-left:2px">⏳</small>`}${qs.length?`<small class="qs">${qs.map(x=>x[0]).join('')}</small>`:''}</span>`;}
@@ -6885,7 +6888,7 @@ const I18=[
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
 ['✔ 작업 배치 확인했습니다','✔ Tôi đã xem phân công','✔ I have checked my assignment'],
 ['새 작업 배치가 있습니다. 내용을 보고 「✔ 작업 배치 확인했습니다」를 눌러 주세요. 누르지 않으면 1시간마다 다시 알림이 갑니다.','Có phân công mới. Hãy xem và bấm «✔ Tôi đã xem phân công». Nếu không bấm, mỗi giờ sẽ nhắc lại.','You have a new assignment. Check it and press “✔ I have checked my assignment”. Otherwise you will be reminded every hour.'],
-['아래 작업 배치를 확인해 주세요','Hãy xem phân công bên dưới','Please check the assignment below'],
+['누르지 않으면 1시간마다 다시 알림이 갑니다 (최대 5번)','Nếu không bấm, mỗi giờ sẽ nhắc lại (tối đa 5 lần)','If not pressed, you will be reminded every hour (up to 5 times)'],['✔ 작업 배치 확인 완료','✔ Đã xác nhận phân công','✔ Assignment confirmed'],
 ['확인 완료','Đã xác nhận','Confirmed'],
 ['🗓 내 작업 배치','🗓 Phân công của tôi','🗓 My assignment'],
 ['퇴근은 맨 아래 「작업 내역 입력 후 퇴근하기」 버튼으로 합니다.','Tan ca bằng nút «Nhập công việc rồi tan ca» ở cuối trang.','Clock out with the “Enter work log, then clock out” button at the bottom.'],
