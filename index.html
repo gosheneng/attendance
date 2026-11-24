@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24r-->
+<!DOCTYPE html><!--v:2026.11.24s-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2797,7 +2797,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24r';
+const APP_VER='2026.11.24s';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3016,7 +3016,7 @@ function myRec(){return recOf(ses.uid,curDate());}
 function ensureRec(wid,date,manual){let r=recOf(wid,date);if(!r){r={id:uid(),workerId:wid,date,checkIn:null,checkOut:null,entries:[],status:'draft',rejectReason:'',submittedAt:'',decidedBy:'',decidedAt:'',manual:!!manual,manualReason:'',history:[]};S.records.push(r);}return r;}
 const editable=r=>!r||r.status==='draft'||r.status==='rejected';
 function wTab(k){ui.wTab=k;render();}
-function pickDay(d){if(!d)return;if(d===today()){ui.wTab='today';ui.pastDate=d;}else{ui.wTab='past';ui.pastDate=d;}render();}   /* 오늘 화면에서 근무 날짜 고르기 */
+function pickDay(d){if(!d)return;if(d>today()){toast('오늘 이후(미래) 날짜는 입력할 수 없습니다.');ui.wTab='today';ui.pastDate=today();render();return;}if(d<daysAgo(14)){toast('최근 14일 이내 날짜만 입력할 수 있습니다.');render();return;}if(d===today()){ui.wTab='today';ui.pastDate=d;}else{ui.wTab='past';ui.pastDate=d;}render();}   /* 오늘 화면에서 근무 날짜 고르기 */
 function vWorker(me){
   let h=`<div class="top"><div class="brand" onclick="goHome(0)" title="처음 화면으로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합근무시스템</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}${isStaff(me)?'<button class="btn sm" onclick="ui.asWorker=false;render()">관리자 화면</button>':''}<button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap narrow">
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
@@ -3027,7 +3027,7 @@ function vWorker(me){
   else if(ui.wTab==='crew')h+=vCrew();
   else if(ui.wTab==='board')h+=vBoard();
   else if(ui.wTab==='help')h+=vHelp(me);
-  else if(ui.wTab==='past'){
+  else if(ui.wTab==='past'){if(ui.pastDate&&ui.pastDate>today())ui.pastDate=today();
     if(!ui.pastDate||ui.pastDate===today()){ui.wTab='today';h+=qualBanner(me)+vDay(true);}else h+=vDay(false);
   }
   else if(ui.wTab==='hist')h+=vMyHist(me);
@@ -6930,6 +6930,7 @@ const I18=[
 ['퇴근 시각은 마지막 작업의 종료 시각으로 저장됩니다. (종료 시각을 비워 두면 퇴근 버튼을 누른 시각이 들어갑니다)','Giờ tan ca được lưu bằng giờ kết thúc của công việc cuối. (Để trống thì lấy giờ bấm nút tan ca)','Clock-out time is saved as the last task\'s end time. (If left blank, the time you press clock-out is used.)'],
 ['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
+['오늘 이후(미래) 날짜는 입력할 수 없습니다.','Không thể nhập ngày trong tương lai.','Future dates cannot be entered.'],['최근 14일 이내 날짜만 입력할 수 있습니다.','Chỉ nhập được trong 14 ngày gần đây.','Only the last 14 days can be entered.'],
 ['이번 달 예상 금액 (세전)','Dự kiến tháng này (trước thuế)','Estimated this month (pre-tax)'],
 ['💰 급여명세서','💰 Phiếu lương','💰 Payslips'],['🩺 건강검진','🩺 Khám sức khỏe','🩺 Health checkup'],['📄 근로계약서','📄 Hợp đồng','📄 Contract'],
 ['공사를 선택하세요. 공사를 고르지 않으면 임시저장·공개할 수 없습니다.','Hãy chọn công trình.','Select a project first.'],
