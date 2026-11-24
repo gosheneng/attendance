@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24j-->
+<!DOCTYPE html><!--v:2026.11.24k-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -14,6 +14,12 @@ body{margin:0;font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;back
 /* 한글 줄바꿈: 단어 중간에서 끊지 않음 (긴 영문·번호만 넘칠 때 끊음) */
 body{word-break:keep-all;overflow-wrap:break-word}
 .chip,.tab,.btn,th{word-break:keep-all}
+/* 접고 펴는 칸(details): 닫혀 있으면 「펼치기 ▼」, 열려 있으면 「접기 ▲」 */
+summary{cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+summary::after{content:'펼치기 ▼';font-size:12px;font-weight:400;color:var(--mute,#888);margin-left:8px;white-space:nowrap}
+details[open]>summary::after{content:'접기 ▲'}
+html[lang=vi] summary::after{content:'Mở ▼'}html[lang=vi] details[open]>summary::after{content:'Đóng ▲'}
+html[lang=en] summary::after{content:'Expand ▼'}html[lang=en] details[open]>summary::after{content:'Collapse ▲'}
 .demo-banner{background:#fff4d6;color:#6d4a00;font-size:13px;padding:6px 16px;border-bottom:1px solid #f0dca0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .linkbtn{background:none;border:none;color:var(--pri2);text-decoration:underline;font:inherit;cursor:pointer;padding:0}
 .top{background:#fff;color:var(--ink);padding:9px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5;border-bottom:3px solid transparent;border-image:linear-gradient(90deg,var(--brand-r) 0 62%,var(--brand-g) 62% 100%) 1;box-shadow:0 1px 6px rgba(0,0,0,.06)}
@@ -166,6 +172,11 @@ table.led th{text-align:center;line-height:1.25}
 <div id="app"><div id="boot-msg" style="max-width:420px;margin:60px auto;text-align:center;color:#55606e;font-size:15px"><div class="spin"></div>고센이엔지 통합근무시스템을 불러오는 중…</div></div>
 <script>
 /* 화면 오류가 나면 백지 대신 오류 내용을 보여 줌 (원인 확인용) */
+/* 길게 펼쳐진 칸은 맨 아래에도 「접기 ▲」 버튼 (위로 다시 올라가지 않아도 접을 수 있게) */
+document.addEventListener('toggle',function(e){var d=e.target;if(!d||d.tagName!=='DETAILS')return;var b=d.querySelector(':scope>.det-close');
+  if(!d.open){if(b)b.remove();return;}if(b||d.scrollHeight<480)return;b=document.createElement('button');b.type='button';b.className='btn sm det-close';
+  var L=document.documentElement.lang;b.textContent=L==='vi'?'Đóng ▲':L==='en'?'Collapse ▲':'접기 ▲';b.style.cssText='display:block;margin:12px auto 0';
+  b.onclick=function(ev){ev.preventDefault();d.open=false;try{d.scrollIntoView({block:'nearest'});}catch(_){}};d.appendChild(b);},true);
 window.__showErr=function(msg){var d=document.getElementById('errbar');if(!d){d=document.createElement('div');d.id='errbar';d.style.cssText='position:fixed;left:8px;right:8px;top:8px;z-index:200;padding:12px 14px;border:1px solid #f0b8b8;background:#fdeeee;color:#8a2020;border-radius:10px;font-size:13px;word-break:break-all;box-shadow:0 4px 14px rgba(0,0,0,.15)';d.onclick=function(){d.remove();};(document.body||document.documentElement).appendChild(d);}try{var n=+(sessionStorage.getItem('errN')||0);if(n<3&&window.BOOT&&BOOT.api){sessionStorage.setItem('errN',n+1);fetch(BOOT.api,{method:'POST',credentials:'omit',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({op:'clientErr',p:{msg:String(msg),ua:navigator.userAgent,ver:(typeof APP_VER!=='undefined'?APP_VER:'')}})}).catch(function(){});}}catch(_){}d.textContent='화면 오류: '+msg+' — 이 화면을 캡처해서 관리자에게 보내 주세요. (누르면 닫힘) ['+(navigator.userAgent.match(/OS [\d_]+|Android [\d.]+|KAKAOTALK|NAVER/g)||[]).join(' ')+']';};
 window.addEventListener('error',function(e){window.__showErr((e.message||'알 수 없는 오류')+(e.lineno?' (줄 '+e.lineno+')':''));});
 window.addEventListener('unhandledrejection',function(e){var r=e.reason;window.__showErr('처리 오류: '+((r&&r.message)||String(r)));});
@@ -2775,7 +2786,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24j';
+const APP_VER='2026.11.24k';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3332,7 +3343,7 @@ function aGisung(){ledEnsureDemo();const y=ledY(),L=gList(),cm=Number(today().sl
   return h+`</table></div><p class="mute" style="margin-bottom:0">행을 누르면 월별 기성금과 담당자·계약 종료·허가서·보험료 정산을 고칠 수 있습니다. 진행률 = (전년도 기성금 + 당해년도 기성금) ÷ 수주금액, 이월 잔금 = 수주금액 − 누적 기성금. 「사용」을 누르면 사용/중지가 바뀝니다 (중지된 공사는 근로자 공사 선택 목록에서 빠짐).</p></div>`;}
 /* 공사 등록·사용 상태 관리 (기성준공 안으로 통합) */
 function projCard(){if(!(canM('proj')||canM('gisung')))return '';const op=!!ui.projOpen,n=S.projects.filter(p=>!p.done).length;
-  return `<div id="projcard"><div class="card click" onclick="ui.projOpen=!ui.projOpen;render()" style="padding:12px 16px"><b>${op?'▼':'▶'} 공사 목록 · 사용 상태 관리</b> <span class="mute">(진행 중 ${n}건 · 공사 등록·수정, 사용/중지, 완료)</span></div>${op?aProjects():''}</div>`;}
+  return `<div id="projcard"><div class="card click" onclick="ui.projOpen=!ui.projOpen;render()" style="padding:12px 16px"><b>${op?'▼':'▶'} 공사 목록 · 사용 상태 관리</b> <span class="mute">(진행 중 ${n}건 · 공사 등록·수정, 사용/중지, 완료)</span> <span class="mute" style="font-size:12px;white-space:nowrap">${op?'접기 ▲':'펼치기 ▼'}</span></div>${op?aProjects():''}</div>`;}
 function aSafety(){ledEnsureDemo();const y=ledY(),L=sList();
   const tot={D:0,C:0,S:0,E:0,m:MH.map(()=>0)};L.forEach(x=>{tot.D+=x.c.D;tot.C+=Number(x.s.carry)||0;tot.S+=x.c.S;tot.E+=Number(x.c.E)||0;MH.forEach((_,i)=>tot.m[i]+=Number((x.s.m||[])[i])||0);});
   const overN=L.filter(x=>x.c.E!==''&&x.c.E<0).length;
@@ -5684,7 +5695,7 @@ function wGuideCard(){const e=brEnv(),L=LANG==='vi'?'vi':LANG==='en'?'en':'ko',T
     :st==='on'?`<button class="btn sm" onclick="pushTest()">${T({ko:'테스트',vi:'Thử',en:'Test'})}</button> <button class="btn sm" onclick="pushOff()">${T({ko:'끄기',vi:'Tắt',en:'Turn off'})}</button>`
     :st==='denied'?`<button class="btn sm" onclick="pushHelp('denied')">${T({ko:'푸는 방법',vi:'Cách mở chặn',en:'How to unblock'})}</button>`
     :st==='nosup'?`<button class="btn sm pri" onclick="pushHelp()">${T({ko:'알림 켜는 방법',vi:'Cách bật',en:'How to enable'})}</button>`:`<button class="btn sm pri" onclick="pushOn()">${T({ko:'알림 켜기',vi:'Bật thông báo',en:'Turn on alerts'})}</button>`;
-  return warn+`<details class="card" style="padding:10px 14px;border-left:4px solid var(--pri2)" ${ui.agOpen?'open':''} ontoggle="ui.agOpen=this.open"><summary style="cursor:pointer;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap" data-notr="1">📲 ${T({ko:'앱 설치 · 휴대폰 알림 방법',vi:'Cài ứng dụng · bật thông báo',en:'Install app · phone alerts'})} ${e.sa?`<span class="chip st-ok">${T({ko:'앱 설치됨',vi:'Đã cài',en:'Installed'})}</span>`:''}${pst}<span class="sp"></span><span class="mute agarr" style="font-size:12px;font-weight:400;white-space:nowrap">${T({ko:'펼치기',vi:'Mở',en:'Open'})} ▼</span></summary>
+  return warn+`<details class="card" style="padding:10px 14px;border-left:4px solid var(--pri2)" ${ui.agOpen?'open':''} ontoggle="ui.agOpen=this.open"><summary style="cursor:pointer;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap" data-notr="1">📲 ${T({ko:'앱 설치 · 휴대폰 알림 방법',vi:'Cài ứng dụng · bật thông báo',en:'Install app · phone alerts'})} ${e.sa?`<span class="chip st-ok">${T({ko:'앱 설치됨',vi:'Đã cài',en:'Installed'})}</span>`:''}${pst}<span class="sp"></span></summary>
   <div style="margin-top:8px;line-height:1.6" data-notr="1"><b>① ${T({ko:'앱으로 설치 (처음 한 번)',vi:'Cài như ứng dụng (một lần)',en:'Install as an app (once)'})}</b>${agSteps(e)}
   <div style="margin-top:10px"><b>② ${T({ko:'휴대폰 알림 켜기',vi:'Bật thông báo điện thoại',en:'Turn on phone alerts'})}</b><div class="mute" style="font-size:12.5px">${T({ko:'반려·승인·작업 배치·연차 결과·공지를 휴대폰 알림으로 받습니다.',vi:'Nhận thông báo duyệt/từ chối, danh sách, nghỉ phép, thông báo.',en:'Get alerts for approvals, rejections, crew lists, leave and notices.'})}${E.ios&&!e.sa?' '+T({ko:'(아이폰은 홈 화면에 추가한 앱으로 열어야 켤 수 있습니다)',vi:'(iPhone: phải mở từ biểu tượng trên màn hình chính)',en:'(iPhone: open from the Home-screen icon first)'}):''}</div><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${btn}</div></div></div></details>`;}
 function appGuideCard(){const e=brEnv();if(e.sa&&e.good)return '';let hid=0;try{hid=Number(localStorage.getItem('agHide')||0);}catch(x){}
