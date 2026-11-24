@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24l-->
+<!DOCTYPE html><!--v:2026.11.24m-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -75,7 +75,18 @@ th{background:#f7f9fb;font-weight:500;color:var(--mute);white-space:nowrap}
 .rzone.rz{display:flex;gap:8px;align-items:flex-start;border:1px dashed #d6dbe3;border-radius:8px;padding:6px;margin-top:6px}.rzl{flex:0 0 30px;font-size:12px;color:var(--mute);padding-top:4px}
 .rzone.over{background:#e9f6f2;border-color:var(--pri2)}.rzone.target{border-color:var(--pri);background:#fff8f8;cursor:pointer}.rpool.target{cursor:pointer}
 .rrole{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.rrole>b{flex:0 0 34px}.rrole select{width:auto;min-width:140px}.rchips{display:flex;flex-wrap:wrap;gap:4px}
-.rchip{background:#eef5f3;border:1px solid #cfe6df;font-size:13px}.rchip button{border:none;background:none;color:var(--bad);cursor:pointer;padding:0 0 0 4px;font-size:12px}
+.rchip{background:#eef5f3;border:1px solid #cfe6df;font-size:13px} /* 공사 투입 추가 창: 역할 칸 정렬 */
+#rf_mem .rrole{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-bottom:8px}
+#rf_mem .rrole>b{white-space:nowrap}
+#rf_mem .rchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+#rf_mem .rrole>select{grid-column:2;width:100%;min-width:0;margin:0}
+#rf_mem .rchips:empty{display:none}
+#rf_mem .rrole>b{grid-row:1/span 2;align-self:center}
+#rf_mem>.btn{margin:2px 0 4px 52px}
+.rf-x{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.rf-x>input,.rf-x>select,.rf-x>.btn{width:100%;min-width:0;margin:0}
+.rf-sub{font-size:13px;color:var(--mute);margin:12px 0 0}
+.rchip button{border:none;background:none;color:var(--bad);cursor:pointer;padding:0 0 0 4px;font-size:12px}
 .reply{background:#f6f8fa;border-left:3px solid var(--pri2);padding:6px 10px;margin-top:6px;border-radius:4px;font-size:14px}
 .chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--chip);white-space:nowrap;margin:1px 2px 1px 0}
 .st-draft{background:#eef0f3;color:#55606e}.st-pend{background:#e6effb;color:var(--pri2)}.st-ok{background:#e3f4ea;color:var(--ok)}.st-bad{background:#fbe7e7;color:var(--bad)}
@@ -2786,7 +2797,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24l';
+const APP_VER='2026.11.24m';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3801,7 +3812,7 @@ function rForm(id,d){const r=id?(S.rosters||[]).find(x=>x.id===id):null;
   <label class="f"><span>작업위치</span><input id="rf_loc" value="${esc(RF.location)}" placeholder="예: 소결공장 3층"></label></div>
   <label class="f" style="margin-top:0"><span>👷 외부 인원 공수 담당 <span class="mute" style="font-size:12px">(이 공사 외부 인원의 공수를 확인·수정하는 관리자 1명)</span></span><select id="rf_gsm"><option value="">— 지정 안 함 (월간 출근부 담당자) —</option>${S.workers.filter(w=>w.role!=='worker'&&w.status!=='퇴사').sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')).map(w=>`<option value="${w.id}" ${w.id===RF.gsMgr?'selected':''}>${esc(w.name)}${w.rank?' '+esc(w.rank):''}</option>`).join('')}</select></label>
   <h4 style="margin:6px 0">투입인원 <span id="rf_cnt" class="mute"></span></h4><div id="rf_mem"></div>
-  <div class="row" style="gap:6px;margin:4px 0 0;flex-wrap:wrap"><input id="rf_xn" placeholder="외부 인원 이름" style="width:130px"><input id="rf_xc" placeholder="소속(선택)" style="width:120px"><select id="rf_xr" style="width:auto" onchange="document.getElementById('rf_xqw').style.display=RQ.indexOf(this.value)>=0?'':'none'">${ROLES.map(r=>`<option ${r==='작업'?'selected':''}>${r}</option>`).join('')}</select><button type="button" class="btn sm" onclick="rfExt()">+ 외부 인원</button></div>
+  <div class="rf-sub">외부 인원 (출근부에 없는 사람)</div><div class="rf-x"><input id="rf_xn" placeholder="외부 인원 이름"><input id="rf_xc" placeholder="소속(선택)"><select id="rf_xr" onchange="document.getElementById('rf_xqw').style.display=RQ.indexOf(this.value)>=0?'':'none'">${ROLES.map(r=>`<option ${r==='작업'?'selected':''}>${r}</option>`).join('')}</select><button type="button" class="btn" onclick="rfExt()">+ 외부 인원 추가</button></div>
   <label class="row" id="rf_xqw" style="gap:6px;display:none;font-size:13px;margin-top:4px"><input type="checkbox" id="rf_xq" style="width:auto"> 이 외부 인원의 해당 자격(자격증·교육 이수)을 확인했습니다</label>
   <h4 style="margin:10px 0 6px">차량</h4><div id="rf_veh"></div>
   <label class="f" style="margin-top:8px"><span>전달내용 (준비물·주의사항)</span><textarea id="rf_note" rows="3" placeholder="예: M24 스패너 필요">${esc(RF.note)}</textarea></label>
@@ -3822,7 +3833,7 @@ function rfRender(){const box=document.getElementById('rf_mem');if(!box)return;
   const cars=(S.cars||[]).filter(c=>(c.active!==false&&!oc[c.id])||RF.vehicles.some(v=>v.cid===c.id));
   const dOpt=sel=>`<option value="">— 운전자 —</option>`+RF.members.filter(m=>!m.ext).map(m=>`<option value="${m.wid}" ${m.wid===sel?'selected':''}>${esc(m.name||W(m.wid).name)}</option>`).join('')+(sel&&!RF.members.some(m=>m.wid===sel)?`<option value="${sel}" selected>${esc(W(sel).name)} (명단 밖)</option>`:'');
   document.getElementById('rf_veh').innerHTML=(cars.length?'':'<p class="mute" style="margin:0 0 6px">등록된 차량이 없습니다. 「차량관리」에서 먼저 등록하세요.</p>')+RF.vehicles.map((v,i)=>{if(v.xv)return `<div class="row" style="gap:6px;margin-bottom:6px"><span class="chip rchip">🚚 ${esc(v.plate)} ${esc(v.model||'')} · ${esc(v.dname||(v.driver?W(v.driver).name:'운전자 미정'))}<small class="mute">(외부)</small><button type="button" onclick="RF.vehicles.splice(${i},1);rfRender()">✕</button></span></div>`;const c=carOf(v.cid);return `<div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:nowrap"><select style="flex:1.3" onchange="rfVeh(${i},'cid',this.value)">${cars.map(c2=>`<option value="${c2.id}" ${c2.id===v.cid?'selected':''}>${esc(carLabel(c2))}${c2.repair?' ⚠수리 필요':''}</option>`).join('')}</select><select style="flex:1" onchange="rfVeh(${i},'driver',this.value)">${dOpt(v.driver)}</select><button type="button" class="btn sm bad" onclick="RF.vehicles.splice(${i},1);rfRender()">✕</button></div>${c&&c.repair?'<div class="mute" style="color:var(--bad);font-size:12px;margin:-4px 0 6px">⚠ 수리 필요로 표시된 차량입니다.</div>':''}`;}).join('')
-   +(cars.length?`<button type="button" class="btn sm" onclick="rfVehAdd()">+ 차량 추가</button> `:'')+`<span class="row" style="gap:4px;display:inline-flex;flex-wrap:wrap;margin-top:4px"><input id="rf_vp" placeholder="외부 차량번호" style="width:120px"><input id="rf_vm" placeholder="차종" style="width:80px"><select id="rf_vd" style="width:auto">${xvDrvOpts(RF.members)}</select><button type="button" class="btn sm" onclick="rfExtV()">+ 외부 차량</button></span>`;}
+   +(cars.length?`<button type="button" class="btn" style="width:100%" onclick="rfVehAdd()">+ 회사 차량 추가</button>`:'')+`<div class="rf-sub">외부 차량</div><div class="rf-x"><input id="rf_vp" placeholder="외부 차량번호"><input id="rf_vm" placeholder="차종"><select id="rf_vd">${xvDrvOpts(RF.members)}</select><button type="button" class="btn" onclick="rfExtV()">+ 외부 차량 추가</button></div>`;}
 function rfExtV(){rfSync();const pl=document.getElementById('rf_vp').value.trim();if(!pl){toast('외부 차량번호를 입력하세요.');return;}const d=document.getElementById('rf_vd').value;RF.vehicles.push(Object.assign({xv:1,plate:pl,model:document.getElementById('rf_vm').value.trim()},xvDrv(d)));rfRender();}
 function rfExt(){rfSync();const n=document.getElementById('rf_xn').value.trim(),ro=document.getElementById('rf_xr').value,qc=document.getElementById('rf_xq');if(!n){toast('외부 인원 이름을 입력하세요.');return;}
   if(RQ.indexOf(ro)>=0&&!qc.checked){toast('「'+ro+'」 칸은 그 사람의 자격을 확인했을 때만 넣을 수 있습니다. 확인 칸에 체크하세요.');return;}
