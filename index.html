@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24h-->
+<!DOCTYPE html><!--v:2026.11.24i-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2772,7 +2772,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24h';
+const APP_VER='2026.11.24i';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -2996,8 +2996,9 @@ function vWorker(me){
   let h=`<div class="top"><div class="brand" onclick="goHome(0)" title="처음 화면으로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합근무시스템</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}${isStaff(me)?'<button class="btn sm" onclick="ui.asWorker=false;render()">관리자 화면</button>':''}<button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap narrow">
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
-  h+=tabs([['today','출퇴근']].concat([['crew','작업 배치'],['hist','출근부',rej||''],['leave','연차·휴가'],['docs','내 서류',((me.hreq||[]).some(r=>r.status==='반려')?'!':'')||((S.payslips||[]).some(x=>x.wid===me.id&&!x.seen)?'N':'')],['board','건의함'],['help','사용방법']]),(ui.wTab==='past'||ui.wTab==='todo')?'today':ui.wTab,'wTab');
-  if(ui.wTab==='today'||ui.wTab==='todo')h+=wGuideCard()+noticeBanner()+bdayWorker(me)+qualBanner(me)+vDay(true);
+  h+=tabs([['notice','공지',ntMine().filter(n=>!n.read).length||''],['today','출퇴근']].concat([['crew','작업 배치'],['hist','출근부',rej||''],['leave','연차·휴가'],['docs','내 서류',((me.hreq||[]).some(r=>r.status==='반려')?'!':'')||((S.payslips||[]).some(x=>x.wid===me.id&&!x.seen)?'N':'')],['board','건의함'],['help','사용방법']]),(ui.wTab==='past'||ui.wTab==='todo')?'today':ui.wTab,'wTab');
+  if(ui.wTab==='notice')h+=vNoticeW();
+  else if(ui.wTab==='today'||ui.wTab==='todo')h+=wGuideCard()+bdayWorker(me)+qualBanner(me)+vDay(true);
   else if(ui.wTab==='crew')h+=vCrew();
   else if(ui.wTab==='board')h+=vBoard();
   else if(ui.wTab==='help')h+=vHelp(me);
@@ -3621,14 +3622,25 @@ function bellBtn(){const n=(S.notis||[]).filter(x=>!x.read).length;try{if(naviga
 const NOTI_TAB={cardask:'card',paydue:'paydue',signup:'workers',lvreq:'leave',hq:'quals',inj:'dash',sign:'sign',note:'notes',cal:'cal',prq:'prq',todo:'todo',appr:'appr',leave:'leave',notice:'notice',buy:'po_mat',tax:'tax',board:'board',roster:'roster'};
 function notiBox(){const L=S.notis||[],un=L.filter(x=>!x.read).length;
   openModal(`<div class="mbox" style="max-width:520px"><div class="row" style="gap:6px"><h3 style="margin:0">🔔 알림함</h3><span class="mute" style="font-size:12.5px">최근 30일</span><span class="sp"></span>${un?`<button class="btn sm" onclick="notiRead('',1)">모두 읽음</button>`:''}<button class="btn sm" onclick="closeModal()">닫기</button></div>
-  <div style="max-height:65vh;overflow:auto;margin-top:8px">${L.length?L.map(x=>`<div class="click" onclick="notiGo('${x.id}')" style="padding:8px 6px;border-top:1px solid var(--line);${x.read?'opacity:.65':'background:#fbf5f5'}"><div class="row" style="gap:6px">${x.read?'':'<i style="width:8px;height:8px;border-radius:50%;background:#c62828;flex:none"></i>'}<b style="flex:1">${esc(x.t)}</b><span class="mute" style="font-size:11.5px">${esc(String(x.at).slice(5,16))}</span></div>${x.b?`<div style="font-size:13px;margin-top:2px;white-space:pre-line">${esc(x.b)}</div>`:''}</div>`).join(''):'<p class="mute">받은 알림이 없습니다.</p>'}</div></div>`);}
-function notiRead(id,all){if(!LIVE)return;window.liveCall('noti_read',{id,all:all?1:0}).then(r=>{if(r&&r.state){applyState(r.state);}if(document.querySelector('.mbox h3')&&/알림함/.test(document.querySelector('.mbox h3').textContent))notiBox();render();}).catch(()=>{});}
+  <div style="max-height:65vh;overflow:auto;margin-top:8px">${L.length?L.map(x=>`<div class="click" onclick="notiGo('${x.id}')" style="padding:8px 6px;border-top:1px solid var(--line);${x.read?'opacity:.65':'background:#fbf5f5'}"><div class="row" style="gap:6px">${x.read?'':'<i style="width:8px;height:8px;border-radius:50%;background:#c62828;flex:none"></i>'}<b style="flex:1">${esc(x.t)}</b><span class="mute" style="font-size:11.5px">${esc(String(x.at).slice(5,16))}</span>${notiDest(x)?'<span style="color:var(--pri);font-weight:700">›</span>':''}</div>${x.b?`<div style="font-size:13px;margin-top:2px;white-space:pre-line">${esc(x.b)}</div>`:''}</div>`).join(''):'<p class="mute">받은 알림이 없습니다.</p>'}</div></div>`);}
+function notiRead(id,all){const L=(S.notis||[]).filter(x=>!x.read&&(all||x.id===id));L.forEach(x=>x.read=1);const box=()=>{if(document.querySelector('.mbox h3')&&/알림함/.test(document.querySelector('.mbox h3').textContent))notiBox();};
+  if(all){box();render();box();}
+  if(!LIVE||!L.length)return;window.liveCall('noti_read',all?{all:1}:{id}).then(r=>{if(r&&r.state){const keep=new Set((S.notis||[]).filter(x=>x.read).map(x=>x.id));applyState(r.state);(S.notis||[]).forEach(x=>{if(keep.has(x.id))x.read=1;});}if(all)toast('모두 읽음으로 표시했습니다.');}).catch(e=>{L.forEach(x=>x.read=0);box();render();toast('읽음 표시를 저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.');});}
 /* 알림 → 메뉴: 태그 앞부분으로 찾음 (긴 것 먼저) */
 function notiTab(x){const tg=String(x.tag||'');let k=NOTI_TAB[tg]?tg:Object.keys(NOTI_TAB).sort((a,b)=>b.length-a.length).find(k=>tg.indexOf(k)===0);let t=k?NOTI_TAB[k]:'';if(t==='po_mat'){const b=(S.buys||[]).find(o=>tg==='buy'+o.id);if(b&&b.kind==='공사')t='po_con';}return t;}
 function notiCnts(){const m={};(S.notis||[]).forEach(x=>{if(x.read)return;const t=notiTab(x);if(t)m[t]=(m[t]||0)+1;});return m;}
 /* 메뉴에 들어가면 그 메뉴의 새 알림을 읽음으로 (알림함 기록은 남음) */
 function notiSeen(tab){const L=(S.notis||[]).filter(x=>!x.read&&notiTab(x)===tab);if(!L.length)return;L.forEach(x=>x.read=1);if(LIVE)window.liveCall('noti_read',{ids:L.map(x=>x.id)}).then(r=>{if(r&&r.state)applyState(r.state);}).catch(()=>{});}
-function notiGo(id){const x=(S.notis||[]).find(o=>o.id===id);if(!x)return;if(!x.read){x.read=1;notiRead(id,0);}const me=W(ses.uid)||{},tg=String(x.tag||''),t=NOTI_TAB[tg]||NOTI_TAB[(Object.keys(NOTI_TAB).find(k=>tg.indexOf(k)===0))];if(t&&isStaff(me)){ui.asWorker=false;closeModal();const bx=t==='po_mat'&&(S.buys||[]).find(o=>tg==='buy'+o.id);aTab(bx&&bx.kind==='공사'?'po_con':t);}else notiBox();}
+/* 알림 → 갈 곳: 관리 메뉴(관리자) 또는 근로자 화면 탭 */
+const NOTI_W={ros:'crew',rec:'hist',apv:'hist',lv:'leave',pay:'docs',nt:'notice'};
+function notiDest(x){const tg=String(x.tag||''),me=W(ses.uid)||{};
+  if(tg==='hq'+ses.uid)return {w:'docs'};
+  const t=notiTab(x);if(t&&isStaff(me))return {a:t};
+  const k=Object.keys(NOTI_W).sort((a,b)=>b.length-a.length).find(k=>tg.indexOf(k)===0&&!(k==='lv'&&tg.indexOf('lvreq')===0));return k?{w:NOTI_W[k]}:null;}
+function notiGo(id){const x=(S.notis||[]).find(o=>o.id===id);if(!x)return;if(!x.read)notiRead(id,0);const d=notiDest(x);
+  if(d&&d.a){ui.asWorker=false;closeModal();aTab(d.a);return;}
+  if(d&&d.w){closeModal();if(isStaff(W(ses.uid)||{}))ui.asWorker=true;if(d.w==='crew'){const m=/^ros(\d{4}-\d{2}-\d{2})/.exec(String(x.tag||''));ui.crewDate=m?m[1]:'';}ui.wTab=d.w;window.scrollTo(0,0);render();return;}
+  notiBox();toast('이 알림은 이동할 메뉴가 없습니다.');}
 /* 시제품: 예시 일정 (운영판에서는 구글 캘린더) */
 async function calDo(op,p){if(op==='list'){const cals=[{id:'c1',name:'1. 현장설명회',color:'#e67c73'},{id:'c2',name:'냉연1',color:'#33b679'},{id:'c3',name:'3. 휴가',color:'#8e24aa'}];
   const t=today();return {cals,events:[{id:'e1',cal:'c1',title:'1냉연 현장설명회 (샘플)',allDay:false,start:t+' 10:00',end:t+' 11:00',loc:'당진제철소',desc:''},{id:'e2',cal:'c2',title:'롤 교체 공사 (샘플)',allDay:true,start:addDaysC(t,2),end:addDaysC(t,5),loc:'',desc:''}],at:stamp()};}
@@ -6059,6 +6071,10 @@ function ntBox(n,act){const u=n.kind==='긴급',x=ntTr(n);return `<div class="ca
 const ntMine=()=>(S.notices||[]).filter(n=>!n.to||n.to.indexOf(ses.uid)>=0);   /* 나에게 온 공지만 */
 function noticeBanner(){const L=ntMine();const un=L.filter(n=>!n.read);let h=un.map(n=>ntBox(n,1)).join('');
   if(L.length>un.length)h+=`<div style="text-align:right;margin:-4px 0 8px"><button class="linkbtn" style="font-size:13px" onclick="ntAll()">지난 공지 ${L.length-un.length}건 보기 ›</button></div>`;return h;}
+function vNoticeW(){const L=ntMine(),un=L.filter(n=>!n.read),rd=L.filter(n=>n.read);
+  if(!L.length)return '<div class="card"><p class="mute" style="margin:0">최근 60일 동안 받은 공지가 없습니다.</p></div>';
+  return (un.length?`<div class="card" style="border-left:4px solid var(--bad);padding:10px 14px"><b style="color:var(--bad)">확인하지 않은 공지 ${un.length}건</b> <span class="mute" style="font-size:12.5px">— 읽고 「확인했습니다」를 눌러 주세요.</span></div>`+un.map(n=>ntBox(n,1)).join(''):'')
+    +(rd.length?`<h3 style="margin:14px 2px 6px">지난 공지 <span class="mute" style="font-size:13px;font-weight:400">(최근 60일)</span></h3>`+rd.map(n=>ntBox(n,1)).join(''):'');}
 function ntAll(){openModal(`<div class="mbox" style="max-width:560px"><div class="row"><h3 style="margin:0">공지·긴급알림 (최근 60일)</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>${ntMine().map(n=>ntBox(n,1)).join('')||'<p class="mute">공지가 없습니다.</p>'}</div>`);}
 function ntRead(id){if(!LIVE){const n=(S.notices||[]).find(x=>x.id===id);if(n)n.read=stamp();closeModal();render();return;}window.liveRun('notice_read',{id}).then(()=>{closeModal();render();});}
 /* 읽지 않은 긴급알림은 앱을 열면 창으로 띄움 (확인할 때까지) */
@@ -6885,6 +6901,13 @@ const I18=[
 ['퇴근 시각은 마지막 작업의 종료 시각으로 저장됩니다. (종료 시각을 비워 두면 퇴근 버튼을 누른 시각이 들어갑니다)','Giờ tan ca được lưu bằng giờ kết thúc của công việc cuối. (Để trống thì lấy giờ bấm nút tan ca)','Clock-out time is saved as the last task\'s end time. (If left blank, the time you press clock-out is used.)'],
 ['작업 내역 확인 후 퇴근하기','Kiểm tra công việc và tan ca','Check work log and clock out'],
 ['작업 내역 입력 후 퇴근하기','Nhập công việc rồi tan ca','Enter work log, then clock out'],
+['최근 60일 동안 받은 공지가 없습니다.','Không có thông báo trong 60 ngày qua.','No notices in the last 60 days.'],
+['— 읽고 「확인했습니다」를 눌러 주세요.','— Hãy đọc và bấm «Đã xác nhận».','— Read it and press “Confirmed”.'],
+['지난 공지','Thông báo cũ','Earlier notices'],
+['공지','Thông báo','Notices'],
+['모두 읽음으로 표시했습니다.','Đã đánh dấu tất cả là đã đọc.','Marked all as read.'],
+['이 알림은 이동할 메뉴가 없습니다.','Thông báo này không có mục để chuyển tới.','This alert has no menu to open.'],
+['읽음 표시를 저장하지 못했습니다. 잠시 뒤 다시 눌러 주세요.','Không lưu được. Vui lòng thử lại sau.','Could not save. Please try again shortly.'],
 ['✔ 작업 배치 확인했습니다','✔ Tôi đã xem phân công','✔ I have checked my assignment'],
 ['새 작업 배치가 있습니다. 내용을 보고 「✔ 작업 배치 확인했습니다」를 눌러 주세요. 누르지 않으면 1시간마다 다시 알림이 갑니다.','Có phân công mới. Hãy xem và bấm «✔ Tôi đã xem phân công». Nếu không bấm, mỗi giờ sẽ nhắc lại.','You have a new assignment. Check it and press “✔ I have checked my assignment”. Otherwise you will be reminded every hour.'],
 ['누르지 않으면 1시간마다 다시 알림이 갑니다 (최대 5번)','Nếu không bấm, mỗi giờ sẽ nhắc lại (tối đa 5 lần)','If not pressed, you will be reminded every hour (up to 5 times)'],['✔ 작업 배치 확인 완료','✔ Đã xác nhận phân công','✔ Assignment confirmed'],
@@ -6972,7 +6995,7 @@ const I18R=[
 [/^테스트 알림을 보냈습니다 \((\d+)대\)\. 몇 초 안에 휴대폰에 알림이 뜹니다\.$/,(m)=>L2(`Đã gửi thông báo thử (${m[1]} máy). Vài giây nữa sẽ hiện trên điện thoại.`,`Test notification sent (${m[1]} device${m[1]==='1'?'':'s'}). It will appear on your phone in a few seconds.`)],
 [/^(\d{4})\. (\d{1,2})월분( NEW)?$/,(m)=>L2(`Tháng ${m[2]}/${m[1]}${m[3]||''}`,`${MON[m[2]-1]} ${m[1]}${m[3]||''}`)],[/^💰 (\d{4})년 (\d{1,2})월 급여명세서$/,(m)=>L2(`💰 Phiếu lương tháng ${m[2]}/${m[1]}`,`💰 Payslip ${MON[m[2]-1]} ${m[1]}`)],[/^([\d,]+)원$/,(m)=>L2(m[1]+' ₩',m[1]+' KRW')],
 [/^(.+) 님, 생일 축하합니다!$/,(m)=>L2(`Chúc mừng sinh nhật ${m[1]}!`,`Happy birthday, ${m[1]}!`)],
-[/^지난 공지 (\d+)건 보기 ›$/,(m)=>L2(`Xem ${m[1]} thông báo cũ ›`,`View ${m[1]} earlier notices ›`)],[/^✔ (\d\d-\d\d \d\d:\d\d) 확인함$/,(m)=>L2(`✔ Đã xác nhận ${m[1]}`,`✔ Read ${m[1]}`)],
+[/^확인하지 않은 공지 (\d+)건$/,(m)=>L2(`${m[1]} thông báo chưa xác nhận`,`${m[1]} unconfirmed notice(s)`)],[/^지난 공지 (\d+)건 보기 ›$/,(m)=>L2(`Xem ${m[1]} thông báo cũ ›`,`View ${m[1]} earlier notices ›`)],[/^✔ (\d\d-\d\d \d\d:\d\d) 확인함$/,(m)=>L2(`✔ Đã xác nhận ${m[1]}`,`✔ Read ${m[1]}`)],
 [/^(\d)\/4장$/,(m)=>L2(`${m[1]}/4 ảnh`,`${m[1]}/4 photos`)],
 [/^(\d+)일 남음 \(~(\d{4}-\d{2}-\d{2})\)$/,(m)=>L2(`còn ${m[1]} ngày (~${m[2]})`,`${m[1]} days left (~${m[2]})`)],[/^(기한 지남) \(~(\d{4}-\d{2}-\d{2})\)$/,(m)=>L2(`quá hạn (~${m[2]})`,`overdue (~${m[2]})`)],[/^\((\d{4}-\d{2}-\d{2}) 제출\)$/,(m)=>L2(`(nộp ${m[1]})`,`(submitted ${m[1]})`)],[/^사유: (.*)$/,(m)=>L2('Lý do: '+m[1],'Reason: '+m[1])],
 [/^(.+) (만료|기한) (\d+)일 전 \((\d{4}-\d{2}-\d{2})(까지)?\)$/,(m)=>L2(`${QN_L(m[1],'vi')}: còn ${m[3]} ngày (${m[4]})`,`${QN_L(m[1],'en')}: ${m[3]} day${m[3]==='1'?'':'s'} left (${m[4]})`)],
