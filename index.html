@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.24s-->
+<!DOCTYPE html><!--v:2026.11.24t-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -86,6 +86,7 @@ th{background:#f7f9fb;font-weight:500;color:var(--mute);white-space:nowrap}
 .rf-x{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .rf-x>input,.rf-x>select,.rf-x>.btn{width:100%;min-width:0;margin:0}
 .rf-sub{font-size:13px;color:var(--mute);margin:12px 0 0}
+.myhist td,.myhist th{padding:8px 5px;vertical-align:middle}.myhist td:nth-child(3){min-width:70px}
 .rchip button{border:none;background:none;color:var(--bad);cursor:pointer;padding:0 0 0 4px;font-size:12px}
 .reply{background:#f6f8fa;border-left:3px solid var(--pri2);padding:6px 10px;margin-top:6px;border-radius:4px;font-size:14px}
 .chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--chip);white-space:nowrap;margin:1px 2px 1px 0}
@@ -2797,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.24s';
+const APP_VER='2026.11.24t';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3265,11 +3266,15 @@ function vMyHist(me){
   const mon=today().slice(0,7);const mr=rs.filter(r=>r.date.startsWith(mon));
   const ap=mr.filter(r=>r.status==='approved').reduce((a,r)=>a+totalG(r),0),pe=mr.filter(r=>r.status==='pending').reduce((a,r)=>a+totalG(r),0);
   let h=`<div class="kpi"><div class="k"><span>이번 달 승인 공수</span><b>${fmtG(ap)}</b></div><div class="k"><span>승인 대기 공수</span><b>${fmtG(pe)}</b></div><div class="k"><span>이번 달 근무일</span><b>${mr.filter(r=>r.checkIn).length}일</b></div>${(()=>{const rt=Number(me.rate)||0;if(!rt)return '';return `<div class="k" style="border-color:#cfe6df;background:#f3faf7"><span>이번 달 예상 금액 (세전)</span><b style="color:var(--pri2)">${won(Math.round(ap*rt))}<small>원</small></b>${pe?`<div class="kfull">승인 대기 포함 시 ${won(Math.round((ap+pe)*rt))}원</div>`:''}</div>`;})()}</div>${Number(me.rate)?`<p class="mute" style="font-size:12px;margin:-6px 2px 12px">※ 예상 금액 = 승인된 공수 × 1공수 단가(${won(me.rate)}원). 세금·4대보험을 빼기 전 금액이라 실제 받는 금액과 다릅니다. 실제 금액은 「내 서류 › 급여명세서」를 확인하세요.</p>`:''}`;
-  h+=`<div class="card"><div class="tbl-wrap"><table><tr><th>일자</th><th>출근</th><th>퇴근</th><th>공사</th><th>공수</th><th>상태</th><th></th></tr>`;
-  if(!rs.length)h+=`<tr><td colspan="7" class="mute">기록이 없습니다.</td></tr>`;
-  rs.forEach(r=>{h+=`<tr><td>${fmtDayS(r.date)}</td><td>${r.checkIn?r.checkIn.time:'-'}</td><td>${r.checkOut?r.checkOut.time:'-'}</td><td>${[...new Set(r.entries.map(e=>pname(e.projectId)))].map(esc).join('<br>')||'-'}</td><td>${fmtG(totalG(r))}</td><td>${statusChip(r.status)}</td><td><button class="btn sm" onclick="openMine('${r.id}')">${editable(r)?'수정':'보기'}</button></td></tr>`;});
+  h+=`<div class="card" style="padding:10px"><div class="tbl-wrap"><table class="myhist"><tr><th>일자</th><th>출퇴근</th><th>공사</th><th>공수</th><th>상태</th><th></th></tr>`;
+  if(!rs.length)h+=`<tr><td colspan="6" class="mute">기록이 없습니다.</td></tr>`;
+  rs.forEach(r=>{h+=`<tr><td style="white-space:nowrap">${fmtDayS(r.date)}</td><td style="white-space:nowrap;font-size:13px">${r.checkIn?r.checkIn.time:'-'}<br>${r.checkOut?r.checkOut.time:'-'}</td><td>${[...new Set(r.entries.map(e=>pname(e.projectId)))].map(esc).join('<br>')||'-'}</td><td>${fmtG(totalG(r))}</td><td>${statusChip(r.status)}</td><td><div style="display:flex;flex-direction:column;gap:4px"><button class="btn sm" onclick="openMine('${r.id}')">${editable(r)?'수정':'보기'}</button>${myDelOk(r)?`<button class="btn sm bad" onclick="delMine('${r.id}')">삭제</button>`:''}</div></td></tr>`;});
   return h+'</table></div></div>';
 }
+/* 본인 삭제: 작성중·반려 + 직접 입력한 기록만 (QR·버튼 출퇴근은 관리자만) */
+function myDelOk(r){if(!r||!(r.status==='draft'||r.status==='rejected'))return false;const real=c=>c&&c.method!=='manual'&&c.method!=='admin'&&(c.via==='qr'||c.via==='button'||c.lat!=null);return !real(r.checkIn)&&!real(r.checkOut);}
+async function delMine(id){const r=S.records.find(x=>x.id===id);if(!r||!myDelOk(r))return;if(!(await confirmBox(`<b>${fmtDay(r.date)}</b> 근무기록(${fmtG(totalG(r))}공수)을 삭제할까요?\n\n지운 기록은 되돌릴 수 없고, 삭제한 사실은 관리자 변경 이력에 남습니다.`,'삭제')))return;
+  if(!LIVE){S.records=S.records.filter(x=>x.id!==id);render();toast('삭제했습니다.');return;}await window.liveRun('delMyRecord',{id});}
 function openMine(id){const r=S.records.find(x=>x.id===id);if(!r)return;
   if(editable(r)){if(r.date===today())ui.wTab='today';else{ui.wTab='past';ui.pastDate=r.date;}render();return;}
   openModal(`<div class="mbox"><div class="row"><h3 style="margin:0">${fmtDay(r.date)}</h3><span class="sp"></span>${statusChip(r.status)}<button class="btn sm" onclick="closeModal()">닫기</button></div>${r.checkIn?checkLine('출근',r.checkIn,r):''}${r.checkOut?checkLine('퇴근',r.checkOut,r):''}<div style="margin-top:12px">${entriesEditor(r.entries,'x',false)}</div>${summaryLine(r)}${histHtml(r)}</div>`);}
