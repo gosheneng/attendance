@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25q-->
+<!DOCTYPE html><!--v:2026.11.25s-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25q';
+const APP_VER='2026.11.25s';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3787,9 +3787,9 @@ async function rcDraw(r,sel){const p=P(r.projectId)||{},seen={},bad=[],cells=[];
   r.members.forEach(m=>{if(m.wid&&sel[m.wid]&&!seen[m.wid]){seen[m.wid]=1;RC_COLS.map(c=>c[0]).filter(q=>sel[m.wid].indexOf(q)>=0).forEach(q=>cells.push({w:W(m.wid),q}));}});
   if(!cells.length)return [];const imgs=[];
   for(const c of cells){try{const im=await rcImg(c.w.id,c.q);if(im)imgs.push(im);else bad.push(c.w.name+' '+QNAME[c.q]);}catch(e){bad.push(c.w.name+' '+QNAME[c.q]);}}
-  const per=RCF.cols*RCF.rows,np=Math.max(1,Math.ceil(imgs.length/per)),M=6 /* px/mm (≈150dpi) */,Wm=RCF.cw*RCF.cols,Hm=RCF.th+RCF.rh*RCF.rows,out=[];
+  const per=RCF.cols*RCF.rows,np=Math.max(1,Math.ceil(imgs.length/per)),PW=210,PH=297,Z=Math.min((PW-8)/(RCF.cw*RCF.cols),(PH-10)/(RCF.th+RCF.rh*RCF.rows)) /* 여백 안에 꽉 차게 */,M=6*Z /* px/mm */,Wm=RCF.cw*RCF.cols,Hm=RCF.th+RCF.rh*RCF.rows,out=[],ox=(4+(PW-8-Wm*Z)/2)/Z,oy=(6+(PH-10-Hm*Z)/2)/Z;   /* A4 한 장 전체를 그림 (엑셀 인쇄: 가로·세로 가운데) */
   const fn0=`교육필증_${r.date}_${String(p.name||'').replace(/[\\/:*?"<>|]/g,'_').slice(0,40)}`;
-  for(let pg=0;pg<np;pg++){const cv=document.createElement('canvas');cv.width=Math.round(Wm*M)+4;cv.height=Math.round(Hm*M)+4;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.translate(2,2);
+  for(let pg=0;pg<np;pg++){const cv=document.createElement('canvas');cv.width=Math.round(PW*6);cv.height=Math.round(PH*6);const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.translate(Math.round(ox*M),Math.round(oy*M));
     c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';c.font=`${(20*0.3528*M).toFixed(1)}px "돋움","Dotum","맑은 고딕","Malgun Gothic",sans-serif`;c.fillText('교육 필증',Wm*M/2,RCF.th*M/2);
     const pad=1.2*M;imgs.slice(pg*per,(pg+1)*per).forEach((im,k)=>{const col=k%RCF.cols,row=Math.floor(k/RCF.cols),x=col*RCF.cw*M+pad,y=(RCF.th+row*RCF.rh)*M+pad,bw=RCF.cw*M-pad*2,bh=RCF.rh*M-pad*2,s=Math.min(bw/im.width,bh/im.height),dw=im.width*s,dh=im.height*s;c.drawImage(im,x+(bw-dw)/2,y+(bh-dh)/2,dw,dh);});
     c.strokeStyle='#000';c.lineWidth=0.25*M/2;c.beginPath();for(let k=1;k<RCF.rows;k++){const y=(RCF.th+k*RCF.rh)*M;c.moveTo(0,y);c.lineTo(Wm*M,y);}for(let k=1;k<RCF.cols;k++){const x=k*RCF.cw*M;c.moveTo(x,RCF.th*M);c.lineTo(x,Hm*M);}c.stroke();
@@ -3800,12 +3800,12 @@ function rcBig(i){const o=(window._rcPV||[])[i];if(!o)return;const w=window.open
 function rcPvHtml(L){window._rcPV=L;return L.map((o,i)=>`<div style="margin:8px 0"><div class="row" style="gap:6px;align-items:center"><b style="font-size:13px">${esc(o.title)}</b><span class="mute" style="font-size:12px">${o.n}명 · 필증 ${o.cnt}장</span><span class="sp"></span><a class="btn sm" href="${o.url}" download="${esc(o.fn)}">🖼️ 이미지 저장</a></div>${o.bad.length?`<div style="color:var(--bad);font-size:12px">불러오지 못한 필증: ${esc(o.bad.join(', '))}</div>`:''}<img src="${o.url}" alt="" title="눌러서 크게 보기" onclick="rcBig(${i})" style="width:100%;max-width:420px;display:block;margin:4px auto 0;border:1px solid var(--line);cursor:zoom-in"></div>`).join('');}
 /* 출력: 엑셀과 같은 A4 세로 · 여백(좌우 4mm, 위 6mm, 아래 4mm) · 가운데 정렬, 한 쪽에 한 장 */
 function rcPrint(L){const win=window.open('','_blank');if(!win){toast('팝업이 막혀 있습니다. 브라우저에서 팝업을 허용해 주세요.');return;}
-  const Wm=RCF.cw*RCF.cols,Hm=RCF.th+RCF.rh*RCF.rows;
-  win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교육필증</title><style>@page{size:A4 portrait;margin:6mm 4mm 4mm 4mm}body{margin:0;font-family:'현대하모니 L','Malgun Gothic',sans-serif}
-  .bar{position:sticky;top:0;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}.bar button{font-size:15px;padding:6px 14px}
-  .pg{width:202mm;height:286mm;display:flex;align-items:center;justify-content:center;break-after:page;page-break-after:always;overflow:hidden}.pg:last-child{break-after:auto;page-break-after:auto}.pg img{width:${Wm}mm;height:${Hm}mm;display:block}
-  @media screen{body{background:#eee}.pg{background:#fff;margin:12px auto;box-shadow:0 0 6px #0003}}@media print{.bar{display:none}}</style></head><body><div class="bar">🪪 <b>교육 필증 ${L.length}장</b> <button onclick="print()" style="font-weight:bold">🖨️ 인쇄</button><br><b>인쇄 설정 위치</b>: 인쇄 창에서 <b>용지 A4 · 세로</b>, <b>배율 100%(기본)</b>, 여백 <b>기본</b>으로 두세요. ‘페이지에 맞춤’을 켜면 필증이 작아집니다.</div>
-  ${L.map(o=>`<div class="pg"><img src="${o.url}" alt=""></div>`).join('')}</body></html>`);win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(e){}},700);}
+  /* 그림 자체가 A4 한 장(여백 포함) → 인쇄 여백 0, 한 쪽에 한 장 그대로 (브라우저 머리글·바닥글도 안 나옴) */
+  win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교육필증</title><style>@page{size:210mm 297mm;margin:0}html,body{margin:0;padding:0}body{font-family:'현대하모니 L','Malgun Gothic',sans-serif}
+  .bar{position:sticky;top:0;z-index:2;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}.bar button{font-size:15px;padding:6px 14px}
+  .pg{width:210mm;height:296.5mm;overflow:hidden;break-after:page;page-break-after:always;break-inside:avoid}.pg:last-child{break-after:auto;page-break-after:auto}.pg img{width:210mm;height:297mm;display:block}
+  @media screen{body{background:#eee}.pg{background:#fff;margin:12px auto;box-shadow:0 0 6px #0003}}@media print{.bar{display:none}}</style></head><body><div class="bar">🪪 <b>교육 필증 ${L.length}장</b> <button onclick="print()" style="font-weight:bold">🖨️ 인쇄</button><br><b>인쇄 설정 위치</b>: 인쇄 창 「설정 더보기」에서 <b>용지 A4</b>, <b>배율 기본(100%)</b>, <b>여백 없음</b>(또는 기본), <b>머리글/바닥글 끄기</b>. 한 쪽에 한 장씩 A4에 꽉 맞게 나옵니다.</div>
+  ${L.map(o=>`<div class="pg"><img src="${o.url}" alt=""></div>`).join('')}</body></html>`);win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(e){}},800);}
 async function rcBuild(items){window.liveBusy(true);const L=[];try{for(const it of items){L.push(...await rcDraw(it.r,it.sel));}}finally{window.liveBusy(false);}return L;}
 /* 카드 하나: 창 안 미리보기 → 출력 */
 async function rCertPv(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const sel=rcDlgSel();if(!Object.keys(sel).length){toast('출력할 필증을 고르세요.');return;}if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
@@ -4349,16 +4349,22 @@ async function bkFile(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)re
     if(/\.(csv|txt)$/i.test(f.name)){let t;try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('euc-kr').decode(buf);}wb=XLSX.read(t,{type:'string',raw:true});}
     else wb=XLSX.read(new Uint8Array(buf),{type:'array',raw:true});
     let A=[];wb.SheetNames.forEach(n=>{const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});if(a.length>A.length)A=a;});
-    let hi=-1;for(let i=0;i<Math.min(A.length,40);i++){const j=A[i].map(c=>String(c)).join('|');if(/거래\s*일|일시|일자|날짜/.test(j)&&/출금|입금|찾으신|맡기신|금액/.test(j)){hi=i;break;}}
+    let hi=-1;for(let i=0;i<Math.min(A.length,40);i++){const C=A[i].map(c=>String(c).replace(/\s+/g,' ').trim()).filter(c=>c&&c.length<=14);   /* 제목 줄: 짧은 칸들 (윗줄 「조회기준일:…·출금가능금액:…」 같은 안내문은 건너뜀) */
+      if(C.some(c=>/거래\s*일|일시|일자|날짜/.test(c))&&C.some(c=>/출금|입금|찾으신|맡기신|금액/.test(c))&&C.length>=3){hi=i;break;}}
     if(hi<0)throw new Error('표의 제목 줄(거래일·출금·입금 등)을 찾지 못했습니다. 은행 사이트에서 「엑셀(xls/xlsx) 저장」으로 받은 파일인지 확인하세요.');
-    const H=A[hi].map(h=>String(h).replace(/\s+/g,' ').trim()),m=bkGuess(H);ui.bkPrev={name:f.name,A,hi,H,m};bkPrevShow();}
+    const H=A[hi].map(h=>String(h).replace(/\s+/g,' ').trim()),m=bkGuess(H);
+    /* 기업은행 등 「거래내역조회」 위쪽 안내문에서 예금종류·예금주 읽어 통장 이름·회사 제안 (계좌번호는 쓰지 않음) */
+    const top=A.slice(0,hi).map(r=>r.join(' ')).join('\n'),kind=(/예금종류\s*[:：]\s*([^\n]+?)(?:\s{2,}|\n|현재잔액|$)/.exec(top)||[])[1]||'',own=(/예금주명?\s*[:：]\s*([^\n]+?)(?:\s{2,}|\n|예금종류|$)/.exec(top)||[])[1]||'';
+    const bankNm=/IBK|기업/.test(kind+top)?'기업은행':/국민|KB/.test(top)?'국민은행':/농협|NH/.test(top)?'농협은행':/신한/.test(top)?'신한은행':/우리/.test(top)?'우리은행':/하나/.test(top)?'하나은행':'';
+    ui.bkSug={acct:kind?[bankNm,kind.replace(/\s+/g,' ').trim()].filter(Boolean).join(' '):'',ctr:CTR_BASE.find(c=>own.indexOf(c)>=0)||''};
+    ui.bkPrev={name:f.name,A,hi,H,m};bkPrevShow();}
   catch(e){alertBox('파일을 읽지 못했습니다',[String(e.message||e)]);}finally{window.liveBusy(false);}}
 function bkPrevShow(){const P=ui.bkPrev;if(!P)return;const rows=bkRows(P.A,P.hi,P.m),opt=(k,multi)=>`<select ${multi?'multiple size="3"':''} onchange="bkMap('${k}',this)" style="width:auto;max-width:150px">${multi?'':'<option value="-1">— 없음 —</option>'}${P.H.map((h,i)=>`<option value="${i}" ${(multi?P.m[k].includes(i):P.m[k]===i)?'selected':''}>${esc(h||'(열 '+(i+1)+')')}</option>`).join('')}</select>`;
   const accts=[...new Set((S.bank||[]).map(b=>b.acct))];
   openModal(`<div class="mbox" style="max-width:860px"><div class="row"><h2 style="margin:0">통장 거래내역 올리기</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="mute" style="margin:4px 0 8px">${esc(P.name)} · 읽은 거래 <b>${rows.length}</b>건 (출금 ${rows.filter(r=>r.out).length} · 입금 ${rows.filter(r=>r.inn).length}) — 칸이 맞는지 확인하세요. 계좌번호는 저장하지 않습니다.</div>
-  <div class="grid2"><label class="f"><span>통장 이름 *</span><input id="bk_acct" list="bk_accts" value="${esc(ui.bkAcct||accts[0]||'')}" placeholder="예: 기업은행 고센 운영통장" onchange="bkCtrGuess()"><datalist id="bk_accts">${accts.map(a=>`<option value="${esc(a)}">`).join('')}</datalist></label>
-  <label class="f"><span>어느 회사 통장? (수주처) *</span><select id="bk_ctr"><option value="">— 선택 —</option>${CTR_BASE.map(c=>`<option ${c===bkCtrOf(ui.bkAcct||accts[0]||'')?'selected':''}>${c}</option>`).join('')}</select></label></div>
+  <div class="grid2"><label class="f"><span>통장 이름 *</span><input id="bk_acct" list="bk_accts" value="${esc(ui.bkAcct||accts.find(a=>ui.bkSug&&ui.bkSug.acct&&a===ui.bkSug.acct)||(ui.bkSug&&ui.bkSug.acct)||accts[0]||'')}" placeholder="예: 기업은행 고센 운영통장" onchange="bkCtrGuess()"><datalist id="bk_accts">${accts.map(a=>`<option value="${esc(a)}">`).join('')}</datalist></label>
+  <label class="f"><span>어느 회사 통장? (수주처) *</span><select id="bk_ctr"><option value="">— 선택 —</option>${CTR_BASE.map(c=>`<option ${c===(bkCtrOf(ui.bkAcct||accts[0]||'')||(ui.bkSug&&ui.bkSug.ctr)||'')?'selected':''}>${c}</option>`).join('')}</select></label></div>
   <div class="row" style="gap:10px;flex-wrap:wrap;font-size:13px;margin:6px 0"><label>거래일 ${opt('dt')}</label><label>시간 ${opt('tm')}</label><label>출금 ${opt('out')}</label><label>입금 ${opt('inn')}</label><label>잔액 ${opt('bal')}</label><label>내용 (여러 개) ${opt('desc',1)}</label></div>
   <div class="tbl-wrap" style="max-height:300px;overflow:auto"><table class="nw"><tr><th>거래일시</th><th style="text-align:right">출금</th><th style="text-align:right">입금</th><th style="text-align:right">잔액</th><th>내용</th></tr>${rows.slice(0,12).map(r=>`<tr><td>${esc(r.dt)}</td><td style="text-align:right">${r.out?won(r.out):''}</td><td style="text-align:right">${r.inn?won(r.inn):''}</td><td style="text-align:right">${r.bal===''?'':won(r.bal)}</td><td>${esc(r.desc)}</td></tr>`).join('')}${rows.length>12?`<tr><td colspan="5" class="mute">… 외 ${rows.length-12}건</td></tr>`:''}</table></div>
   <div class="row" style="margin-top:10px"><span class="mute" style="font-size:12px">이미 올린 거래는 자동으로 건너뜁니다 (같은 기간을 다시 올려도 됩니다).</span><span class="sp"></span><button class="btn pri" onclick="bkUp()" ${rows.length?'':'disabled'}>올리기</button></div></div>`);}
