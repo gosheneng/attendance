@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25h-->
+<!DOCTYPE html><!--v:2026.11.25i-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25h';
+const APP_VER='2026.11.25i';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3683,7 +3683,7 @@ async function calDo(op,p){if(op==='list'){const cals=[{id:'c1',name:'1. 현장�
 /* ===================== 작업 배치 · 차량관리 · 건의함 ===================== */
 /* 자격·교육 (기초=기초안전교육, 크레인=무선크레인 운전자교육). RQ = 작업 배치 역할에 쓰는 자격 */
 const ALSO={신호:'화기',화기:'신호'};   /* 신호↔화기만 겸직 */
-const QUALS=['기초','안전','신호','화기','밀폐','크레인'],RQ=['안전','신호','화기','밀폐'],QNAME={기초:'기초안전교육',안전:'안전',신호:'신호수',화기:'화기감시',밀폐:'밀폐감시',크레인:'무선크레인 운전'},QWARN=14,ROLES=['관리','안전','신호','화기','밀폐','작업'],POST_ST=['접수','검토중','반영','보류'],POST_CLS={접수:'st-pend',검토중:'st-draft',반영:'st-ok',보류:'st-bad'};
+const QUALS=['기초','안전','신호','화기','밀폐','크레인','비계','건설기초'],RQ=['안전','신호','화기','밀폐'],QNAME={기초:'기초안전교육',안전:'안전',신호:'신호수',화기:'화기감시',밀폐:'밀폐감시',크레인:'무선크레인 운전',비계:'비계(기능습득교육)',건설기초:'건설업 기초안전보건교육'},QWARN=14,ROLES=['관리','안전','신호','화기','밀폐','작업'],POST_ST=['접수','검토중','반영','보류'],POST_CLS={접수:'st-pend',검토중:'st-draft',반영:'st-ok',보류:'st-bad'};
 const DEF_CO='㈜고센이엔지';
 function liveOnly(op,p,msg){if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return Promise.resolve(null);}return window.liveRun(op,p,msg);}
 const nextWork=d=>{let x=addDaysC(d,1);while(dow(x)===0)x=addDaysC(x,1);return x;};
@@ -3735,7 +3735,7 @@ function rosterCard(r,opt){opt=opt||{};const p=P(r.projectId)||{name:r.projectId
 
 /* ---------- 작업 배치 › 교육필증 출력: 투입인원 전원 기초안전교육 + 역할별 필증 (인사·노무 › 자격·교육·검진에 올린 이미지) ---------- */
 const RC_Q={안전:'안전',신호:'신호',화기:'화기',밀폐:'밀폐'};
-const RC_COLS=[['기초','기초'],['화기','화기'],['신호','신호'],['안전','안전'],['크레인','크레인'],['밀폐','밀폐감시']];
+const RC_COLS=[['기초','기초'],['화기','화기'],['신호','신호'],['안전','안전'],['크레인','크레인'],['비계','비계'],['밀폐','밀폐감시'],['건설기초','건설업 기초안전보건교육 이수증']];
 function rCertList(r){return r.members.map(m=>{const w=m.wid?W(m.wid):null,need=['기초'];[m.role,m.also].forEach(ro=>{const q=RC_Q[ro];if(q&&need.indexOf(q)<0)need.push(q);});
   const ks=RC_COLS.map(([q])=>({q,need:need.indexOf(q)>=0,has:!!(w&&w.qualFile&&w.qualFile[q]&&w.qualFile[q].id),exp:w&&w.qualExp?w.qualExp[q]||'':''})).filter(k=>k.need||k.has);
   return {m,w,ks};});}
