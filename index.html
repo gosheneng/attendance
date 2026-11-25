@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25k-->
+<!DOCTYPE html><!--v:2026.11.25l-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25k';
+const APP_VER='2026.11.25l';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3742,10 +3742,10 @@ function rCertList(r){return r.members.map(m=>{const w=m.wid?W(m.wid):null,need=
 function rCertDlg(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const L=rCertList(r),p=P(r.projectId)||{};
   const rows=L.map((x,i)=>`<tr><td><b>${esc(x.m.name||(x.w&&x.w.name)||'')}</b>${x.m.ext?' <small class="mute">(외부)</small>':''}<div class="mute" style="font-size:12px">${esc([x.m.role,x.m.also].filter(Boolean).join('·'))}</div></td><td>${x.m.ext||!x.w?'<span class="mute">외부 인원 — 필증 없음</span>':x.ks.map((k,j)=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;white-space:nowrap"><input type="checkbox" class="rc_ck" data-w="${x.w.id}" data-q="${k.q}" ${k.has?(k.need?'checked':''):'disabled'}>${QNAME[k.q]}${k.has?(k.exp&&k.exp<r.date?' <b style="color:var(--bad)">만료 '+esc(k.exp)+'</b>':''):' <b style="color:var(--bad)">✖ 없음</b>'}</label>`).join('')}</td></tr>`).join('');
   const miss=L.reduce((a,x)=>a+(x.m.ext||!x.w?0:x.ks.filter(k=>k.need&&!k.has).length),0);
-  openModal(`<div class="mbox" style="max-width:900px"><h3 style="margin:0 0 4px">🪪 단체 교육필증</h3><div class="mute" style="font-size:13px;margin-bottom:8px">${fmtDay(r.date)} · ${esc(p.name||'')}${r.location?' · '+esc(r.location):''}<br>투입인원 전원 기초안전교육 + 역할별 필증(안전·신호·화기·밀폐)이 미리 체크됩니다. 그 밖에 가진 필증도 골라 넣을 수 있습니다.</div>
+  openModal(`<div class="mbox" style="max-width:900px"><h3 style="margin:0 0 4px">🪪 교육 필증</h3><div class="mute" style="font-size:13px;margin-bottom:8px">${fmtDay(r.date)} · ${esc(p.name||'')}${r.location?' · '+esc(r.location):''}<br>투입인원 전원 기초안전교육 + 역할별 필증(안전·신호·화기·밀폐)이 미리 체크됩니다. 그 밖에 가진 필증도 골라 넣을 수 있습니다.</div>
   ${miss?`<div class="note" style="color:var(--bad);margin-bottom:6px">필증 이미지가 없는 항목 ${miss}건 — 「인사·노무 › 자격·교육·검진」에서 올리면 출력됩니다.</div>`:''}
   <div class="tbl-wrap"><table style="width:100%"><tr><th style="width:30%">이름·역할</th><th>출력할 필증</th></tr>${rows}</table></div>
-  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="rc_head" checked>맨 위에 공사명·날짜 넣기</label><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn" onclick="rCertPv('${r.id}')">👁 미리보기</button><button class="btn pri" id="rc_pb" onclick="rCertGroup('${r.id}')">🖨️ 출력</button></div><div id="rc_pv"></div></div>`);ui._rcL=null;document.querySelectorAll('.rc_ck,#rc_head').forEach(e=>e.addEventListener('change',()=>{ui._rcL=null;}));}
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><span class="mute" style="font-size:12.5px">필증 출력 양식(A4 세로 · 한 장 18칸)</span><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn" onclick="rCertPv('${r.id}')">👁 미리보기</button><button class="btn pri" id="rc_pb" onclick="rCertGroup('${r.id}')">🖨️ 출력</button></div><div id="rc_pv"></div></div>`);ui._rcL=null;document.querySelectorAll('.rc_ck').forEach(e=>e.addEventListener('change',()=>{ui._rcL=null;}));}
 async function rCertPrint(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const p=P(r.projectId)||{};
   const sel=[...document.querySelectorAll('.rc_ck:checked')].map(c=>({w:c.dataset.w,q:c.dataset.q}));if(!sel.length){toast('출력할 필증을 고르세요.');return;}
   const head=(document.getElementById('rc_head')||{}).checked;if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
@@ -3775,41 +3775,44 @@ async function rcImg(wid,q){const w=W(wid),f=w&&w.qualFile&&w.qualFile[q];if(!f|
   return RC_IMG[k]=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src='data:'+g.mime+';base64,'+g.b64;});}
 function rcDefSel(r){const o={};rCertList(r).forEach(x=>{if(x.m.ext||!x.w)return;const qs=x.ks.filter(k=>k.need&&k.has).map(k=>k.q);if(qs.length&&!o[x.w.id])o[x.w.id]=qs;});return o;}
 function rcDlgSel(){const o={};[...document.querySelectorAll('.rc_ck:checked')].forEach(c=>{(o[c.dataset.w]=o[c.dataset.w]||[]).push(c.dataset.q);});return o;}
-async function rcDraw(r,sel,head){const p=P(r.projectId)||{},ppl=[],seen={},bad=[];r.members.forEach(m=>{if(m.wid&&sel[m.wid]&&!seen[m.wid]){seen[m.wid]=1;ppl.push({w:W(m.wid),qs:sel[m.wid]});}});
-  if(!ppl.length)return null;const img={};
-  for(const x of ppl)for(const q of x.qs){try{const im=await rcImg(x.w.id,q);if(im)img[x.w.id+'|'+q]=im;else bad.push(x.w.name+' '+QNAME[q]);}catch(e){bad.push(x.w.name+' '+QNAME[q]);}}
-  /* 엑셀 크기: A열 9, 필증 열 37(≈264px), 머리행 27pt(36px), 사람 행 120pt(160px) → 2배로 그려 인쇄 선명하게 */
-  const K=2,cw0=72*K,cw=264*K,hh=36*K,rh=160*K,th=head?64*K:0,pad=4*K,W0=cw0+cw*RC_COLS.length,H0=th+hh+rh*ppl.length;
-  const cv=document.createElement('canvas');cv.width=W0+2;cv.height=H0+2;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);
-  const F=(sz,b)=>`${b?'bold ':''}${sz*K}px "맑은 고딕","Malgun Gothic","현대하모니 L",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle='#000';
-  if(head){c.textAlign='left';c.font=F(20,1);c.fillText(p.name||'',4*K,22*K);c.font=F(13);c.fillText(`${fmtDay(r.date)}${r.location?' · '+r.location:''} · ${r.company||DEF_CO} · 교육필증 ${ppl.length}명`,4*K,48*K);c.textAlign='center';}
-  const y0=th+1;c.font=F(16);c.fillText('분류',1+cw0/2,y0+hh/2);RC_COLS.forEach(([q,l],i)=>{c.font=F(l.length>8?12:16);c.fillText(l,1+cw0+cw*i+cw/2,y0+hh/2);});
-  ppl.forEach((x,ri)=>{const y=y0+hh+rh*ri;c.font=F(16);c.fillText(x.w.name,1+cw0/2,y+rh/2);
-    RC_COLS.forEach(([q],i)=>{const im=img[x.w.id+'|'+q];if(!im)return;const bx=1+cw0+cw*i+pad,by=y+pad,bw=cw-pad*2,bh=rh-pad*2,s=Math.min(bw/im.width,bh/im.height),dw=im.width*s,dh=im.height*s;c.drawImage(im,bx+(bw-dw)/2,by+(bh-dh)/2,dw,dh);});});
-  c.strokeStyle='#000';c.lineWidth=1.2*K/2;c.beginPath();for(let i=0;i<=ppl.length+1;i++){const y=y0+(i?hh+rh*(i-1):0);c.moveTo(1,y);c.lineTo(1+W0,y);}
-  [0,cw0].concat(RC_COLS.map((_,i)=>cw0+cw*(i+1))).forEach(x=>{c.moveTo(1+x,y0);c.lineTo(1+x,y0+hh+rh*ppl.length);});c.stroke();
-  return {url:cv.toDataURL('image/png'),fn:`단체교육필증_${r.date}_${String(p.name||'').replace(/[\\/:*?"<>|]/g,'_').slice(0,40)}.png`,title:p.name||'',n:ppl.length,bad};}
-/* 미리보기(창 안) */
+/* 필증 출력 양식(필증_출력.xlsx «필증 출력» 시트) 그대로: A4 세로 · 맨 위 「교육 필증」(돋움 20) · 3열×6행 칸에 필증 1장씩 (한 장 18개, 넘으면 다음 장)
+   열 너비 30.625 ≈ 57.9mm, 행 높이 114.95pt ≈ 40.55mm, 제목 행 40.5pt ≈ 14.3mm, 바깥 굵은 선·안쪽 가는 선. 사람마다 기초안전교육 → 역할별 필증 순서 */
+const RCF={cw:57.9,rh:40.55,th:14.3,cols:3,rows:6};
+async function rcDraw(r,sel){const p=P(r.projectId)||{},seen={},bad=[],cells=[];
+  r.members.forEach(m=>{if(m.wid&&sel[m.wid]&&!seen[m.wid]){seen[m.wid]=1;RC_COLS.map(c=>c[0]).filter(q=>sel[m.wid].indexOf(q)>=0).forEach(q=>cells.push({w:W(m.wid),q}));}});
+  if(!cells.length)return [];const imgs=[];
+  for(const c of cells){try{const im=await rcImg(c.w.id,c.q);if(im)imgs.push(im);else bad.push(c.w.name+' '+QNAME[c.q]);}catch(e){bad.push(c.w.name+' '+QNAME[c.q]);}}
+  const per=RCF.cols*RCF.rows,np=Math.max(1,Math.ceil(imgs.length/per)),M=6 /* px/mm (≈150dpi) */,Wm=RCF.cw*RCF.cols,Hm=RCF.th+RCF.rh*RCF.rows,out=[];
+  const fn0=`교육필증_${r.date}_${String(p.name||'').replace(/[\\/:*?"<>|]/g,'_').slice(0,40)}`;
+  for(let pg=0;pg<np;pg++){const cv=document.createElement('canvas');cv.width=Math.round(Wm*M)+4;cv.height=Math.round(Hm*M)+4;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);c.translate(2,2);
+    c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';c.font=`${(20*0.3528*M).toFixed(1)}px "돋움","Dotum","맑은 고딕","Malgun Gothic",sans-serif`;c.fillText('교육 필증',Wm*M/2,RCF.th*M/2);
+    const pad=1.2*M;imgs.slice(pg*per,(pg+1)*per).forEach((im,k)=>{const col=k%RCF.cols,row=Math.floor(k/RCF.cols),x=col*RCF.cw*M+pad,y=(RCF.th+row*RCF.rh)*M+pad,bw=RCF.cw*M-pad*2,bh=RCF.rh*M-pad*2,s=Math.min(bw/im.width,bh/im.height),dw=im.width*s,dh=im.height*s;c.drawImage(im,x+(bw-dw)/2,y+(bh-dh)/2,dw,dh);});
+    c.strokeStyle='#000';c.lineWidth=0.25*M/2;c.beginPath();for(let k=1;k<RCF.rows;k++){const y=(RCF.th+k*RCF.rh)*M;c.moveTo(0,y);c.lineTo(Wm*M,y);}for(let k=1;k<RCF.cols;k++){const x=k*RCF.cw*M;c.moveTo(x,RCF.th*M);c.lineTo(x,Hm*M);}c.stroke();
+    c.lineWidth=0.5*M/2*2;c.beginPath();c.rect(0,0,Wm*M,Hm*M);c.moveTo(0,RCF.th*M);c.lineTo(Wm*M,RCF.th*M);c.stroke();
+    out.push({url:cv.toDataURL('image/png'),fn:fn0+(np>1?`_${pg+1}`:'')+'.png',title:(p.name||'')+(np>1?` (${pg+1}/${np}쪽)`:''),n:Object.keys(seen).length,cnt:Math.min(per,imgs.length-pg*per),bad:pg?[]:bad});}
+  return out;}
 function rcBig(i){const o=(window._rcPV||[])[i];if(!o)return;const w=window.open('','_blank');if(!w)return;w.document.write(`<title>${esc(o.fn)}</title><body style="margin:0;background:#eee"><img src="${o.url}" style="max-width:none;display:block"></body>`);w.document.close();}
-function rcPvHtml(L){window._rcPV=L;return L.map((o,i)=>`<div style="margin:8px 0"><div class="row" style="gap:6px;align-items:center"><b style="font-size:13px">${esc(o.title)}</b><span class="mute" style="font-size:12px">${o.n}명</span><span class="sp"></span><a class="btn sm" href="${o.url}" download="${esc(o.fn)}">🖼️ 이미지 저장</a></div>${o.bad.length?`<div style="color:var(--bad);font-size:12px">불러오지 못한 필증: ${esc(o.bad.join(', '))}</div>`:''}<img src="${o.url}" alt="" title="눌러서 크게 보기" onclick="rcBig(${i})" style="width:100%;border:1px solid var(--line);margin-top:4px;cursor:zoom-in"></div>`).join('');}
-/* 출력: 카드마다 A4 가로 한 장 */
+function rcPvHtml(L){window._rcPV=L;return L.map((o,i)=>`<div style="margin:8px 0"><div class="row" style="gap:6px;align-items:center"><b style="font-size:13px">${esc(o.title)}</b><span class="mute" style="font-size:12px">${o.n}명 · 필증 ${o.cnt}장</span><span class="sp"></span><a class="btn sm" href="${o.url}" download="${esc(o.fn)}">🖼️ 이미지 저장</a></div>${o.bad.length?`<div style="color:var(--bad);font-size:12px">불러오지 못한 필증: ${esc(o.bad.join(', '))}</div>`:''}<img src="${o.url}" alt="" title="눌러서 크게 보기" onclick="rcBig(${i})" style="width:100%;max-width:420px;display:block;margin:4px auto 0;border:1px solid var(--line);cursor:zoom-in"></div>`).join('');}
+/* 출력: 엑셀과 같은 A4 세로 · 여백(좌우 4mm, 위 6mm, 아래 4mm) · 가운데 정렬, 한 쪽에 한 장 */
 function rcPrint(L){const win=window.open('','_blank');if(!win){toast('팝업이 막혀 있습니다. 브라우저에서 팝업을 허용해 주세요.');return;}
-  win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>단체교육필증</title><style>@page{size:A4 landscape;margin:8mm}body{margin:0;font-family:'현대하모니 L','Malgun Gothic',sans-serif}
-  .bar{position:sticky;top:0;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}.bar button{font-size:15px;padding:6px 14px}.pg{break-after:page;page-break-after:always}.pg:last-child{break-after:auto;page-break-after:auto}img{display:block;width:100%;height:auto}
-  @media screen{.pg{margin:12px;box-shadow:0 0 6px #0003}body{background:#eee}}@media print{.bar{display:none}}</style></head><body><div class="bar">🪪 <b>단체 교육필증 ${L.length}장</b> <button onclick="print()" style="font-weight:bold">🖨️ 인쇄</button><br><b>인쇄 설정 위치</b>: 인쇄 창에서 <b>용지 A4 · 가로</b>, 배율 <b>페이지에 맞춤</b>(또는 기본), 여백 <b>기본</b>. 공사(카드)마다 한 장씩 나옵니다.</div>
-  ${L.map(o=>`<div class="pg"><img src="${o.url}" alt=""></div>`).join('')}</body></html>`);win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(e){}},600);}
-async function rcBuild(items){window.liveBusy(true);const L=[];try{for(const it of items){const o=await rcDraw(it.r,it.sel,it.head);if(o)L.push(o);}}finally{window.liveBusy(false);}return L;}
+  const Wm=RCF.cw*RCF.cols,Hm=RCF.th+RCF.rh*RCF.rows;
+  win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교육필증</title><style>@page{size:A4 portrait;margin:6mm 4mm 4mm 4mm}body{margin:0;font-family:'현대하모니 L','Malgun Gothic',sans-serif}
+  .bar{position:sticky;top:0;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}.bar button{font-size:15px;padding:6px 14px}
+  .pg{width:202mm;height:286mm;display:flex;align-items:center;justify-content:center;break-after:page;page-break-after:always;overflow:hidden}.pg:last-child{break-after:auto;page-break-after:auto}.pg img{width:${Wm}mm;height:${Hm}mm;display:block}
+  @media screen{body{background:#eee}.pg{background:#fff;margin:12px auto;box-shadow:0 0 6px #0003}}@media print{.bar{display:none}}</style></head><body><div class="bar">🪪 <b>교육 필증 ${L.length}장</b> <button onclick="print()" style="font-weight:bold">🖨️ 인쇄</button><br><b>인쇄 설정 위치</b>: 인쇄 창에서 <b>용지 A4 · 세로</b>, <b>배율 100%(기본)</b>, 여백 <b>기본</b>으로 두세요. ‘페이지에 맞춤’을 켜면 필증이 작아집니다.</div>
+  ${L.map(o=>`<div class="pg"><img src="${o.url}" alt=""></div>`).join('')}</body></html>`);win.document.close();setTimeout(()=>{try{win.focus();win.print();}catch(e){}},700);}
+async function rcBuild(items){window.liveBusy(true);const L=[];try{for(const it of items){L.push(...await rcDraw(it.r,it.sel));}}finally{window.liveBusy(false);}return L;}
 /* 카드 하나: 창 안 미리보기 → 출력 */
 async function rCertPv(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const sel=rcDlgSel();if(!Object.keys(sel).length){toast('출력할 필증을 고르세요.');return;}if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
-  const L=await rcBuild([{r,sel,head:(document.getElementById('rc_head')||{}).checked}]);ui._rcL=L;const b=document.getElementById('rc_pv');if(b)b.innerHTML=rcPvHtml(L);const pb=document.getElementById('rc_pb');if(pb)pb.disabled=!L.length;}
+  const L=await rcBuild([{r,sel}]);ui._rcL=L;const b=document.getElementById('rc_pv');if(b)b.innerHTML=rcPvHtml(L);const pb=document.getElementById('rc_pb');if(pb)pb.disabled=!L.length;}
 async function rCertGroup(id){if(!ui._rcL||!ui._rcL.length)await rCertPv(id);if(ui._rcL&&ui._rcL.length)rcPrint(ui._rcL);}
 /* 여러 카드 일괄: 카드마다 기본 선택(기초 + 역할별) */
 function rcPick(id,on){ui.rcSel=ui.rcSel||{};if(on)ui.rcSel[id]=1;else delete ui.rcSel[id];const n=Object.keys(ui.rcSel).length,e=document.getElementById('rc_bn');if(e)e.textContent=n;}
 function rcPickAll(d,on){ui.rcSel={};if(on)rostersOn(d).forEach(r=>ui.rcSel[r.id]=1);render();}
 async function rCertBatch(d){const ids=Object.keys(ui.rcSel||{}).filter(id=>rostersOn(d).some(r=>r.id===id));if(!ids.length){toast('카드를 먼저 체크하세요.');return;}if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
-  const items=ids.map(id=>{const r=rostersOn(d).find(x=>x.id===id);return {r,sel:rcDefSel(r),head:true};}).filter(it=>Object.keys(it.sel).length);
+  const items=ids.map(id=>{const r=rostersOn(d).find(x=>x.id===id);return {r,sel:rcDefSel(r)};}).filter(it=>Object.keys(it.sel).length);
   if(!items.length){toast('체크한 카드에 출력할 필증이 없습니다.');return;}
-  openModal(`<div class="mbox" style="max-width:980px"><div class="row" style="gap:6px"><h3 style="margin:0">🪪 단체 교육필증 일괄 미리보기</h3><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn pri" id="rc_bp" disabled onclick="rcPrint(ui._rcB||[])">🖨️ 출력</button></div><p class="mute" style="font-size:12.5px;margin:4px 0">카드 ${items.length}장 · 투입인원 전원 기초안전교육 + 역할별 필증. 사람·필증을 바꾸려면 카드의 「🪪 필증」에서 따로 고르세요.</p><div id="rc_bpv"><p class="mute">필증 이미지를 불러오는 중…</p></div></div>`);
+  openModal(`<div class="mbox" style="max-width:980px"><div class="row" style="gap:6px"><h3 style="margin:0">🪪 교육 필증 일괄 미리보기</h3><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn pri" id="rc_bp" disabled onclick="rcPrint(ui._rcB||[])">🖨️ 출력</button></div><p class="mute" style="font-size:12.5px;margin:4px 0">카드 ${items.length}개 · 투입인원 전원 기초안전교육 + 역할별 필증 (필증 출력 양식, 카드마다 따로 장을 나눔). 사람·필증을 바꾸려면 카드의 「🪪 필증」에서 따로 고르세요.</p><div id="rc_bpv"><p class="mute">필증 이미지를 불러오는 중…</p></div></div>`);
   const L=await rcBuild(items);ui._rcB=L;const b=document.getElementById('rc_bpv');if(b)b.innerHTML=L.length?rcPvHtml(L):'<p class="mute">불러온 필증이 없습니다.</p>';const pb=document.getElementById('rc_bp');if(pb)pb.disabled=!L.length;}
 /* ---------- 근로자: 투입현황 ---------- */
 function qualBanner(w){const L=qualAlerts(w);if(!L.length)return '';
