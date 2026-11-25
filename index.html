@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25g-->
+<!DOCTYPE html><!--v:2026.11.25h-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25g';
+const APP_VER='2026.11.25h';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3735,15 +3735,17 @@ function rosterCard(r,opt){opt=opt||{};const p=P(r.projectId)||{name:r.projectId
 
 /* ---------- 작업 배치 › 교육필증 출력: 투입인원 전원 기초안전교육 + 역할별 필증 (인사·노무 › 자격·교육·검진에 올린 이미지) ---------- */
 const RC_Q={안전:'안전',신호:'신호',화기:'화기',밀폐:'밀폐'};
-function rCertList(r){return r.members.map(m=>{const w=m.wid?W(m.wid):null,ks=['기초'];[m.role,m.also].forEach(ro=>{const q=RC_Q[ro];if(q&&ks.indexOf(q)<0)ks.push(q);});
-  return {m,w,ks:ks.map(q=>({q,has:!!(w&&w.qualFile&&w.qualFile[q]&&w.qualFile[q].id),exp:w&&w.qualExp?w.qualExp[q]||'':''}))};});}
+const RC_COLS=[['기초','기초'],['화기','화기'],['신호','신호'],['안전','안전'],['크레인','크레인'],['밀폐','밀폐감시']];
+function rCertList(r){return r.members.map(m=>{const w=m.wid?W(m.wid):null,need=['기초'];[m.role,m.also].forEach(ro=>{const q=RC_Q[ro];if(q&&need.indexOf(q)<0)need.push(q);});
+  const ks=RC_COLS.map(([q])=>({q,need:need.indexOf(q)>=0,has:!!(w&&w.qualFile&&w.qualFile[q]&&w.qualFile[q].id),exp:w&&w.qualExp?w.qualExp[q]||'':''})).filter(k=>k.need||k.has);
+  return {m,w,ks};});}
 function rCertDlg(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const L=rCertList(r),p=P(r.projectId)||{};
-  const rows=L.map((x,i)=>`<tr><td><b>${esc(x.m.name||(x.w&&x.w.name)||'')}</b>${x.m.ext?' <small class="mute">(외부)</small>':''}<div class="mute" style="font-size:12px">${esc([x.m.role,x.m.also].filter(Boolean).join('·'))}</div></td><td>${x.m.ext||!x.w?'<span class="mute">외부 인원 — 필증 없음</span>':x.ks.map((k,j)=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;white-space:nowrap"><input type="checkbox" class="rc_ck" data-w="${x.w.id}" data-q="${k.q}" ${k.has?'checked':'disabled'}>${QNAME[k.q]}${k.has?(k.exp&&k.exp<r.date?' <b style="color:var(--bad)">만료 '+esc(k.exp)+'</b>':''):' <b style="color:var(--bad)">✖ 없음</b>'}</label>`).join('')}</td></tr>`).join('');
-  const miss=L.reduce((a,x)=>a+(x.m.ext||!x.w?0:x.ks.filter(k=>!k.has).length),0);
-  openModal(`<div class="mbox" style="max-width:640px"><h3 style="margin:0 0 4px">🪪 교육필증 출력</h3><div class="mute" style="font-size:13px;margin-bottom:8px">${fmtDay(r.date)} · ${esc(p.name||'')}${r.location?' · '+esc(r.location):''}<br>투입인원 전원 기초안전교육 + 역할별 필증(안전·신호·화기·밀폐)을 고릅니다.</div>
+  const rows=L.map((x,i)=>`<tr><td><b>${esc(x.m.name||(x.w&&x.w.name)||'')}</b>${x.m.ext?' <small class="mute">(외부)</small>':''}<div class="mute" style="font-size:12px">${esc([x.m.role,x.m.also].filter(Boolean).join('·'))}</div></td><td>${x.m.ext||!x.w?'<span class="mute">외부 인원 — 필증 없음</span>':x.ks.map((k,j)=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;white-space:nowrap"><input type="checkbox" class="rc_ck" data-w="${x.w.id}" data-q="${k.q}" ${k.has?(k.need?'checked':''):'disabled'}>${QNAME[k.q]}${k.has?(k.exp&&k.exp<r.date?' <b style="color:var(--bad)">만료 '+esc(k.exp)+'</b>':''):' <b style="color:var(--bad)">✖ 없음</b>'}</label>`).join('')}</td></tr>`).join('');
+  const miss=L.reduce((a,x)=>a+(x.m.ext||!x.w?0:x.ks.filter(k=>k.need&&!k.has).length),0);
+  openModal(`<div class="mbox" style="max-width:640px"><h3 style="margin:0 0 4px">🪪 교육필증 출력</h3><div class="mute" style="font-size:13px;margin-bottom:8px">${fmtDay(r.date)} · ${esc(p.name||'')}${r.location?' · '+esc(r.location):''}<br>투입인원 전원 기초안전교육 + 역할별 필증(안전·신호·화기·밀폐)이 미리 체크됩니다. 그 밖에 가진 필증도 골라 넣을 수 있습니다.</div>
   ${miss?`<div class="note" style="color:var(--bad);margin-bottom:6px">필증 이미지가 없는 항목 ${miss}건 — 「인사·노무 › 자격·교육·검진」에서 올리면 출력됩니다.</div>`:''}
   <div class="tbl-wrap"><table class="nw" style="width:100%"><tr><th style="width:30%">이름·역할</th><th>출력할 필증</th></tr>${rows}</table></div>
-  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="rc_head" checked>맨 위에 공사명·날짜 넣기</label><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn pri" onclick="rCertPrint('${r.id}')">🖨️ 출력 미리보기</button></div></div>`);}
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="rc_head" checked>맨 위에 공사명·날짜 넣기</label><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn" onclick="rCertPrint('${r.id}')">낱장으로 보기</button><button class="btn pri" onclick="rCertGroup('${r.id}')">🪪 단체 교육필증 이미지</button></div></div>`);}
 async function rCertPrint(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const p=P(r.projectId)||{};
   const sel=[...document.querySelectorAll('.rc_ck:checked')].map(c=>({w:c.dataset.w,q:c.dataset.q}));if(!sel.length){toast('출력할 필증을 고르세요.');return;}
   const head=(document.getElementById('rc_head')||{}).checked;if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
@@ -3765,6 +3767,33 @@ async function rCertPrint(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)r
   필증 크기 <button onclick="document.body.style.setProperty('--cw','86mm')">실제 카드 크기 (가로 86mm)</button><button onclick="document.body.style.setProperty('--cw','120mm')">크게 (가로 120mm)</button>
   <label><input type="checkbox" onchange="document.body.classList.toggle('nocap',!this.checked)"> 필증 아래 이름 표시</label> <button onclick="print()" style="font-weight:bold">인쇄</button></div>
   <div class="wrap">${hd}${bad.length?`<div class="miss">불러오지 못한 필증: ${bad.map(x=>esc(nm(x)+' '+QNAME[x.q])).join(', ')}</div>`:''}<div class="grid">${cards}</div></div></body></html>`);win.document.close();}
+/* 단체 교육필증: 업로드한 엑셀(교육필증.xlsx) 양식 그대로 — 분류(이름) | 기초 | 화기 | 신호 | 안전 | 크레인 | 밀폐감시, 칸마다 필증 사진 */
+async function rCertGroup(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const p=P(r.projectId)||{};
+  const sel={};[...document.querySelectorAll('.rc_ck:checked')].forEach(c=>{(sel[c.dataset.w]=sel[c.dataset.w]||[]).push(c.dataset.q);});
+  const ppl=[];const seen={};r.members.forEach(m=>{if(m.wid&&sel[m.wid]&&!seen[m.wid]){seen[m.wid]=1;ppl.push({w:W(m.wid),qs:sel[m.wid]});}});
+  if(!ppl.length){toast('출력할 필증을 고르세요.');return;}const head=(document.getElementById('rc_head')||{}).checked;
+  if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
+  const win=window.open('','_blank');if(!win){toast('팝업이 막혀 있습니다. 브라우저에서 팝업을 허용해 주세요.');return;}
+  win.document.write('<p style="font-family:sans-serif">필증 이미지를 불러오는 중…</p>');
+  const img={},bad=[];window.liveBusy(true);
+  try{for(const x of ppl)for(const q of x.qs){try{const g=await window.liveCall('qual_fileGet',{id:x.w.id,q});if(g&&g.b64&&/^image\//.test(g.mime||''))img[x.w.id+'|'+q]=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=no;im.src='data:'+g.mime+';base64,'+g.b64;});else bad.push(x.w.name+' '+QNAME[q]);}catch(e){bad.push(x.w.name+' '+QNAME[q]);}}}finally{window.liveBusy(false);}
+  /* 엑셀 크기: A열 9, 필증 열 37(≈264px), 머리행 27pt(36px), 사람 행 120pt(160px) → 2배로 그려 인쇄 선명하게 */
+  const K=2,cw0=72*K,cw=264*K,hh=36*K,rh=160*K,th=head?64*K:0,pad=4*K,W0=cw0+cw*RC_COLS.length,H0=th+hh+rh*ppl.length;
+  const cv=document.createElement('canvas');cv.width=W0+2;cv.height=H0+2;const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);
+  const F=(sz,b)=>`${b?'bold ':''}${sz*K}px "맑은 고딕","Malgun Gothic","현대하모니 L",sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillStyle='#000';
+  if(head){c.textAlign='left';c.font=F(20,1);c.fillText(p.name||'',4*K,22*K);c.font=F(13);c.fillText(`${fmtDay(r.date)}${r.location?' · '+r.location:''} · ${r.company||DEF_CO} · 교육필증 ${ppl.length}명`,4*K,48*K);c.textAlign='center';}
+  const y0=th+1;c.font=F(16);c.fillText('분류',1+cw0/2,y0+hh/2);RC_COLS.forEach(([q,l],i)=>c.fillText(l,1+cw0+cw*i+cw/2,y0+hh/2));
+  ppl.forEach((x,ri)=>{const y=y0+hh+rh*ri;c.font=F(16);c.fillText(x.w.name,1+cw0/2,y+rh/2);
+    RC_COLS.forEach(([q],i)=>{const im=img[x.w.id+'|'+q];if(!im)return;const bx=1+cw0+cw*i+pad,by=y+pad,bw=cw-pad*2,bh=rh-pad*2,s=Math.min(bw/im.width,bh/im.height),dw=im.width*s,dh=im.height*s;c.drawImage(im,bx+(bw-dw)/2,by+(bh-dh)/2,dw,dh);});});
+  c.strokeStyle='#000';c.lineWidth=1.2*K/2;c.beginPath();for(let i=0;i<=ppl.length+1;i++){const y=y0+(i?hh+rh*(i-1):0);c.moveTo(1,y);c.lineTo(1+W0,y);}
+  [0,cw0].concat(RC_COLS.map((_,i)=>cw0+cw*(i+1))).forEach(x=>{c.moveTo(1+x,y0);c.lineTo(1+x,y0+hh+rh*ppl.length);});c.stroke();
+  const url=cv.toDataURL('image/png'),fn=`단체교육필증_${r.date}_${String(p.name||'').replace(/[\\/:*?"<>|]/g,'_').slice(0,40)}.png`;
+  win.document.open();win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${esc(fn)}</title><style>
+  @page{size:A4 landscape;margin:8mm}body{margin:0;font-family:'현대하모니 L','Malgun Gothic',sans-serif}.bar{position:sticky;top:0;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}
+  .bar button,.bar a{font-size:15px;padding:6px 14px;margin-right:6px}img{display:block;width:100%;height:auto}@media screen{.pg{padding:12px;background:#eee}img{background:#fff;box-shadow:0 0 6px #0003}}@media print{.bar{display:none}}
+  </style></head><body><div class="bar">🪪 <b>단체 교육필증</b> (엑셀 교육필증 양식) — <a href="${url}" download="${esc(fn)}">🖼️ 이미지 저장(PNG)</a><button onclick="print()" style="font-weight:bold">🖨️ 인쇄</button><br>
+  <b>인쇄 설정 위치</b>: 인쇄 창에서 <b>용지 A4 · 가로</b>, 배율 <b>페이지에 맞춤</b>(또는 기본), 여백 <b>기본</b>. 인원이 많으면 여러 장으로 나뉩니다.${bad.length?`<br><b style="color:#b00">불러오지 못한 필증: ${esc(bad.join(', '))}</b>`:''}</div>
+  <div class="pg"><img src="${url}" alt="단체 교육필증"></div></body></html>`);win.document.close();}
 /* ---------- 근로자: 투입현황 ---------- */
 function qualBanner(w){const L=qualAlerts(w);if(!L.length)return '';
   return `<div class="card" style="border-left:4px solid ${L.some(x=>x.lv!=='soon')?'var(--bad)':'var(--warn)'}"><h3 style="margin:0 0 6px">🔔 자격·교육·검진 알림</h3>${L.map(x=>`<div style="margin:3px 0">${x.lv==='soon'?'⏰':'⚠'} ${esc(x.t)}</div>`).join('')}<p class="mute" style="margin:6px 0 0;font-size:12.5px">${L.some(x=>!x.h)?'갱신 교육을 받고 이수증을 관리자에게 제출하세요. ':''}${L.some(x=>x.h)?'기한 안에 건강검진을 받고, 받은 날짜를 관리자에게 알려 주세요.':''}</p>${L.some(x=>x.h)&&LIVE&&w.id===ses.uid?`<button class="btn sm pri" style="margin-top:6px" onclick="myHealthUp()">📷 건강검진표 올리기</button>`:''}</div>`;}
@@ -5715,12 +5744,13 @@ function aWorkers(){
   return h+`</table></div><p class="mute">퇴사자는 삭제하지 않고 로그인만 막습니다. 근로계약 관련 서류는 근로기준법상 보존 의무(3년)가 있어 출근 기록을 그대로 보존합니다.</p></div>`;
 }
 /* 목록에서 자격 바로 켜고 끄기 */
-function qRows(w,pre){return QUALS.map(q=>`<div class="row" style="gap:8px;margin-bottom:6px;flex-wrap:nowrap"><label class="row" style="gap:6px;flex:0 0 150px"><input type="checkbox" class="${pre}_q" value="${q}" style="width:auto" ${hasQ(w,q)?'checked':''} onchange="document.querySelector('.${pre}_e[data-q=${q}]').disabled=!this.checked"> ${QNAME[q]}</label><input type="date" class="${pre}_e" data-q="${q}" value="${qExpOf(w,q)}" ${hasQ(w,q)?'':'disabled'} style="flex:1"><span class="mute" style="font-size:12px;flex:0 0 70px">${qState(w,q)==='expired'?'<b style="color:var(--bad)">만료</b>':qState(w,q)==='soon'?'<b style="color:var(--warn)">2주 내 만료</b>':''}</span></div>`).join('');}
+function qRows(w,pre){const qe=pre==='qe',st=q=>qState(w,q)==='expired'?'<b style="color:var(--bad)">만료</b>':qState(w,q)==='soon'?'<b style="color:var(--warn)">'+(qe?'임박':'2주 내 만료')+'</b>':'';
+  return QUALS.map(q=>`<div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:nowrap;align-items:center"><label class="row" style="gap:6px;flex:0 0 ${qe?'118px':'150px'};min-width:0"><input type="checkbox" class="${pre}_q" value="${q}" style="width:auto" ${hasQ(w,q)?'checked':''} onchange="document.querySelector('.${pre}_e[data-q=${q}]').disabled=!this.checked"> <span>${QNAME[q]}${qe&&st(q)?'<br><small>'+st(q)+'</small>':''}</span></label><input type="date" class="${pre}_e" data-q="${q}" value="${qExpOf(w,q)}" ${hasQ(w,q)?'':'disabled'} style="flex:1;min-width:0">${qe?`<span style="flex:0 0 86px;display:flex;gap:4px"><label class="btn sm" style="cursor:pointer;padding:4px 8px" title="${QNAME[q]} 필증 사진 첨부 → 만료일 자동 변경">📷<input type="file" accept="image/*,application/pdf" style="display:none" onchange="qOcr1('${w.id}','${q}',this)"></label>${w.qualFile&&w.qualFile[q]&&w.qualFile[q].id?`<button class="btn sm" style="padding:4px 8px" title="등록된 필증 미리보기" onclick="qFileGet('${w.id}','${q}')">📎</button>`:''}</span>`:`<span class="mute" style="font-size:12px;flex:0 0 70px">${st(q)}</span>`}</div>`).join('');}
 function qVals(pre){const quals=[...document.querySelectorAll('.'+pre+'_q:checked')].map(e=>e.value),exp={};document.querySelectorAll('.'+pre+'_e').forEach(e=>{if(e.value&&quals.indexOf(e.dataset.q)>=0)exp[e.dataset.q]=e.value;});return {quals,exp};}
 /* 목록에서 자격·만료일 바로 편집 */
 function qEdit(id){const w=W(id);openModal(`<div class="mbox" style="max-width:480px"><div class="row"><h3 style="margin:0">${esc(w.name)} — 자격·교육·검진</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="row" style="gap:8px;margin:8px 0 4px;flex-wrap:wrap"><label class="btn pri sm" style="cursor:pointer">📷 이수증 사진으로 자동 입력<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="qOcr('${id}',this)"></label><span class="mute" style="font-size:12px">여러 장 한 번에 가능 · 읽은 결과를 아래 칸에 채운 뒤, 확인하고 저장</span></div><div id="qe_ocr"></div>${qFileLinks(w)}
-  <p class="mute" style="margin:6px 0 10px">보유한 자격에 체크하고 유효기간 만료일을 넣으세요. 만료 2주 전부터 근로자 화면에 알림이 뜨고, 만료되면 작업 배치 해당 칸에 넣을 수 없습니다. (만료일을 비우면 기한 없음)</p>${qRows(w,'qe')}${hRows(w)}
+  <p class="mute" style="margin:6px 0 10px"><b>📷</b> = 그 항목 필증 사진 첨부(새로 교육받으면 새 사진으로 갱신 → 만료일 자동 변경, 작업 배치 단체 필증에도 새 사진), <b>📎</b> = 등록된 필증 미리보기. 보유한 자격에 체크하고 유효기간 만료일을 넣으세요. 만료 2주 전부터 근로자 화면에 알림이 뜨고, 만료되면 작업 배치 해당 칸에 넣을 수 없습니다. (만료일을 비우면 기한 없음)</p>${qRows(w,'qe')}${hRows(w)}
   <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="qEditSave('${id}')">저장</button></div></div>`);}
 function qEditSave(id){const v=qVals('qe'),health=hVals();if(health===null)return;if(!LIVE){const w=W(id);w.quals=v.quals.join(',');w.qualExp=v.exp;w.health=health;save();closeModal();render();return;}liveOnly('setQuals',{id,quals:v.quals,exp:v.exp,files:QE_FILES,health,hfiles:HE_FILES});}
 /* 건강검진 입력칸: 받은 날짜만 (결과는 넣지 않음) */
@@ -6261,6 +6291,15 @@ function qFileLinks(w){QE_FILES={};const f=w.qualFile||{},ks=QUALS.filter(q=>f[q
   return `<div class="mute" style="font-size:12px;margin:4px 0">등록된 이수증: ${ks.map(q=>`<button class="linkbtn" onclick="qFileGet('${w.id}','${q}')">📎 ${QNAME[q]}</button>`).join(' ')}</div>`;}
 function qImg(f){return new Promise((ok,no)=>{if(f.type==='application/pdf'||!/^image\//.test(f.type)){const rd=new FileReader();rd.onload=()=>ok({b64:String(rd.result).split(',')[1]||'',mime:f.type||'application/pdf'});rd.onerror=no;rd.readAsDataURL(f);return;}
   const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{const s=Math.min(1,2000/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok({b64:c.toDataURL('image/jpeg',0.88).split(',')[1],mime:'image/jpeg'});};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('사진을 열 수 없습니다. JPG/PNG/PDF로 올려 주세요.'));};im.src=u;});}
+/* 자격·교육 줄마다 📷: 그 항목 필증 사진을 붙이면 사진에서 유효기간을 읽어 만료일을 바꿈 (저장 눌러야 반영) */
+async function qOcr1(id,q,inp){const f=(inp.files||[])[0];inp.value='';if(!f)return;if(!LIVE){toast('시제품에서는 사진 읽기가 되지 않습니다.');return;}
+  const box=document.getElementById('qe_ocr'),w=W(id),old=!!(w.qualFile&&w.qualFile[q]&&w.qualFile[q].id),th=/^image\//.test(f.type)?URL.createObjectURL(f):'';window.liveBusy(true);let line='';
+  try{if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const d=await qImg(f);const r=await window.liveCall('qual_ocr',{id,name:QNAME[q]+'_'+f.name,mime:d.mime,b64:d.b64});
+    if(!r||!r.fileId)throw new Error((r&&r.error)||'올리지 못했습니다.');QE_FILES[q]=r.fileId;
+    if(r.exp){qSet(q,r.exp);line=`✅ <b>${QNAME[q]}</b> 사진 첨부 · 만료일 <b>${r.exp}</b>로 바꿈 <span class="mute">(${esc(r.how||'사진에서 읽음')})</span>${r.q&&r.q!==q?` <b style="color:var(--warn)">— 사진은 ${QNAME[r.q]||r.q} 필증처럼 보입니다. 확인하세요.</b>`:''}${r.nameOk===false?` <b style="color:var(--bad)">— 사진에서 ${esc(w.name)} 이름을 찾지 못했습니다. 확인하세요.</b>`:''}`;}
+    else{qSet(q,'');line=`<b style="color:var(--warn)">${QNAME[q]}</b> 사진은 첨부했지만 유효기간을 읽지 못했습니다. 만료일을 직접 고치세요.`;}
+  }catch(e){line=`<b style="color:var(--bad)">${QNAME[q]}</b>: ${esc(e.message||String(e))}`;}finally{window.liveBusy(false);}
+  if(box)box.insertAdjacentHTML('beforeend',`<div style="font-size:13px;margin:6px 0;display:flex;gap:8px;align-items:flex-start">${th?`<img src="${th}" alt="" style="width:120px;border:1px solid var(--line);border-radius:4px;flex:0 0 auto">`:''}<div>${line}${QE_FILES[q]&&old?'<br><span class="mute">저장하면 이 사진이 새 필증으로 바뀌고, 작업 배치 단체 필증에도 새 사진이 나옵니다. (이전 사진은 보관함에 남음)</span>':''}</div></div>`);toast('저장을 눌러야 반영됩니다.');}
 function qSet(q,exp){const cb=document.querySelector('.qe_q[value="'+q+'"]'),de=document.querySelector('.qe_e[data-q="'+q+'"]');if(!cb||!de)return;cb.checked=true;de.disabled=false;if(exp)de.value=exp;de.style.background='#fff8d6';}
 async function qOcr(id,inp){const fs=[...(inp.files||[])];inp.value='';if(!fs.length)return;if(!LIVE){toast('시제품에서는 사진 읽기가 되지 않습니다.');return;}
   const box=document.getElementById('qe_ocr'),w=W(id);window.liveBusy(true);
