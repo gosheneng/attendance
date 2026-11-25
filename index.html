@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25l-->
+<!DOCTYPE html><!--v:2026.11.25n-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25l';
+const APP_VER='2026.11.25n';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3285,11 +3285,11 @@ function histHtml(r){if(!r.history||!r.history.length)return '';return `<details
    ========================================================= */
 /* 화면 메뉴 → 권한 키 (발주 = buy, 매입 = purch) */
 const TAB_PERM={po_mat:'buy',po_con:'buy',notes:'bank'};
-const ADMIN_GROUPS=[['g_notice','📢 공지',['ntview','notice']],['g_home','오늘 업무',['dash','sign','todo','ceotodo']],['g_ceo','경영 현황',['ceoviz','ceo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','pre','tax','notes']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['paydue','card','stmt','bank','vendor']],['g_board','소통',['board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','next']]];
+const ADMIN_GROUPS=[['g_notice','📢 공지',['ntview','notice']],['g_home','오늘 업무',['dash','sign','todo','ceotodo']],['g_ceo','경영 현황',['ceoviz','ceo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','pre','tax','notes']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['paydue','card','stmt','bank','vendor']],['g_board','소통',['board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','sysst','next']]];
 /* 회사 로고 누르면 처음 화면: 관리자 = 오늘 업무, 근로자 = 오늘 출퇴근 */
 function goHome(adm){closeModal();if(adm)aTab('dash');else{ui.wTab='today';render();}try{window.scrollTo(0,0);}catch(e){}}
 function aTab(k){ui.aTab=k;const g=ADMIN_GROUPS.find(x=>x[2].indexOf(k)>=0);if(g){ui.gLast=ui.gLast||{};ui.gLast[g[0]]=k;}render();}
-function aGroup(gk){const g=ADMIN_GROUPS.find(x=>x[0]===gk);if(!g)return;const me=W(ses.uid),P=permsOf(me);const ok=k=>k==='ntview'?true:k==='paydue'?payDueOk():k==='sign'?prqAppr():k==='todo'?todoOk(me):k==='prq'?me.role!=='worker':k==='ceo'||k==='ceoviz'||k==='ceotodo'?ceoSee(me):k==='next'||k==='vault'?me.role==='admin':k==='forms'||P.indexOf(TAB_PERM[k]||k)>=0||(k==='card'&&me.role==='manager')||(k==='month'&&(S.extTodo||[]).length)||(k==='gisung'&&P.indexOf('proj')>=0);
+function aGroup(gk){const g=ADMIN_GROUPS.find(x=>x[0]===gk);if(!g)return;const me=W(ses.uid),P=permsOf(me);const ok=k=>k==='ntview'?true:k==='paydue'?payDueOk():k==='sign'?prqAppr():k==='todo'?todoOk(me):k==='prq'?me.role!=='worker':k==='ceo'||k==='ceoviz'||k==='ceotodo'?ceoSee(me):k==='next'||k==='vault'||k==='sysst'?me.role==='admin':k==='forms'||P.indexOf(TAB_PERM[k]||k)>=0||(k==='card'&&me.role==='manager')||(k==='month'&&(S.extTodo||[]).length)||(k==='gisung'&&P.indexOf('proj')>=0);
   const last=ui.gLast&&ui.gLast[gk];ui.aTab=(last&&ok(last))?last:g[2].find(ok);render();}
 /* ---------- 기성준공 · 안전관리비 대장 ---------- */
 const won=v=>(v===''||v==null||!isFinite(Number(v)))?'':Number(v).toLocaleString('ko-KR');
@@ -5269,17 +5269,28 @@ function fmForm(id,newVer,ctr0){const x0=id?(S.forms||[]).find(o=>o.id===id):{na
   <label class="f"><span>발주처 (비우면 발주처 공통)</span><input id="fm_o" maxlength="40" value="${esc(x.cli||'')}" list="fm_ol" placeholder="예: 현대제철, 현대비앤지스틸"><datalist id="fm_ol">${clis.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
   <label class="f"><span>분류</span><input id="fm_c" maxlength="30" value="${esc(x.cat||'')}" list="fm_dl" placeholder="예: 견적·발주, 안전, 기성, 보고서"><datalist id="fm_dl">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label>
   <label class="f"><span>양식명</span><input id="fm_n" maxlength="60" value="${esc(x.name)}" placeholder="예: 견적서 양식"></label>`}
-  ${!id||newVer?`<label class="f"><span>파일 (엑셀·PPT·워드·한글·PDF, 20MB 이하)</span><input id="fm_f" type="file" accept="${FORM_EXT}" onchange="fmPick(this.files[0])"></label><div id="fm_prev" class="mute" style="font-size:12px;margin:-4px 0 8px"></div>`:''}
+  ${!id||newVer?`<label class="f"><span>파일 (모든 형식 · 한 개 20MB 이하${newVer?'':' · <b>최대 10개</b> 한 번에'})</span><input id="fm_f" type="file" ${newVer?'':'multiple'} onchange="fmPick(this.files,${newVer?1:0})"></label><div id="fm_prev" class="mute" style="font-size:12px;margin:-4px 0 8px"></div>`:''}
   <label class="f"><span>${newVer?'바뀐 내용 (선택)':'설명 (선택)'}</span><input id="fm_m" maxlength="300" value="${newVer?'':esc(x.memo||'')}" placeholder="${newVer?'예: 단가표 수식 수정':'예: 2026년 단가 반영'}"></label>
   <div class="row" style="justify-content:flex-end;gap:6px">${id&&!newVer?`<button class="btn bad" onclick="fmDel('${id}')">삭제</button><span class="sp"></span>`:''}<button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="fmSave('${id}',${newVer?1:0})">저장</button></div></div>`);}
-function fmPick(f){const box=document.getElementById('fm_prev');FM_NEW=null;if(!f)return;if(!/\.(xlsx|xlsm|xls|pptx|ppt|docx|doc|hwp|hwpx|pdf)$/i.test(f.name)){toast('엑셀·PPT·워드·한글·PDF 파일만 올릴 수 있습니다.');return;}
-  if(f.size>20*1024*1024){toast('20MB 이하 파일만 올릴 수 있습니다.');return;}box.textContent='읽는 중…';
-  const rd=new FileReader();rd.onload=()=>{FM_NEW={b64:String(rd.result).split(',')[1],mime:f.type||'application/octet-stream',fname:f.name};box.innerHTML=fIcon(f.name)+' '+esc(f.name)+' ('+Math.ceil(f.size/1024)+'KB) 준비됨';
-    const n=document.getElementById('fm_n');if(n&&!n.value.trim())n.value=f.name.replace(/\.[^.]+$/,'');};rd.readAsDataURL(f);}
-async function fmSave(id,newVer){const ctrE=document.getElementById('fm_r'),ctr=ctrE&&ctrE.value!=='__new'?ctrE.value.trim():'',co=document.getElementById('fm_o').value.trim(),name=document.getElementById('fm_n').value.trim(),cat=document.getElementById('fm_c').value.trim(),memo=document.getElementById('fm_m').value.trim();if(!name){toast('양식명을 입력하세요.');return;}
-  if((!id||newVer)&&!FM_NEW){toast('파일을 고르세요.');return;}if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return;}
-  let up=null;if(FM_NEW){window.liveBusy(true);try{up=await window.liveCall('form_up',FM_NEW);}catch(e){window.liveBusy(false);toast('파일을 올리지 못했습니다: '+(e.message||e));return;}window.liveBusy(false);if(up&&up.error){toast(up.error);return;}}
-  const d=Object.assign({id,co,ctr,name,cat},up||{});if(newVer)d.verMemo=memo;else d.memo=memo;liveOnly('form_save',d);}
+/* 파일 고르기: 형식 제한 없음, 새 양식은 최대 10개 (여러 개면 파일 이름이 양식명) */
+async function fmPick(fl,one){const box=document.getElementById('fm_prev');FM_NEW=null;let fs=[...(fl||[])];if(!fs.length){box.textContent='';return;}
+  if(one)fs=fs.slice(0,1);if(fs.length>10){toast('한 번에 10개까지 올릴 수 있습니다. 앞의 10개만 고릅니다.');fs=fs.slice(0,10);}
+  const big=fs.filter(f=>f.size>20*1024*1024);if(big.length){toast('20MB가 넘는 파일은 뺐습니다: '+big.map(f=>f.name).join(', '));fs=fs.filter(f=>f.size<=20*1024*1024);}if(!fs.length){box.textContent='';return;}
+  box.textContent='읽는 중…';const rd=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok({b64:String(r.result).split(',')[1],mime:f.type||'application/octet-stream',fname:f.name,size:f.size});r.onerror=no;r.readAsDataURL(f);});
+  const L=[];for(const f of fs)L.push(await rd(f));FM_NEW=L;
+  box.innerHTML=L.map(x=>fIcon(x.fname)+' '+esc(x.fname)+' <span class="mute">('+Math.ceil(x.size/1024)+'KB)</span>').join('<br>')+`<div style="margin-top:4px">${L.length}개 준비됨${L.length>1?' · 여러 개는 <b>파일 이름이 양식명</b>이 되고, 수주처·발주처·분류·설명은 같이 들어갑니다':''}</div>`;
+  const n=document.getElementById('fm_n');if(n){if(L.length===1){if(!n.value.trim())n.value=L[0].fname.replace(/\.[^.]+$/,'');n.disabled=false;}else{n.value='';n.placeholder='여러 파일: 파일 이름이 양식명';n.disabled=true;}}}
+async function fmSave(id,newVer){const ctrE=document.getElementById('fm_r'),ctr=ctrE&&ctrE.value!=='__new'?ctrE.value.trim():'',co=document.getElementById('fm_o').value.trim(),name=document.getElementById('fm_n').value.trim(),cat=document.getElementById('fm_c').value.trim(),memo=document.getElementById('fm_m').value.trim();const many=FM_NEW&&FM_NEW.length>1;if(!name&&!many){toast('양식명을 입력하세요.');return;}
+  if((!id||newVer)&&!(FM_NEW&&FM_NEW.length)){toast('파일을 고르세요.');return;}if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return;}
+  if(!many){let up=null;if(FM_NEW){window.liveBusy(true);try{up=await window.liveCall('form_up',FM_NEW[0]);}catch(e){window.liveBusy(false);toast('파일을 올리지 못했습니다: '+(e.message||e));return;}window.liveBusy(false);if(up&&up.error){toast(up.error);return;}}
+    const d=Object.assign({id,co,ctr,name,cat},up||{});if(newVer)d.verMemo=memo;else d.memo=memo;liveOnly('form_save',d);return;}
+  /* 여러 개: 파일마다 올리고 양식으로 저장 (파일 이름 = 양식명) */
+  const ok=[],bad=[];let st=null;window.liveBusy(true);
+  try{for(const f of FM_NEW){const nm=f.fname.replace(/\.[^.]+$/,'').slice(0,60)||f.fname;try{const up=await window.liveCall('form_up',f);if(!up||up.error)throw new Error((up&&up.error)||'올리지 못함');
+      const r=await window.liveCall('form_save',Object.assign({id:'',co,ctr,name:nm,cat,memo},up));if(r&&r.error)throw new Error(r.error);if(r&&r.state)st=r.state;ok.push(nm);}catch(e){bad.push(nm+' — '+(e.message||e));}}}
+  finally{window.liveBusy(false);}
+  if(st)applyState(st);closeModal();render();
+  if(bad.length)alertBox(`양식 ${ok.length}개를 올렸습니다. <b style="color:var(--bad)">${bad.length}개는 올리지 못했습니다.</b>`,bad);else toast(`양식 ${ok.length}개를 올렸습니다.`);}
 async function fmDel(id){const x=(S.forms||[]).find(o=>o.id===id);if(!(await confirmBox(`<b>${esc(x.name)}</b> 양식을 삭제할까요?\n이전 버전 파일까지 드라이브 휴지통으로 이동합니다.`,'삭제')))return;liveOnly('form_del',{id});}
 async function fmGet(id,ver){if(!LIVE){toast('시제품에서는 내려받을 수 없습니다.');return;}window.liveBusy(true);let r;
   try{r=await window.liveCall('form_get',{id,ver:ver||''});}catch(e){window.liveBusy(false);window.liveFail(e);return;}window.liveBusy(false);if(r&&r.error){toast(r.error);return;}
@@ -5453,8 +5464,8 @@ function aBoard(){const L=S.posts||[];const f=ui.pf2||'';const sh=L.filter(x=>!f
 function vAdmin(me){
   const pend=S.records.filter(r=>r.status==='pending').length;
   let h=`<div class="top"><div class="brand" onclick="goHome(1)" title="오늘 업무로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합업무시스템 · ${me.role==='admin'?'관리자':'메뉴 담당'}</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}<button class="btn sm" onclick="ui.asWorker=true;ui.wTab='today';render()">근로자 화면</button><button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap">`;
-  const allT=[['dash','주요 이벤트'],['sign','결재',signPend().n||''],['todo','업무 체크리스트',(()=>{const td=today();return (S.todos||[]).filter(x=>!x.done&&x.due&&x.due<=td).length||'';})()],['ceoviz','한눈에 보기'],['ceo','실시간 손익표'],['ceotodo','직원 업무 현황'],['appr','출퇴근 승인',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['qr','출근 QR'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['quals','자격·교육·검진',(qAlertCount()+hReqList().length)||''],['notice','공지·긴급알림 보내기'],['pay','급여명세서'],['proj','공사 등록(기성준공 안)'],['gisung','기성준공'],['safety','안전관리비'],['roster','작업 배치'],['car','차량관리',carAlerts().length||''],['board','건의함',(S.posts||[]).filter(x=>x.status==='접수').length||''],['po_mat','자재 및 소모품 발주',(S.buys||[]).filter(x=>x.kind==='자재'&&x.status==='결재요청').length||''],['po_con','공사발주'],['card','법인카드 지출',canM('card')?((S.buys||[]).filter(x=>x.kind==='카드'&&bSt(x)==='미확인').length||''):''],['stmt','거래명세표·세금계산서',(S.stmts||[]).filter(x=>!x.paid).length||''],['paydue','결재 완료 · 지급 대기',payDueOk()?((S.preq||[]).filter(x=>x.st==='승인'&&!x.paid).length||''):''],['prq','선지급 요청',prqAppr()?((S.preq||[]).filter(x=>x.st==='요청').length||''):((S.preq||[]).filter(x=>x.by===ses.uid&&x.st==='반려').length||'')],['bank','통장 대조'],['vendor','거래처관리'],['vault','계정 보관함'],['tax','세금계산서 요청',canM('gisung')?((S.taxreqs||[]).filter(x=>x.status==='요청').length||''):((S.taxreqs||[]).filter(x=>x.by===ses.uid&&x.status==='반려').length||'')],['notes','받을어음'],['company','회사정보'],['pre','선작업·미수금',(S.prework||[]).filter(x=>x.status==='발주대기').length||''],['ahelp','관리자 사용방법'],['log','변경 이력'],['next','추가 예정 기능'],['forms','파일양식']];
-  const P=permsOf(me),cardOnly=me.role==='manager'&&P.indexOf('card')<0,tl=allT.concat([['ntview','받은 공지·긴급알림',ntMine().filter(n=>!n.read).length||'']]).filter(t=>t[0]==='ntview'?true:t[0]==='paydue'?payDueOk():t[0]==='sign'?prqAppr():t[0]==='todo'?todoOk(me):t[0]==='prq'?me.role!=='worker':t[0]==='ceo'||t[0]==='ceoviz'||t[0]==='ceotodo'?ceoSee(me):t[0]==='next'||t[0]==='vault'?me.role==='admin':(t[0]==='ahelp'||P.indexOf(TAB_PERM[t[0]]||t[0])>=0||(t[0]==='card'&&cardOnly)||(t[0]==='month'&&(S.extTodo||[]).length)||t[0]==='forms'||(t[0]==='gisung'&&P.indexOf('proj')>=0)));   /* 권한 없는 관리자도 법인카드 지출은 기록 */
+  const allT=[['dash','주요 이벤트'],['sign','결재',signPend().n||''],['todo','업무 체크리스트',(()=>{const td=today();return (S.todos||[]).filter(x=>!x.done&&x.due&&x.due<=td).length||'';})()],['ceoviz','한눈에 보기'],['ceo','실시간 손익표'],['ceotodo','직원 업무 현황'],['appr','출퇴근 승인',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['qr','출근 QR'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['quals','자격·교육·검진',(qAlertCount()+hReqList().length)||''],['notice','공지·긴급알림 보내기'],['pay','급여명세서'],['proj','공사 등록(기성준공 안)'],['gisung','기성준공'],['safety','안전관리비'],['roster','작업 배치'],['car','차량관리',carAlerts().length||''],['board','건의함',(S.posts||[]).filter(x=>x.status==='접수').length||''],['po_mat','자재 및 소모품 발주',(S.buys||[]).filter(x=>x.kind==='자재'&&x.status==='결재요청').length||''],['po_con','공사발주'],['card','법인카드 지출',canM('card')?((S.buys||[]).filter(x=>x.kind==='카드'&&bSt(x)==='미확인').length||''):''],['stmt','거래명세표·세금계산서',(S.stmts||[]).filter(x=>!x.paid).length||''],['paydue','결재 완료 · 지급 대기',payDueOk()?((S.preq||[]).filter(x=>x.st==='승인'&&!x.paid).length||''):''],['prq','선지급 요청',prqAppr()?((S.preq||[]).filter(x=>x.st==='요청').length||''):((S.preq||[]).filter(x=>x.by===ses.uid&&x.st==='반려').length||'')],['bank','통장 대조'],['vendor','거래처관리'],['vault','계정 보관함'],['tax','세금계산서 요청',canM('gisung')?((S.taxreqs||[]).filter(x=>x.status==='요청').length||''):((S.taxreqs||[]).filter(x=>x.by===ses.uid&&x.status==='반려').length||'')],['notes','받을어음'],['company','회사정보'],['pre','선작업·미수금',(S.prework||[]).filter(x=>x.status==='발주대기').length||''],['ahelp','관리자 사용방법'],['log','변경 이력'],['sysst','시스템 상태',(()=>{const d=ui.drv;return d&&d.limit&&d.used/d.limit>=0.7?'!':'';})()],['next','추가 예정 기능'],['forms','파일양식']];
+  const P=permsOf(me),cardOnly=me.role==='manager'&&P.indexOf('card')<0,tl=allT.concat([['ntview','받은 공지·긴급알림',ntMine().filter(n=>!n.read).length||'']]).filter(t=>t[0]==='ntview'?true:t[0]==='paydue'?payDueOk():t[0]==='sign'?prqAppr():t[0]==='todo'?todoOk(me):t[0]==='prq'?me.role!=='worker':t[0]==='ceo'||t[0]==='ceoviz'||t[0]==='ceotodo'?ceoSee(me):t[0]==='next'||t[0]==='vault'||t[0]==='sysst'?me.role==='admin':(t[0]==='ahelp'||P.indexOf(TAB_PERM[t[0]]||t[0])>=0||(t[0]==='card'&&cardOnly)||(t[0]==='month'&&(S.extTodo||[]).length)||t[0]==='forms'||(t[0]==='gisung'&&P.indexOf('proj')>=0)));   /* 권한 없는 관리자도 법인카드 지출은 기록 */
   if(!tl.find(t=>t[0]===ui.aTab))ui.aTab=tl[0][0];
   /* 메뉴 묶음: 큰 메뉴 → 아래 작은 탭 */
   notiSeen(ui.aTab);const NC=notiCnts();tl.forEach(t=>{t[3]=NC[t[0]]||0;});
@@ -5467,7 +5478,7 @@ function vAdmin(me){
   h+=`<div class="gnav">${tabs(gl.map(g=>[g[0],g[1],g[2]]),cg[0],'aGroup')}</div><div class="ptitle">${esc(cg[1])}${cg[3].length>1?` <span class="mute" style="font-weight:400">›</span> ${esc(curT[1])}`:''}</div>`;
   if(cg[3].length>1)h+=`<div class="subtabs">${cg[3].map(([k,l,c,n])=>`<button class="stab ${k===ui.aTab?'on':''}" onclick="aTab('${k}')">${l}${c?`<span class="cnt">${c}</span>`:''}${n?`<span class="ncnt">🔔${n}</span>`:''}</button>`).join('')}</div>`;
   if(me.role!=='admin')h+=`<div class="mute" style="margin:-6px 0 10px">메뉴 담당자 화면입니다 — 권한을 받은 메뉴만 보입니다. 다른 메뉴가 필요하면 전체 관리자에게 요청하세요.</div>`;
-  const f={paydue:aPayDue,sign:aSign,ceotodo:aCeoTodo,forms:aForms,tax:aTax,leave:aLeaveTab,dash:aDash,appr:aAppr,month:aMonth,workers:aWorkers,quals:aQuals,notice:aNotice,ntview:aNtView,pay:aPay,ahelp:aHelp,proj:aProjects,gisung:aGisung,safety:aSafety,cal:aCal,qr:aQr,log:aLog,next:aNext,roster:aRoster,car:aCar,board:aBoard,pre:aPre,company:aCompany,po_mat:()=>aBuy('자재'),po_con:()=>aBuy('공사'),card:()=>aBuy('카드'),stmt:aStmt,vendor:aVendor,vault:aVault,ceo:aCeo,ceoviz:aCeoViz,prq:aPrq,bank:aBank,todo:vTodo,notes:aNotes}[ui.aTab];
+  const f={paydue:aPayDue,sign:aSign,ceotodo:aCeoTodo,forms:aForms,tax:aTax,leave:aLeaveTab,dash:aDash,appr:aAppr,month:aMonth,workers:aWorkers,quals:aQuals,notice:aNotice,ntview:aNtView,pay:aPay,ahelp:aHelp,proj:aProjects,gisung:aGisung,safety:aSafety,cal:aCal,qr:aQr,log:aLog,sysst:aSysSt,next:aNext,roster:aRoster,car:aCar,board:aBoard,pre:aPre,company:aCompany,po_mat:()=>aBuy('자재'),po_con:()=>aBuy('공사'),card:()=>aBuy('카드'),stmt:aStmt,vendor:aVendor,vault:aVault,ceo:aCeo,ceoviz:aCeoViz,prq:aPrq,bank:aBank,todo:vTodo,notes:aNotes}[ui.aTab];
   return h+f()+'</main></div></div>';
 }
 /* 대시보드 메뉴 검색: 메뉴 이름을 입력하면 바로 이동 */
@@ -5476,18 +5487,11 @@ const MENU_KW={paydue:'결재 완료 지급 대기 선지급 이체 대기 경�
 function menuHits(q){q=String(q||'').trim().toLowerCase();if(!q)return '<span class="mute" style="font-size:13px">메뉴 이름이나 하는 일을 입력하면 바로 갈 수 있는 메뉴가 나옵니다. (Enter = 첫 번째 메뉴로 이동)</span>';const L=(ui._menus||[]).filter(m=>m.k!=='dash'&&(!q||(m.l+' '+m.g+' '+(MENU_KW[m.k]||'')).toLowerCase().indexOf(q)>=0));
   if(!L.length)return '<span class="mute">찾는 메뉴가 없습니다.</span>';return L.map(m=>`<button class="stab" onclick="aTab('${m.k}')">${esc(m.l)}${m.g!==m.l?` <span class="mute" style="font-size:12px">${esc(m.g)}</span>`:''}</button>`).join('');}
 function menuSearch(q){const e=document.getElementById('msr');if(e)e.innerHTML=menuHits(q);}
-function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return signDash()+pushCard(1)+bdayDash()+menuSearchCard()+todoDash()+extTodoDash()+(calDash())+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+injDashCard()+(P.indexOf('notice')>=0?noticeDashCard():'')+(P.indexOf('quals')>=0?hReqCard():'')+(P.indexOf('quals')>=0?qualDashCard():'')+aDash()+driveCard();}finally{ui._dashCar=0;}}
+function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return signDash()+pushCard(1)+bdayDash()+menuSearchCard()+todoDash()+extTodoDash()+(calDash())+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+injDashCard()+(P.indexOf('notice')>=0?noticeDashCard():'')+(P.indexOf('quals')>=0?hReqCard():'')+(P.indexOf('quals')>=0?qualDashCard():'')+aDash();}finally{ui._dashCar=0;}}
 /* 오늘 업무: 최근 7일 부상 보고 */
 function injDashCard(){const cut=daysAgo(7),L=S.records.filter(r=>r.date>=cut&&r.checkOut&&r.checkOut.safe==='N').sort((a,b)=>b.date.localeCompare(a.date));if(!L.length)return '';
   return `<div class="card" style="border-left:4px solid var(--bad)"><h3 style="margin:0">⚠ 부상 보고 (최근 7일)</h3>${L.map(r=>{const w=W(r.workerId)||{};return `<div style="margin-top:6px"><b>${esc(w.name||'')}</b> ${fmtDayS(r.date)} 퇴근 ${esc(r.checkOut.time)} — ${esc(r.checkOut.safeNote||'(내용 없음)')}</div>`;}).join('')}<p class="mute" style="font-size:12px;margin:6px 0 0">퇴근할 때 근로자가 「다친 곳이 있습니다」를 고른 기록입니다. 산재 처리 여부를 확인하세요.</p></div>`;}
-/* 오늘 업무 맨 아래: 구글 드라이브(계정 저장공간) 사용량 */
-function driveCard(){if(!LIVE)return '';const d=ui.drv;if(d===undefined&&!ui._drvL){ui._drvL=1;window.liveCall('drive_usage',{}).then(r=>{ui.drv=r&&!r.error?r:null;}).catch(()=>{ui.drv=null;}).finally(()=>{ui._drvL=0;if(ui.aTab==='dash')render();});}
-  if(!d)return d===null?'':`<div class="card"><span class="mute">💾 저장공간 확인 중…</span></div>`;
-  const gb=v=>(v/1073741824).toFixed(v<10737418240?2:1)+'GB',pct=d.limit>0?Math.round(d.used/d.limit*1000)/10:0,warn=pct>=70,col=pct>=90?'var(--bad)':warn?'var(--warn)':'var(--ok,#2e7d32)';
-  return `<div class="card" style="${warn?'border-left:4px solid '+col:''}"><div class="row" style="gap:6px"><h3 style="margin:0">💾 구글 저장공간 (드라이브·지메일·사진 공용)</h3><span class="sp"></span><button class="btn sm" onclick="ui.drv=undefined;window.liveCall('drive_usage',{fresh:1}).then(r=>{ui.drv=r;render();})">새로고침</button></div>
-  <div style="margin-top:8px;height:14px;background:#eceff3;border-radius:7px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${col}"></div></div>
-  <div class="row" style="margin-top:6px"><b style="color:${col}">${pct}% 사용</b><span class="mute">&nbsp;· ${gb(d.used)} / ${d.limit>0?gb(d.limit):'무제한'}</span><span class="sp"></span><span class="mute" style="font-size:12px">${esc(String(d.at||'').slice(5,16))} 기준</span></div>
-  ${warn?`<div class="${pct>=90?'badbox':'warnbox'}" style="margin-top:8px">⚠ 저장공간이 ${pct}% 찼습니다. 가득 차면 <b>사진·서류 올리기와 지메일 송수신이 멈춥니다.</b> 지메일·드라이브 휴지통 비우기, 오래된 큰 파일 정리, 또는 Google One 요금제(100GB 등)로 늘리기를 검토하세요.</div>`:''}</div>`;}
+
   const td=today();const act=S.workers.filter(w=>w.status==='재직'&&w.role!=='admin');
   const recs=S.records.filter(r=>r.date===td);
   const inN=recs.filter(r=>r.checkIn).length,noOut=recs.filter(r=>r.checkIn&&!r.checkOut).length;
@@ -5788,9 +5792,8 @@ function qEdit(id){const w=W(id);openModal(`<div class="mbox" style="max-width:4
 function qEditSave(id){const v=qVals('qe'),health=hVals();if(health===null)return;if(!LIVE){const w=W(id);w.quals=v.quals.join(',');w.qualExp=v.exp;w.health=health;save();closeModal();render();return;}liveOnly('setQuals',{id,quals:v.quals,exp:v.exp,files:QE_FILES,health,hfiles:HE_FILES});}
 /* 건강검진 입력칸: 받은 날짜만 (결과는 넣지 않음) */
 function hRows(w){HE_FILES={};const hf=w.qualFile||{},ks=isSuper()?HK.filter(([k])=>hf['h_'+k]&&hf['h_'+k].id):[];return `<h4 style="margin:14px 0 4px;border-top:1px solid var(--line);padding-top:10px">🩺 건강검진 <span class="mute" style="font-weight:400;font-size:12px">검진 날짜로 기한을 계산합니다 · 기한 3주 전부터 근로자 화면에 알림</span></h4>
-  <div class="row" style="gap:8px;margin:4px 0 6px;flex-wrap:wrap"><label class="btn pri sm" style="cursor:pointer">📷 검진표 사진으로 날짜 자동 입력<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="hOcr('${w.id}',this)"></label><span class="mute" style="font-size:12px">사진은 보관되며, 결과표는 민감정보라 <b>전체 관리자</b>만 다시 볼 수 있습니다</span></div><div id="he_ocr"></div>
-  ${ks.length?`<div class="mute" style="font-size:12px;margin:4px 0">보관된 결과표: ${ks.map(([k,nm])=>`<button class="linkbtn" onclick="qFileGet('${w.id}','h_${k}')">📎 ${nm}${hf['h_'+k].d?' ('+hf['h_'+k].d+')':''}</button>`).join(' ')}</div>`:''}
-  ${HK.map(([k,nm,due,ex])=>{const st=hState(w,k);return `<div class="row" style="gap:8px;margin-bottom:6px;flex-wrap:nowrap"><span style="flex:0 0 150px">${nm}<br><small class="mute">${ex?(due?due+'개월마다 · 최대 '+ex+'개월':ex+'개월마다'):'주기 없음'}</small></span><input type="date" class="qe_h" data-k="${k}" value="${hDate(w,k)}" max="${today()}" style="flex:1"><span class="mute" style="font-size:12px;flex:0 0 70px">${st==='expired'?'<b style="color:var(--bad)">기한 지남</b>':st==='soon'?'<b style="color:var(--warn)">3주 내 기한</b>':''}</span></div>`;}).join('')}`;}
+  <div class="row" style="gap:8px;margin:4px 0 6px;flex-wrap:wrap"><span class="mute" style="font-size:12px">검진 종류마다 <b>📷</b>로 결과표를 찍어 올리면 검진일이 자동으로 바뀝니다(여러 장 가능). 새로 검진받으면 다시 📷로 올리면 갱신됩니다. <b>⬇</b> = 결과표 내려받기(민감정보라 <b>전체 관리자</b>만)</span></div><div id="he_ocr"></div>
+  ${HK.map(([k,nm,due,ex])=>{const st=hState(w,k),f=hf['h_'+k];return `<div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:nowrap;align-items:center"><span style="flex:0 0 118px;min-width:0">${nm}<br><small class="mute">${ex?(due?due+'개월마다 · 최대 '+ex+'개월':ex+'개월마다'):'주기 없음'}</small>${st==='expired'?'<br><small><b style="color:var(--bad)">기한 지남</b></small>':st==='soon'?'<br><small><b style="color:var(--warn)">3주 내 기한</b></small>':''}</span><input type="date" class="qe_h" data-k="${k}" value="${hDate(w,k)}" max="${today()}" style="flex:1;min-width:0"><span style="flex:0 0 auto;display:flex;gap:4px"><label class="btn sm" style="cursor:pointer;padding:4px 8px" title="${nm} 결과표 사진 찍기·첨부 → 검진일 자동 갱신">📷<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="hOcr1('${w.id}','${k}',this)"></label>${isSuper()&&f&&f.id?`<button class="btn sm" style="padding:4px 8px" title="${nm} 결과표 내려받기${f.d?' ('+f.d+')':''}" onclick="hDown('${w.id}','${k}')">⬇</button>`:''}</span></div>`;}).join('')}`;}
 var HE_FILES={};
 function hSet(k,d,fid){const e=document.querySelector('.qe_h[data-k="'+k+'"]');if(!e)return;if(d&&!(HE_FILES[k]||[]).length)e.value=d;e.style.background='#fff8d6';if(fid){HE_FILES[k]=(HE_FILES[k]||[]).concat([fid]).slice(0,4);}}   /* 같은 검진 사진 여러 장(최대 4) */
 async function hOcr(id,inp){const fs=[...(inp.files||[])];inp.value='';if(!fs.length)return;if(!LIVE){toast('시제품에서는 사진 읽기가 되지 않습니다.');return;}
@@ -5807,6 +5810,48 @@ async function hOcr(id,inp){const fs=[...(inp.files||[])];inp.value='';if(!fs.le
     box.insertAdjacentHTML('beforeend',`<div style="font-size:13px;margin:3px 0">${line}</div>`);}
     box.insertAdjacentHTML('beforeend',`<div class="mute" style="font-size:12px;margin:4px 0 6px">노란 칸이 사진에서 채운 값입니다. 확인 후 <b>저장</b>을 누르세요. (저장해야 사진도 보관됩니다)</div>`);}
   finally{window.liveBusy(false);}}
+/* 건강검진 줄마다 📷: 그 검진 결과표를 올리면 검진일 자동 갱신 (여러 장이면 같은 검진 묶음, 저장 눌러야 반영) */
+async function hOcr1(id,k,inp){const fs=[...(inp.files||[])];inp.value='';if(!fs.length)return;if(!LIVE){toast('시제품에서는 사진 읽기가 되지 않습니다.');return;}
+  const box=document.getElementById('he_ocr'),w=W(id),e=document.querySelector('.qe_h[data-k="'+k+'"]');HE_FILES[k]=[];window.liveBusy(true);let got='';
+  try{for(const f of fs.slice(0,4)){let line='';
+    try{if(f.size>15*1024*1024)throw new Error('15MB 이하 파일만 됩니다.');const d=await qImg(f);const r=await window.liveCall('health_ocr',{id,name:HNAME[k]+'_'+f.name,mime:d.mime,b64:d.b64});
+      if(!r||!r.fileId)throw new Error((r&&r.error)||'올리지 못했습니다.');HE_FILES[k]=(HE_FILES[k]||[]).concat([r.fileId]).slice(0,4);
+      if(r.date&&!got&&r.date<=today()){got=r.date;if(e){e.value=r.date;e.style.background='#fff8d6';}}
+      line=`✅ <b>${HNAME[k]}</b> ${esc(f.name)} 첨부${r.date?` · 검진일 <b>${r.date}</b>`:' · <b style="color:var(--warn)">검진일을 읽지 못함</b>'}${r.k&&r.k!==k?` <b style="color:var(--warn)">— ${HNAME[r.k]} 결과표처럼 보입니다. 확인하세요.</b>`:''}${r.nameOk===false?` <b style="color:var(--bad)">— ${esc(w.name)} 이름을 찾지 못했습니다. 확인하세요.</b>`:''}`;}
+    catch(er){line=`<b style="color:var(--bad)">${esc(f.name)}</b>: ${esc(er.message||er)}`;}
+    box.insertAdjacentHTML('beforeend',`<div style="font-size:13px;margin:3px 0">${line}</div>`);}
+    box.insertAdjacentHTML('beforeend',`<div class="mute" style="font-size:12px;margin:2px 0 6px">${got?'노란 칸이 새 검진일입니다.':'검진일을 직접 넣으세요.'} <b>저장</b>을 눌러야 결과표와 날짜가 갱신됩니다.</div>`);}
+  finally{window.liveBusy(false);}}
+/* 결과표 내려받기 (여러 장이면 모두) — 전체 관리자만 */
+async function hDown(id,k){if(!LIVE)return;const w=W(id),f=(w.qualFile||{})['h_'+k]||{};window.liveBusy(true);
+  try{let n=1;for(let i=0;i<n;i++){const r=await window.liveCall('qual_fileGet',{id,q:'h_'+k,i});if(!r||r.error)throw new Error((r&&r.error)||'내려받지 못했습니다.');n=r.n||1;
+    const ext=(String(r.name||'').match(/\.[a-z0-9]{2,5}$/i)||[(/pdf/.test(r.mime)?'.pdf':'.jpg')])[0],a=document.createElement('a');a.href='data:'+r.mime+';base64,'+r.b64;a.download=`${w.name}_${HNAME[k]}${f.d?'_'+f.d:''}${n>1?'_'+(i+1):''}${ext}`;document.body.appendChild(a);a.click();a.remove();await new Promise(z=>setTimeout(z,400));}
+    toast('내려받았습니다.');}catch(e){toast(e.message||String(e));}finally{window.liveBusy(false);}}
+/* ---------- 도움말·시스템 › 시스템 상태 (전체 관리자): 저장공간 · 시트 구조 점검 · 백업 · 화면 버전 · 데이터 현황 ---------- */
+function sysChk(force){if(!LIVE)return;if(ui._sysL)return;if(ui.sysc&&!force)return;ui._sysL=1;const t0=Date.now();
+  window.liveCall('sys_check',{}).then(r=>{ui.sysc=r&&!r.error?Object.assign({},r,{ms:Date.now()-t0,at:new Date().toLocaleString('ko-KR')}):{err:(r&&r.error)||'응답 없음'};}).catch(e=>{ui.sysc={err:String(e&&e.message||e)};}).finally(()=>{ui._sysL=0;render();});}
+function aSysSt(){if(!LIVE)return `<div class="card"><h3 style="margin:0">🛠 시스템 상태</h3><p class="mute">시제품에서는 서버 상태를 확인할 수 없습니다.</p></div>`;
+  sysChk();const c=ui.sysc,ok=v=>v?'<b style="color:var(--ok)">✔ 정상</b>':'<b style="color:var(--bad)">✖ 확인 필요</b>';
+  const cnt=[['재직 인원',(S.workers||[]).filter(w=>w.status==='재직').length+'명'],['공사',(S.projects||[]).length+'건'],['작업 배치',(S.rosters||[]).length+'건'],['출근 기록(화면에 받은 것)',(S.records||[]).length+'건'],['필증 등록',(S.workers||[]).reduce((a,w)=>a+Object.keys(w.qualFile||{}).filter(k=>!/^h_/.test(k)).length,0)+'장']];
+  const chk=!c?'<p class="mute">점검 중…</p>':c.err?`<div class="badbox">점검하지 못했습니다: ${esc(c.err)}</div>`:`<table style="width:100%;table-layout:fixed"><col style="width:42%"><col>
+    <tr><td>서버 연결</td><td>${ok(true)} <span class="mute">(응답 ${(c.ms/1000).toFixed(1)}초)</span></td></tr>
+    <tr><td>근로자 시트 머리행(열 순서)</td><td>${ok(c.headerOk)}</td></tr>
+    <tr><td>근로자 상태 값</td><td>${ok(c.statusOk)}</td></tr>
+    <tr><td>전체 시트 머리행</td><td>${c.hdrBad&&c.hdrBad.length?`<b style="color:var(--bad)">✖ ${esc(c.hdrBad.join(', '))}</b>`:ok(true)}</td></tr>
+    <tr><td>최근 백업</td><td>${c.cmp&&c.cmp.backup?esc(c.cmp.backup)+(c.cmp.lost&&(c.cmp.lost.rank+c.cmp.lost.lang+c.cmp.lost.leave)?` <b style="color:var(--warn)">— 백업보다 빈 칸 ${c.cmp.lost.rank+c.cmp.lost.lang+c.cmp.lost.leave}개</b>`:' <span class="mute">(백업과 비교 이상 없음)</span>'):c.cmp&&c.cmp.err?'<span style="color:var(--bad)">'+esc(c.cmp.err)+'</span>':'<span class="mute">백업 폴더 없음</span>'}</td></tr>
+    <tr><td>마지막 점검</td><td>${esc(c.at)}</td></tr></table>`;
+  return `<div class="card"><div class="row" style="gap:6px"><h3 style="margin:0">🛠 시스템 상태</h3><span class="sp"></span><button class="btn sm" onclick="ui.sysc=null;sysChk(1);render()">🔄 다시 점검</button></div>
+  <p class="mute" style="font-size:12.5px;margin:6px 0 8px">시트 구조(열 순서)·데이터 상태를 서버에서 점검합니다. 「✖ 확인 필요」가 보이면 바로 개발 담당에게 알려 주세요. 개인정보 없이 결과만 받아 옵니다.</p>${chk}</div>
+  ${(()=>{const h=driveCard();return h||`<div class="card"><span class="mute">💾 저장공간을 불러오지 못했습니다.</span></div>`;})()}
+  <div class="card"><h3 style="margin:0 0 6px">📱 화면·데이터</h3><table class="nw" style="width:100%"><tr><td>화면 버전</td><td><b>${esc(APP_VER)}</b></td></tr><tr><td>접속 기기</td><td>${/iPhone|iPad/.test(navigator.userAgent)?'아이폰':/Android/.test(navigator.userAgent)?'안드로이드':'PC'}${window.matchMedia&&matchMedia('(display-mode: standalone)').matches?' · 앱(홈 화면)':' · 브라우저'}</td></tr>${cnt.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table></div>`;}
+/* 도움말·시스템 › 시스템 상태: 구글 드라이브(계정 저장공간) 사용량 */
+function driveCard(){if(!LIVE)return '';const d=ui.drv;if(d===undefined&&!ui._drvL){ui._drvL=1;window.liveCall('drive_usage',{}).then(r=>{ui.drv=r&&!r.error?r:null;}).catch(()=>{ui.drv=null;}).finally(()=>{ui._drvL=0;if(ui.aTab==='dash')render();});}
+  if(!d)return d===null?'':`<div class="card"><span class="mute">💾 저장공간 확인 중…</span></div>`;
+  const gb=v=>(v/1073741824).toFixed(v<10737418240?2:1)+'GB',pct=d.limit>0?Math.round(d.used/d.limit*1000)/10:0,warn=pct>=70,col=pct>=90?'var(--bad)':warn?'var(--warn)':'var(--ok,#2e7d32)';
+  return `<div class="card" style="${warn?'border-left:4px solid '+col:''}"><div class="row" style="gap:6px"><h3 style="margin:0">💾 구글 저장공간 (드라이브·지메일·사진 공용)</h3><span class="sp"></span><button class="btn sm" onclick="ui.drv=undefined;window.liveCall('drive_usage',{fresh:1}).then(r=>{ui.drv=r;render();})">새로고침</button></div>
+  <div style="margin-top:8px;height:14px;background:#eceff3;border-radius:7px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:${col}"></div></div>
+  <div class="row" style="margin-top:6px"><b style="color:${col}">${pct}% 사용</b><span class="mute">&nbsp;· ${gb(d.used)} / ${d.limit>0?gb(d.limit):'무제한'}</span><span class="sp"></span><span class="mute" style="font-size:12px">${esc(String(d.at||'').slice(5,16))} 기준</span></div>
+  ${warn?`<div class="${pct>=90?'badbox':'warnbox'}" style="margin-top:8px">⚠ 저장공간이 ${pct}% 찼습니다. 가득 차면 <b>사진·서류 올리기와 지메일 송수신이 멈춥니다.</b> 지메일·드라이브 휴지통 비우기, 오래된 큰 파일 정리, 또는 Google One 요금제(100GB 등)로 늘리기를 검토하세요.</div>`:''}</div>`;}
 function hVals(){const o={};let bad=false;document.querySelectorAll('.qe_h').forEach(e=>{if(e.value){if(e.value>today()){bad=true;return;}o[e.dataset.k]=e.value;}});if(bad){toast('건강검진 받은 날짜는 오늘 이후로 넣을 수 없습니다.');return null;}return o;}
 /* ---------- 앱 설치·권장 브라우저 안내 (안드로이드=크롬, 아이폰=사파리) ---------- */
 function brEnv(){const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/i.test(ua);
