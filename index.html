@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25f-->
+<!DOCTYPE html><!--v:2026.11.25g-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25f';
+const APP_VER='2026.11.25g';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3722,7 +3722,7 @@ function rosterCard(r,opt){opt=opt||{};const p=P(r.projectId)||{name:r.projectId
   const veh=r.vehicles.length?r.vehicles.map(v=>`<div>${esc(v.dname||'-')} · ${esc(v.model||'')} <b>${esc(v.plate||'')}</b>${v.xv?` <small class="mute">(외부${v.co?'·'+esc(v.co):''})</small>`:''}</div>`).join(''):'<span class="mute">없음</span>';
   return `<div class="card roster${mine?' mine':''}">
   <div class="row" style="gap:8px;flex-wrap:wrap"><b style="font-size:15px">${fmtDay(r.date)}</b>${mine?'<span class="chip st-ok">내 투입</span>':''}<span class="sp"></span>${r.permit?`<button class="btn sm ${mine?'pri':''}" onclick="event.stopPropagation();rPermitView('${r.id}')">📋 안전작업허가서</button>`:''}
-  ${opt.admin?`<button class="btn sm" onclick="rForm('${r.id}')">수정</button><button class="btn sm bad" onclick="rDel('${r.id}')">삭제</button>`:''}</div>
+  ${opt.admin?`<button class="btn sm" onclick="event.stopPropagation();rCertDlg('${r.id}')">🪪 교육필증 출력</button><button class="btn sm" onclick="rForm('${r.id}')">수정</button><button class="btn sm bad" onclick="rDel('${r.id}')">삭제</button>`:''}</div>
   <div class="rline"><span>■ 공사명</span><b>${esc(p.name)}</b></div>
   ${p.client||p.plant?`<div class="rline"><span>발주처·공장</span>${esc([p.client,p.plant].filter(Boolean).join(' · '))}</div>`:''}
   <div class="rline"><span>■ 업체명</span>${esc(r.company||DEF_CO)}</div>
@@ -3733,6 +3733,38 @@ function rosterCard(r,opt){opt=opt||{};const p=P(r.projectId)||{name:r.projectId
   ${r.note?`<div class="rline"><span>■ 전달내용</span><div style="white-space:pre-wrap">${esc(r.note)}</div></div>`:''}
   ${p.mgrName?mgrLine(p.id,true):''}</div>`;}
 
+/* ---------- 작업 배치 › 교육필증 출력: 투입인원 전원 기초안전교육 + 역할별 필증 (인사·노무 › 자격·교육·검진에 올린 이미지) ---------- */
+const RC_Q={안전:'안전',신호:'신호',화기:'화기',밀폐:'밀폐'};
+function rCertList(r){return r.members.map(m=>{const w=m.wid?W(m.wid):null,ks=['기초'];[m.role,m.also].forEach(ro=>{const q=RC_Q[ro];if(q&&ks.indexOf(q)<0)ks.push(q);});
+  return {m,w,ks:ks.map(q=>({q,has:!!(w&&w.qualFile&&w.qualFile[q]&&w.qualFile[q].id),exp:w&&w.qualExp?w.qualExp[q]||'':''}))};});}
+function rCertDlg(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const L=rCertList(r),p=P(r.projectId)||{};
+  const rows=L.map((x,i)=>`<tr><td><b>${esc(x.m.name||(x.w&&x.w.name)||'')}</b>${x.m.ext?' <small class="mute">(외부)</small>':''}<div class="mute" style="font-size:12px">${esc([x.m.role,x.m.also].filter(Boolean).join('·'))}</div></td><td>${x.m.ext||!x.w?'<span class="mute">외부 인원 — 필증 없음</span>':x.ks.map((k,j)=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 8px 2px 0;white-space:nowrap"><input type="checkbox" class="rc_ck" data-w="${x.w.id}" data-q="${k.q}" ${k.has?'checked':'disabled'}>${QNAME[k.q]}${k.has?(k.exp&&k.exp<r.date?' <b style="color:var(--bad)">만료 '+esc(k.exp)+'</b>':''):' <b style="color:var(--bad)">✖ 없음</b>'}</label>`).join('')}</td></tr>`).join('');
+  const miss=L.reduce((a,x)=>a+(x.m.ext||!x.w?0:x.ks.filter(k=>!k.has).length),0);
+  openModal(`<div class="mbox" style="max-width:640px"><h3 style="margin:0 0 4px">🪪 교육필증 출력</h3><div class="mute" style="font-size:13px;margin-bottom:8px">${fmtDay(r.date)} · ${esc(p.name||'')}${r.location?' · '+esc(r.location):''}<br>투입인원 전원 기초안전교육 + 역할별 필증(안전·신호·화기·밀폐)을 고릅니다.</div>
+  ${miss?`<div class="note" style="color:var(--bad);margin-bottom:6px">필증 이미지가 없는 항목 ${miss}건 — 「인사·노무 › 자격·교육·검진」에서 올리면 출력됩니다.</div>`:''}
+  <div class="tbl-wrap"><table class="nw" style="width:100%"><tr><th style="width:30%">이름·역할</th><th>출력할 필증</th></tr>${rows}</table></div>
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><label style="display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="rc_head" checked>맨 위에 공사명·날짜 넣기</label><span class="sp"></span><button class="btn" onclick="closeModal()">닫기</button><button class="btn pri" onclick="rCertPrint('${r.id}')">🖨️ 출력 미리보기</button></div></div>`);}
+async function rCertPrint(id){const r=(S.rosters||[]).find(x=>x.id===id);if(!r)return;const p=P(r.projectId)||{};
+  const sel=[...document.querySelectorAll('.rc_ck:checked')].map(c=>({w:c.dataset.w,q:c.dataset.q}));if(!sel.length){toast('출력할 필증을 고르세요.');return;}
+  const head=(document.getElementById('rc_head')||{}).checked;if(!LIVE){toast('시제품에서는 필증 이미지를 불러올 수 없습니다.');return;}
+  const win=window.open('','_blank');if(!win){toast('팝업이 막혀 있습니다. 브라우저에서 팝업을 허용해 주세요.');return;}
+  win.document.write('<p style="font-family:sans-serif">필증 이미지를 불러오는 중…</p>');
+  const out=[],bad=[];window.liveBusy(true);
+  try{for(const x of sel){try{const g=await window.liveCall('qual_fileGet',{id:x.w,q:x.q});if(g&&g.b64&&/^image\//.test(g.mime||''))out.push({x,src:'data:'+g.mime+';base64,'+g.b64});else bad.push(x);}catch(e){bad.push(x);}}}finally{window.liveBusy(false);}
+  const nm=x=>(W(x.w)||{}).name||'';
+  const cards=out.map(o=>`<figure class="cd"><img src="${o.src}" alt=""><figcaption>${esc(nm(o.x))} · ${esc(QNAME[o.x.q])}</figcaption></figure>`).join('');
+  const hd=head?`<div class="hd"><b>${esc(p.name||'')}</b><span>${fmtDay(r.date)}${r.location?' · '+esc(r.location):''} · ${esc(r.company||DEF_CO)} · 투입 ${r.members.length}명</span></div>`:'';
+  win.document.open();win.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교육필증_${esc(r.date)}_${esc(p.name||'')}</title><style>
+  @page{size:A4 portrait;margin:10mm}body{font-family:'현대하모니 L','Malgun Gothic',sans-serif;margin:0;color:#111}
+  .bar{position:sticky;top:0;background:#fff8e6;border-bottom:1px solid #e5c97a;padding:10px 14px;font-size:14px;line-height:1.6}.bar button{font-size:15px;padding:6px 14px;margin-right:6px}
+  .hd{display:flex;flex-direction:column;gap:2px;border-bottom:1.5px solid #333;padding:0 0 4mm;margin:0 0 4mm}.hd b{font-size:15pt}.hd span{font-size:10pt;color:#333}
+  .wrap{padding:0}.grid{display:flex;flex-wrap:wrap;gap:4mm}.cd{margin:0;width:var(--cw,86mm);break-inside:avoid;page-break-inside:avoid}.cd img{width:100%;display:block;border:.2mm solid #999}
+  .cd figcaption{font-size:8pt;color:#555;margin-top:1mm}.nocap .cd figcaption{display:none}.miss{color:#b00;font-size:10pt;margin:3mm 0}
+  @media print{.bar{display:none}}@media screen{.wrap{max-width:190mm;margin:12px auto;background:#fff;padding:10mm;box-shadow:0 0 6px #0003}body{background:#eee}}
+  </style></head><body class="nocap"><div class="bar">🖨️ <b>인쇄 설정 위치</b>: 인쇄 창에서 <b>용지 A4 · 세로</b>, <b>배율 100%(기본/실제 크기)</b>, 여백 <b>기본</b>으로 두세요. ‘페이지에 맞춤’을 켜면 필증이 작아집니다.<br>
+  필증 크기 <button onclick="document.body.style.setProperty('--cw','86mm')">실제 카드 크기 (가로 86mm)</button><button onclick="document.body.style.setProperty('--cw','120mm')">크게 (가로 120mm)</button>
+  <label><input type="checkbox" onchange="document.body.classList.toggle('nocap',!this.checked)"> 필증 아래 이름 표시</label> <button onclick="print()" style="font-weight:bold">인쇄</button></div>
+  <div class="wrap">${hd}${bad.length?`<div class="miss">불러오지 못한 필증: ${bad.map(x=>esc(nm(x)+' '+QNAME[x.q])).join(', ')}</div>`:''}<div class="grid">${cards}</div></div></body></html>`);win.document.close();}
 /* ---------- 근로자: 투입현황 ---------- */
 function qualBanner(w){const L=qualAlerts(w);if(!L.length)return '';
   return `<div class="card" style="border-left:4px solid ${L.some(x=>x.lv!=='soon')?'var(--bad)':'var(--warn)'}"><h3 style="margin:0 0 6px">🔔 자격·교육·검진 알림</h3>${L.map(x=>`<div style="margin:3px 0">${x.lv==='soon'?'⏰':'⚠'} ${esc(x.t)}</div>`).join('')}<p class="mute" style="margin:6px 0 0;font-size:12.5px">${L.some(x=>!x.h)?'갱신 교육을 받고 이수증을 관리자에게 제출하세요. ':''}${L.some(x=>x.h)?'기한 안에 건강검진을 받고, 받은 날짜를 관리자에게 알려 주세요.':''}</p>${L.some(x=>x.h)&&LIVE&&w.id===ses.uid?`<button class="btn sm pri" style="margin-top:6px" onclick="myHealthUp()">📷 건강검진표 올리기</button>`:''}</div>`;}
