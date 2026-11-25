@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25o-->
+<!DOCTYPE html><!--v:2026.11.25p-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25o';
+const APP_VER='2026.11.25p';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5782,12 +5782,12 @@ function aWorkers(){
 }
 /* 목록에서 자격 바로 켜고 끄기 */
 function qRows(w,pre){const qe=pre==='qe',st=q=>qState(w,q)==='expired'?'<b style="color:var(--bad)">만료</b>':qState(w,q)==='soon'?'<b style="color:var(--warn)">'+(qe?'임박':'2주 내 만료')+'</b>':'';
-  return QUALS.map(q=>`<div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:nowrap;align-items:center"><label class="row" style="gap:6px;flex:0 0 ${qe?'118px':'150px'};min-width:0"><input type="checkbox" class="${pre}_q" value="${q}" style="width:auto" ${hasQ(w,q)?'checked':''} onchange="document.querySelector('.${pre}_e[data-q=${q}]').disabled=!this.checked"> <span>${QNAME[q]}${qe&&st(q)?'<br><small>'+st(q)+'</small>':''}</span></label><input type="date" class="${pre}_e" data-q="${q}" value="${qExpOf(w,q)}" ${hasQ(w,q)?'':'disabled'} style="flex:1;min-width:0">${qe?`<span style="flex:0 0 auto;display:flex;gap:4px"><label class="btn sm" style="cursor:pointer;padding:4px 8px" title="${QNAME[q]} 필증 사진 첨부 → 만료일 자동 변경">📷<input type="file" accept="image/*,application/pdf" style="display:none" onchange="qOcr1('${w.id}','${q}',this)"></label></span>`:`<span class="mute" style="font-size:12px;flex:0 0 70px">${st(q)}</span>`}</div>`).join('');}
+  return QUALS.map(q=>`<div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:nowrap;align-items:center"><label class="row" style="gap:6px;flex:0 0 ${qe?'118px':'150px'};min-width:0"><input type="checkbox" class="${pre}_q" value="${q}" style="width:auto" ${hasQ(w,q)?'checked':''} onchange="document.querySelector('.${pre}_e[data-q=${q}]').disabled=!this.checked"> <span>${QNAME[q]}${qe&&st(q)?'<br><small>'+st(q)+'</small>':''}</span></label><input type="date" class="${pre}_e" data-q="${q}" value="${qExpOf(w,q)}" ${hasQ(w,q)?'':'disabled'} style="flex:1;min-width:0">${qe?`<span style="flex:0 0 auto;display:flex;gap:4px"><label class="btn sm" style="cursor:pointer;padding:4px 8px" title="${QNAME[q]} 필증 사진 첨부 → 만료일 자동 변경">📷<input type="file" accept="image/*,application/pdf" style="display:none" onchange="qOcr1('${w.id}','${q}',this)"></label>${w.qualFile&&w.qualFile[q]&&w.qualFile[q].id?`<button class="btn sm" style="padding:4px 8px" title="${QNAME[q]} 필증 내려받기" onclick="qDown('${w.id}','${q}')">⬇</button>`:''}</span>`:`<span class="mute" style="font-size:12px;flex:0 0 70px">${st(q)}</span>`}</div>`).join('');}
 function qVals(pre){const quals=[...document.querySelectorAll('.'+pre+'_q:checked')].map(e=>e.value),exp={};document.querySelectorAll('.'+pre+'_e').forEach(e=>{if(e.value&&quals.indexOf(e.dataset.q)>=0)exp[e.dataset.q]=e.value;});return {quals,exp};}
 /* 목록에서 자격·만료일 바로 편집 */
 function qEdit(id){const w=W(id);openModal(`<div class="mbox" style="max-width:480px"><div class="row"><h3 style="margin:0">${esc(w.name)} — 자격·교육·검진</h3><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="row" style="gap:8px;margin:8px 0 4px;flex-wrap:wrap"><label class="btn pri sm" style="cursor:pointer">📷 이수증 사진으로 자동 입력<input type="file" accept="image/*,application/pdf" multiple style="display:none" onchange="qOcr('${id}',this)"></label><span class="mute" style="font-size:12px">여러 장 한 번에 가능 · 읽은 결과를 아래 칸에 채운 뒤, 확인하고 저장</span></div><div id="qe_ocr"></div>${qFileLinks(w)}
-  <p class="mute" style="margin:6px 0 10px"><b>📷</b> = 그 항목 필증 사진 첨부(새로 교육받으면 새 사진으로 갱신 → 만료일 자동 변경, 작업 배치 단체 필증에도 새 사진). 보유한 자격에 체크하고 유효기간 만료일을 넣으세요. 만료 2주 전부터 근로자 화면에 알림이 뜨고, 만료되면 작업 배치 해당 칸에 넣을 수 없습니다. (만료일을 비우면 기한 없음)</p>${qRows(w,'qe')}${hRows(w)}
+  <p class="mute" style="margin:6px 0 10px"><b>⬇</b> = 등록된 필증 내려받기. <b>📷</b> = 그 항목 필증 사진 첨부(새로 교육받으면 새 사진으로 갱신 → 만료일 자동 변경, 작업 배치 단체 필증에도 새 사진). 보유한 자격에 체크하고 유효기간 만료일을 넣으세요. 만료 2주 전부터 근로자 화면에 알림이 뜨고, 만료되면 작업 배치 해당 칸에 넣을 수 없습니다. (만료일을 비우면 기한 없음)</p>${qRows(w,'qe')}${hRows(w)}
   <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="qEditSave('${id}')">저장</button></div></div>`);}
 function qEditSave(id){const v=qVals('qe'),health=hVals();if(health===null)return;if(!LIVE){const w=W(id);w.quals=v.quals.join(',');w.qualExp=v.exp;w.health=health;save();closeModal();render();return;}liveOnly('setQuals',{id,quals:v.quals,exp:v.exp,files:QE_FILES,health,hfiles:HE_FILES});}
 /* 건강검진 입력칸: 받은 날짜만 (결과는 넣지 않음) */
@@ -5822,6 +5822,11 @@ async function hOcr1(id,k,inp){const fs=[...(inp.files||[])];inp.value='';if(!fs
     box.insertAdjacentHTML('beforeend',`<div style="font-size:13px;margin:3px 0">${line}</div>`);}
     box.insertAdjacentHTML('beforeend',`<div class="mute" style="font-size:12px;margin:2px 0 6px">${got?'노란 칸이 새 검진일입니다.':'검진일을 직접 넣으세요.'} <b>저장</b>을 눌러야 결과표와 날짜가 갱신됩니다.</div>`);}
   finally{window.liveBusy(false);}}
+/* 필증 내려받기 (자격·교육 줄마다 ⬇) */
+async function qDown(id,q){if(!LIVE){toast('시제품에서는 내려받을 수 없습니다.');return;}const w=W(id),exp=(w.qualExp||{})[q]||'';window.liveBusy(true);
+  try{let n=1;for(let i=0;i<n;i++){const r=await window.liveCall('qual_fileGet',{id,q,i});if(!r||r.error)throw new Error((r&&r.error)||'내려받지 못했습니다.');n=r.n||1;
+    const ext=(String(r.name||'').match(/\.[a-z0-9]{2,5}$/i)||[(/pdf/.test(r.mime)?'.pdf':'.jpg')])[0],a=document.createElement('a');a.href='data:'+r.mime+';base64,'+r.b64;a.download=`${w.name}_${QNAME[q]}${exp?'_만료'+exp:''}${n>1?'_'+(i+1):''}${ext}`;document.body.appendChild(a);a.click();a.remove();await new Promise(z=>setTimeout(z,400));}
+    toast('내려받았습니다.');}catch(e){toast(e.message||String(e));}finally{window.liveBusy(false);}}
 /* 결과표 내려받기 (여러 장이면 모두) — 전체 관리자만 */
 async function hDown(id,k){if(!LIVE)return;const w=W(id),f=(w.qualFile||{})['h_'+k]||{};window.liveBusy(true);
   try{let n=1;for(let i=0;i<n;i++){const r=await window.liveCall('qual_fileGet',{id,q:'h_'+k,i});if(!r||r.error)throw new Error((r&&r.error)||'내려받지 못했습니다.');n=r.n||1;
