@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.26d-->
+<!DOCTYPE html><!--v:2026.11.26e-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.26d';
+const APP_VER='2026.11.26e';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -4353,7 +4353,7 @@ function bkInfo(banks,stmts){const mIds={};banks.forEach(b=>{if(b.match&&b.match
   return {R,mIds};}
 /* 이체 전 경고: 같은 거래처로 같은 금액이 이미 통장에서 나갔는지 */
 function bkWarn(name,amt,from,banks){if(!amt||!(banks||[]).length)return '';const h=banks.filter(b=>b.out===amt&&String(b.dt).slice(0,10)>=from&&nmSim(name,b.desc));return h.length?`<div style="color:var(--bad);font-size:11.5px;font-weight:700">⚠ 통장에 ${h.map(b=>String(b.dt).slice(5,10)).join(', ')} 같은 금액 출금 있음 — 이미 보냈는지 확인</div>`:'';}
-async function xlsxLib(){if(!window.XLSX)await loadJs('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js').catch(()=>{throw new Error('엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');});if(!window.XLSX)throw new Error('엑셀 읽기 도구를 불러오지 못했습니다.');}
+async function xlsxLib(){if(!window.XLSX)await loadJs(LIBB+'xlsx.full.min.js').catch(()=>{throw new Error('엑셀 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');});if(!window.XLSX)throw new Error('엑셀 읽기 도구를 불러오지 못했습니다.');}
 function bkDate(v,t){let s='';if(typeof v==='number'&&v>20000&&v<90000){const d=new Date(Math.round((v-25569)*864e5));s=d.toISOString().replace('T',' ').slice(0,19);return s;}
   const x=String(v==null?'':v).trim();let m=x.match(/(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})/)||x.match(/^(\d{4})(\d{2})(\d{2})/);if(!m)return '';
   const tt=(x.slice(m.index+m[0].length)+' '+String(t==null?'':t)).match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
@@ -6203,8 +6203,10 @@ function paySlipDoc(x,name,prevB64){const I=x.items||[],G=g=>I.filter(i=>i.g===g
   <p class="mute" style="font-size:12px;margin:8px 0 0">세무사무소에서 작성한 급여 지급명세서입니다. 궁금한 점은 관리자에게 문의하세요.</p></div>`;}
 /* ---- 세무사무소 PDF 올리기: 쪽마다 한 사람·한 달 → 글자 위치로 항목 읽기 + 그 쪽만 잘라 원본 보관 ---- */
 const PDFJS_V='3.11.174';
-function loadJs(u){return new Promise((ok,no)=>{if(document.querySelector('script[src="'+u+'"]'))return ok();const e=document.createElement('script');e.src=u;e.onload=ok;e.onerror=()=>no(new Error('PDF 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'));document.head.appendChild(e);});}
-async function pdfLibs(){const B='https://cdn.jsdelivr.net/npm/';if(!window.pdfjsLib)await loadJs(B+'pdfjs-dist@'+PDFJS_V+'/build/pdf.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc=B+'pdfjs-dist@'+PDFJS_V+'/build/pdf.worker.min.js';if(!window.PDFLib)await loadJs(B+'pdf-lib@1.17.1/dist/pdf-lib.min.js');}
+/* 2026-11-26 보안: 엑셀·PDF 도구는 외부 CDN 대신 우리 저장소에 둔 사본을 씀 + 파일 위조 확인(SRI) */
+const LIBB=/github\.io$/.test(location.hostname)?'./':'https://gosheneng.github.io/attendance/',LIB_SRI={"xlsx.full.min.js": "sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT", "pdf.min.js": "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e", "pdf-lib.min.js": "sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"};
+function loadJs(u){return new Promise((ok,no)=>{if(document.querySelector('script[src="'+u+'"]'))return ok();const e=document.createElement('script');e.src=u;const nm=u.split('/').pop();if(LIB_SRI[nm]){e.integrity=LIB_SRI[nm];e.crossOrigin='anonymous';}e.onload=ok;e.onerror=()=>no(new Error('PDF 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'));document.head.appendChild(e);});}
+async function pdfLibs(){const B=LIBB;if(!window.pdfjsLib)await loadJs(B+'pdf.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc=B+'pdf.worker.min.js';if(!window.PDFLib)await loadJs(B+'pdf-lib.min.js');}
 const u8b64=u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s);};
 /* 세무사무소 「급여 지급명세서」 PDF 한 쪽 → 구조화 (글자 위치 기준) */
 function payPdfParse(items,PW){
@@ -6245,7 +6247,7 @@ function payMatch(name,birth){const L=S.workers.filter(w=>w.status!=='가입반�
   const md=String(birth||'').slice(-5),b=L.filter(w=>w.bday&&w.bday===md);return b.length===1?b[0].id:'';}
 async function payPdfPick(f){if(f.size>20*1024*1024){toast('20MB 이하 PDF만 됩니다.');return;}window.liveBusy(true);
   try{await pdfLibs();const buf=new Uint8Array(await f.arrayBuffer());
-    const doc=await window.pdfjsLib.getDocument({data:buf.slice(),cMapUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@'+PDFJS_V+'/cmaps/',cMapPacked:true,standardFontDataUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@'+PDFJS_V+'/standard_fonts/'}).promise;
+    const doc=await window.pdfjsLib.getDocument({isEvalSupported:false,data:buf.slice(),cMapUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@'+PDFJS_V+'/cmaps/',cMapPacked:true,standardFontDataUrl:'https://cdn.jsdelivr.net/npm/pdfjs-dist@'+PDFJS_V+'/standard_fonts/'}).promise;
     const src=await window.PDFLib.PDFDocument.load(buf),pages=[],bad=[];
     for(let i=1;i<=doc.numPages;i++){const pg=await doc.getPage(i),vp=pg.getViewport({scale:1}),tc=await pg.getTextContent();
       const o=payPdfParse(tc.items.map(t=>({s:t.str,x:t.transform[4],y:vp.height-t.transform[5],w:t.width})),vp.width);
