@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.26c-->
+<!DOCTYPE html><!--v:2026.11.26d-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.26c';
+const APP_VER='2026.11.26d';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5568,11 +5568,11 @@ function aAppr(){
   <label class="f"><span>소속</span><select onchange="ui.f.aff=this.value;render()"><option value="">전체 소속</option>${['고센이엔지','씨유이엔지','협력업체'].map(a=>`<option ${f.aff===a?'selected':''}>${a}</option>`).join('')}</select></label>
   <label class="f"><span>이름·전화 검색</span><input value="${esc(f.q)}" placeholder="입력 후 Enter" onchange="ui.f.q=this.value;render()"></label></div>
   <div class="row"><span class="mute">${rs.length}건 · 공수 합계 ${fmtG(rs.reduce((a,r)=>a+totalG(r),0))}</span><span class="sp"></span><button class="btn" onclick="aNew()">+ 기록 직접 추가</button><button class="btn ok" ${ui.sel.size?'':'disabled'} onclick="bulkApprove()">선택 ${ui.sel.size}건 일괄 승인</button></div></div>`;
-  h+=`<div class="card"><div class="tbl-wrap"><table><tr><th><input type="checkbox" ${pendIds.length&&pendIds.every(id=>ui.sel.has(id))?'checked':''} ${pendIds.length?'':'disabled'} onchange="tSelAll(this.checked)" title="승인대기 전체 선택"></th><th>일자</th><th>근로자</th><th>출근</th><th>퇴근</th><th>출근 위치</th><th>공사 · 작업내용</th><th>공수</th><th>상태</th><th></th></tr>`;
-  if(!rs.length)h+=`<tr><td colspan="10" class="mute">조건에 맞는 기록이 없습니다.</td></tr>`;
+  h+=`<div class="card"><div class="tbl-wrap"><table><tr><th><input type="checkbox" ${pendIds.length&&pendIds.every(id=>ui.sel.has(id))?'checked':''} ${pendIds.length?'':'disabled'} onchange="tSelAll(this.checked)" title="승인대기 전체 선택"></th><th>일자</th><th>근로자</th><th>출근</th><th>퇴근</th><th>공사 · 작업내용</th><th>공수</th><th>상태</th><th></th></tr>`;
+  if(!rs.length)h+=`<tr><td colspan="9" class="mute">조건에 맞는 기록이 없습니다.</td></tr>`;
   rs.forEach(r=>{const w=W(r.workerId);
     const flags=(r.manual?'<span class="chip c-man">사후/수기</span>':'')+(r.history.some(x=>x.action==='관리자 수정')?'<span class="chip">관리자 수정</span>':'');
-    h+=`<tr><td><input type="checkbox" ${r.status==='pending'?'':'disabled'} ${ui.sel.has(r.id)?'checked':''} onchange="tSel('${r.id}',this.checked)"></td><td style="white-space:nowrap">${fmtDayS(r.date)}</td><td style="white-space:nowrap"><b>${esc(w.name)}</b><div class="mute">${esc(affLabel(w))} · ${w.type}</div></td><td>${r.checkIn?r.checkIn.time:'-'}</td><td style="white-space:nowrap">${r.checkOut?r.checkOut.time+(r.checkOut.date!==r.date?' (익일)':''):'-'}</td><td>${locChip(r.checkIn)}</td><td style="min-width:260px">${r.entries.map(e=>`<div>${esc(pname(e.projectId))} <b>${entryG(e)?fmtG(entryG(e)):'?'}</b><br><span class="mute">└ ${esc(e.desc)||'(내용 없음)'}</span></div>`).join('')||'-'}</td><td><b>${fmtG(totalG(r))}</b></td><td>${statusChip(r.status)}${flags}</td><td><button class="btn sm" onclick="aOpen('${r.id}')">상세·수정</button></td></tr>`;});
+    h+=`<tr><td><input type="checkbox" ${r.status==='pending'?'':'disabled'} ${ui.sel.has(r.id)?'checked':''} onchange="tSel('${r.id}',this.checked)"></td><td style="white-space:nowrap">${fmtDayS(r.date)}</td><td style="white-space:nowrap"><b>${esc(w.name)}</b><div class="mute">${esc(affLabel(w))} · ${w.type}</div></td><td>${r.checkIn?r.checkIn.time:'-'}</td><td style="white-space:nowrap">${r.checkOut?r.checkOut.time+(r.checkOut.date!==r.date?' (익일)':''):'-'}</td><td style="min-width:260px">${r.entries.map(e=>`<div>${esc(pname(e.projectId))} <b>${entryG(e)?fmtG(entryG(e)):'?'}</b><br><span class="mute">└ ${esc(e.desc)||'(내용 없음)'}</span></div>`).join('')||'-'}</td><td><b>${fmtG(totalG(r))}</b></td><td>${statusChip(r.status)}${flags}</td><td><button class="btn sm" onclick="aOpen('${r.id}')">상세·수정</button></td></tr>`;});
   return h+'</table></div></div>';
 }
 function tSel(id,on){on?ui.sel.add(id):ui.sel.delete(id);render();}
