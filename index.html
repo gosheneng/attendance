@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.26a-->
+<!DOCTYPE html><!--v:2026.11.26b-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.26a';
+const APP_VER='2026.11.26b';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -2930,7 +2930,26 @@ function policyHtml(){const S2=(n,t,b)=>`<h3 style="margin:16px 0 6px">제${n}�
   <p class="mute" style="margin-top:14px;font-size:12px">※ 초안입니다. 시행 전 노무사·변호사 검토로 확정하세요. 대괄호([ ]) 부분은 회사가 채워야 합니다.</p></div>`;}
 function openPolicy(){openModal(`<div class="mbox" style="max-width:760px" data-notr="1"><div class="row"><h2 style="margin:0">개인정보 처리방침</h2><span class="sp"></span><button class="btn sm" onclick="policyPrint()">🖨 인쇄</button><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div><p class="mute" style="margin:4px 0">주식회사 고센이엔지 · 시행 ${POLICY_VER}</p>${policyHtml()}</div>`);}
 function policyPrint(){const w=window.open('','_blank');if(!w)return;w.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>개인정보 처리방침 - 주식회사 고센이엔지</title><style>body{font-family:'현대하모니 L','Malgun Gothic',sans-serif;max-width:800px;margin:24px auto;padding:0 16px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px;text-align:left;vertical-align:top}.mute{color:#777}</style></head><body><h1>개인정보 처리방침</h1><p>주식회사 고센이엔지 · 시행 ${POLICY_VER}</p>${policyHtml()}</body></html>`);w.document.close();setTimeout(()=>w.print(),400);}
-function pvToggle(){const ok=document.getElementById('pv_1').checked&&document.getElementById('pv_2').checked;['sg_name','sg_phone','su_r1','su_r2','su_pw','su_pw2','su_btn'].forEach(k=>{const e=document.getElementById(k);if(e)e.disabled=!ok;});const a=document.getElementById('pv_all');if(a)a.checked=ok;}
+function pvToggle(){const ok=document.getElementById('pv_1').checked&&document.getElementById('pv_2').checked;['sg_name','sg_phone','su_r1','su_r2','su_code','su_pw','su_pw2','su_btn'].forEach(k=>{const e=document.getElementById(k);if(e)e.disabled=!ok;});const a=document.getElementById('pv_all');if(a)a.checked=ok;}
+/* ----- 보안: 내 비밀번호 바꾸기 · 모든 기기 로그아웃 (관리자는 8자 이상) ----- */
+function pwDlg(force,old){const me=W(ses.uid)||{},min=me.role&&me.role!=='worker'?8:4;
+  openModal(`<div class="mbox" style="max-width:420px"><h3 style="margin:0 0 6px">🔑 비밀번호 바꾸기</h3>${force?`<div class="note" style="color:var(--bad);margin-bottom:8px">관리자 계정은 보안을 위해 <b>비밀번호 8자 이상</b>이 필요합니다. 지금 바꿔 주세요.</div>`:''}
+  <label class="f"><span>지금 비밀번호</span><input id="pc_old" type="password" maxlength="20" value="${esc(old||'')}"></label>
+  <label class="f"><span>새 비밀번호 (${min}~20자${min>=8?' · 숫자만 말고 글자를 섞어 주세요':''})</span><input id="pc_new" type="password" maxlength="20"></label>
+  <label class="f"><span>새 비밀번호 확인</span><input id="pc_new2" type="password" maxlength="20" onkeydown="if(event.key==='Enter')pwGo()"></label>
+  <p class="mute" style="font-size:12.5px">바꾸면 다른 휴대폰·PC의 로그인은 모두 끊깁니다.</p>
+  <div class="row" style="gap:6px;flex-wrap:wrap">${force?'':`<button class="btn" onclick="logoutAll()" title="잃어버린 휴대폰 등 다른 기기의 로그인을 모두 끊습니다">📵 모든 기기 로그아웃</button>`}<span class="sp"></span>${force?'':'<button class="btn" onclick="closeModal()">닫기</button>'}<button class="btn pri" onclick="pwGo()">바꾸기</button></div></div>`);}
+async function pwGo(){const g=k=>(document.getElementById(k)||{}).value||'',me=W(ses.uid)||{},min=me.role&&me.role!=='worker'?8:4;
+  if(g('pc_new').length<min){toast('새 비밀번호는 '+min+'자 이상이어야 합니다.');return;}if(g('pc_new')!==g('pc_new2')){toast('새 비밀번호 확인이 일치하지 않습니다.');return;}
+  if(!LIVE){toast('시제품에서는 바뀌지 않습니다.');closeModal();return;}
+  window.liveBusy(true);try{const r=await window.liveCall('pw_change',{old:g('pc_old'),pw:g('pc_new'),keep:window.liveKeep?window.liveKeep():false});
+    if(!r||r.error){toast((r&&r.error)||'바꾸지 못했습니다.');return;}if(r.token&&window.liveTok)window.liveTok(r.token);closeModal();toast(r.msg||'바꿨습니다.');}catch(e){toast(e.message||String(e));}finally{window.liveBusy(false);}}
+async function logoutAll(){if(!(await confirmBox('이 기기를 포함해 <b>모든 휴대폰·PC의 로그인</b>을 끊을까요?\n다시 로그인해야 합니다.','모두 로그아웃')))return;
+  if(!LIVE){logout();return;}try{await window.liveCall('logout_all',{});}catch(e){}logout();}
+/* 관리자: 1회용 가입 코드 발급 (주민번호가 일부만 등록된 근로자의 최초 비밀번호 설정용) */
+async function aSetupCode(id){const w=W(id);if(!(await confirmBox(`<b>${esc(w.name)}</b> 님의 <b>가입 코드</b>(6자리, 3일 유효)를 발급할까요?\n\n회사에 주민등록번호 전체(13자리)가 없으면 최초 비밀번호를 정할 때 이 코드가 필요합니다. 코드는 본인에게만 직접 알려 주세요.`,'발급')))return;
+  if(!LIVE){alertBox('가입 코드 (시제품)',['123456']);return;}window.liveBusy(true);
+  try{const r=await window.liveCall('setupCode',{id});if(!r||r.error){toast((r&&r.error)||'발급하지 못했습니다.');return;}alertBox(`🔑 ${esc(w.name)} 님 가입 코드: <b style="font-size:22px;letter-spacing:3px">${esc(r.code)}</b>`,['3일 동안 한 번만 쓸 수 있습니다.','본인에게 직접(전화·대면) 알려 주세요. 단체방에 올리지 마세요.','이 창을 닫으면 다시 볼 수 없습니다. 잊으면 새로 발급하세요.']);}catch(e){toast(e.message||String(e));}finally{window.liveBusy(false);}}
 function pvAll(on){document.getElementById('pv_1').checked=on;document.getElementById('pv_2').checked=on;pvToggle();}
 function vPrivacy(me){return `<div class="wrap narrow"><div class="card" style="margin-top:16px"><h2>개인정보 수집·이용 동의</h2><p class="mute">${esc(me.name)} 님, 계속 이용하려면 아래 내용을 확인하고 동의해 주세요.</p>
   <label class="row" style="margin-bottom:8px;font-weight:700"><input type="checkbox" id="pv_all" onchange="pvAll(this.checked)"> 전체 동의</label>${privacyHtml()}
@@ -2945,7 +2964,8 @@ function vSetup(w){
   <h3 style="margin-top:16px">② 본인 확인 및 비밀번호 설정</h3>
   <p class="mute" style="margin-top:0">위 필수 항목에 동의해야 입력할 수 있습니다.</p>
   <label class="f"><span>주민등록번호 *</span><div style="display:flex;gap:6px;align-items:center"><input id="su_r1" inputmode="numeric" maxlength="6" placeholder="앞 6자리" style="flex:1" disabled> − <input id="su_r2" type="password" inputmode="numeric" maxlength="7" placeholder="뒤 7자리" style="flex:1.2" disabled></div></label>
-  <label class="f"><span>비밀번호 * (4~20자)</span><input id="su_pw" type="password" maxlength="20" disabled></label>
+  <label class="f"><span>가입 코드 <small class="mute">(관리자에게 받은 6자리 — 회사에 주민번호 전체가 등록되지 않은 경우 필요)</small></span><input id="su_code" inputmode="numeric" maxlength="6" placeholder="없으면 비워 두세요" disabled></label>
+  <label class="f"><span>비밀번호 * (4~20자 · 관리자는 8자 이상)</span><input id="su_pw" type="password" maxlength="20" disabled></label>
   <label class="f"><span>비밀번호 확인 *</span><input id="su_pw2" type="password" maxlength="20" disabled onkeydown="if(event.key==='Enter')doSetup()"></label>
   <div class="row"><button class="btn" onclick="ses.setup=null;render()">취소</button><span class="sp"></span><button class="btn pri" id="su_btn" disabled onclick="doSetup()">확인하고 시작</button></div></div></div>`;
 }
@@ -3019,7 +3039,7 @@ const editable=r=>!r||r.status==='draft'||r.status==='rejected';
 function wTab(k){ui.wTab=k;render();}
 function pickDay(d){if(!d)return;if(d>today()){toast('오늘 이후(미래) 날짜는 입력할 수 없습니다.');ui.wTab='today';ui.pastDate=today();render();return;}if(d<daysAgo(14)){toast('최근 14일 이내 날짜만 입력할 수 있습니다.');render();return;}if(d===today()){ui.wTab='today';ui.pastDate=d;}else{ui.wTab='past';ui.pastDate=d;}render();}   /* 오늘 화면에서 근무 날짜 고르기 */
 function vWorker(me){
-  let h=`<div class="top"><div class="brand" onclick="goHome(0)" title="처음 화면으로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합근무시스템</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}${isStaff(me)?'<button class="btn sm" onclick="ui.asWorker=false;render()">관리자 화면</button>':''}<button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap narrow">
+  let h=`<div class="top"><div class="brand" onclick="goHome(0)" title="처음 화면으로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합근무시스템</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}${isStaff(me)?'<button class="btn sm" onclick="ui.asWorker=false;render()">관리자 화면</button>':''}<button class="btn sm" onclick="pwDlg()" title="비밀번호 바꾸기 · 모든 기기 로그아웃">🔑</button><button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap narrow">
   <div class="mute" style="margin-bottom:8px">${esc(me.name)} 님 · ${esc(affLabel(me))} · ${me.type}</div>`;
   const rej=S.records.filter(r=>r.workerId===me.id&&r.status==='rejected').length;
   h+=tabs([['notice','공지',ntMine().filter(n=>!n.read).length||''],['today','출퇴근']].concat([['crew','작업 배치'],['hist','내 근무기록',rej||''],['leave','연차·휴가'],['docs','내 서류',((me.hreq||[]).some(r=>r.status==='반려')?'!':'')||((S.payslips||[]).some(x=>x.wid===me.id&&!x.seen)?'N':'')],['board','건의함'],['help','사용방법']]),(ui.wTab==='past'||ui.wTab==='todo')?'today':ui.wTab,'wTab');
@@ -4220,13 +4240,13 @@ function payDueCard(all,canPay,cardBuys,cards,banks){const mo=ui.payM||payMonth0
 function payIdsOf(gs){const ids=[],links={};gs.forEach(g=>{g.pick.forEach(x=>{if(!x.paid)ids.push(x.id);});g.ded.forEach(x=>{if(!x.link)links[x.id]=g.k;});});return {ids,links};}
 async function chkGrp(k,on){const g=payGroups(S.stmts||[])[k];if(!g)return;liveOnly('stmt_chk',{ids:g.pick.map(x=>x.id),on:!!on});}
 async function payGrp(k){const g=payGroups(S.stmts||[])[k];if(!g)return;const {ids,links}=payIdsOf([g]);if(!ids.length)return;
-  if(!(await confirmBox(`${g.vname}: 월마감 ${won(g.inv)}원${g.dt?' − 선지급 '+won(g.dt)+'원':''} = 잔여 ${won(g.rest)}원을 이체 완료로 표시할까요?`,'이체 완료')))return;
+  if(!(await confirmBox(`${esc(g.vname)}: 월마감 ${won(g.inv)}원${g.dt?' − 선지급 '+won(g.dt)+'원':''} = 잔여 ${won(g.rest)}원을 이체 완료로 표시할까요?`,'이체 완료')))return;
   liveOnly('stmt_pay',{ids,links,paid:true,date:(document.getElementById('pd_date')||{}).value||today()});}
 async function payChecked(){const R=payDue(S.stmts||[],ui.payM||payMonth0(),[]),gs=R.cur.filter(g=>g.chk),{ids,links}=payIdsOf(gs);if(!ids.length)return;
   if(!(await confirmBox(`금액 확인된 ${gs.length}곳, 잔여 ${won(gs.reduce((a,g)=>a+g.rest,0))}원을 이체 완료로 표시할까요?`,'이체 완료')))return;
   liveOnly('stmt_pay',{ids,links,paid:true,date:(document.getElementById('pd_date')||{}).value||today()});}
 function preDefer(id,m){liveOnly('stmt_link',{id,link:m?'after:'+m:''});}
-async function payPre(id){const x=(S.stmts||[]).find(o=>o.id===id);if(!x)return;if(!(await confirmBox(`${x.vname} 선지급 ${won(preAmt(x))}원을 이체 완료로 표시할까요?`,'이체 완료')))return;
+async function payPre(id){const x=(S.stmts||[]).find(o=>o.id===id);if(!x)return;if(!(await confirmBox(`${esc(x.vname)} 선지급 ${won(preAmt(x))}원을 이체 완료로 표시할까요?`,'이체 완료')))return;
   liveOnly('stmt_pay',{ids:[id],paid:true,date:(document.getElementById('pd_date')||{}).value||today()});}
 /* ===== 선지급 요청 (담당 PM 요청 → 대표 결재 → 경리: 명세표·계산서 받은 뒤 이체) ===== */
 /* 승인된 자재·소모품 발주 / 공사발주 → 거래명세표 초안 (거래처가 없으면 새로 등록) */
@@ -4234,7 +4254,7 @@ async function buyToStmt(id){const x=(S.buys||[]).find(o=>o.id===id);if(!x)retur
   if(n&&!(await confirmBox(`이 발주에서 이미 명세표 ${n}건을 만들었습니다.\n(나눠서 납품된 경우처럼) 하나 더 만들까요?`,'하나 더 만들기')))return;
   const vn=String(x.vendor||'').trim();let v=(S.vendors||[]).find(o=>nmN(o.name)===nmN(vn));
   if(!v&&vn){const cat=x.kind==='공사'?'외주(공사)':'자재·소모품';
-    if(!(await confirmBox(`「${vn}」은(는) 거래처관리에 없습니다.\n새 거래처(업종: ${cat})로 등록하고 명세표를 만들까요?\n(사업자등록증·통장사본·연락처는 나중에 거래처관리에서 채우세요)`,'등록하고 계속')))return;
+    if(!(await confirmBox(`「${esc(vn)}」은(는) 거래처관리에 없습니다.\n새 거래처(업종: ${cat})로 등록하고 명세표를 만들까요?\n(사업자등록증·통장사본·연락처는 나중에 거래처관리에서 채우세요)`,'등록하고 계속')))return;
     window.liveBusy(true);try{const r=await window.liveCall('vendor_save',{id:'',data:{name:vn,cat,vctr:(x.doc&&x.doc.ctr)?[x.doc.ctr]:[],active:true}});if(r&&r.error)throw new Error(r.error);if(r.state)applyState(r.state);}catch(e){window.liveFail(e);return;}finally{window.liveBusy(false);}
     v=(S.vendors||[]).find(o=>nmN(o.name)===nmN(vn));}
   const it=Array.isArray(x.items)?x.items:[],desc=(x.kind==='공사'?'[공사발주] ':'[발주] ')+(x.title||it.slice(0,3).map(i=>i.name).filter(Boolean).join(', ')+(it.length>3?' 외 '+(it.length-3)+'건':''));
@@ -4244,8 +4264,8 @@ function textBox(msg,label,ph){return new Promise(res=>{modalResolve=res;openTop
 function signPend(){const B=(S.buys||[]).filter(x=>(x.kind==='자재'||x.kind==='공사')&&x.status==='결재요청'),Q=(S.preq||[]).filter(x=>x.st==='요청');return {B,Q,n:B.length+Q.length};}
 function signDash(){if(!prqAppr())return '';const p=signPend();if(!p.n)return '';const c=k=>p.B.filter(x=>x.kind===k).length;
   return `<div class="card click" onclick="aTab('sign')" style="border:2px solid var(--warn);border-left-width:6px;background:#fffaf0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="font-size:17px">✍ 결재 대기 ${p.n}건</b>${c('자재')?`<span class="chip st-pend">자재·소모품 ${c('자재')}</span>`:''}${c('공사')?`<span class="chip st-pend">공사발주 ${c('공사')}</span>`:''}${p.Q.length?`<span class="chip st-pend">선지급 ${p.Q.length}</span>`:''}<span class="sp"></span><span class="btn sm pri">결재하러 가기 ›</span></div></div>`;}
-async function signDecide(id,ok){const x=(S.buys||[]).find(o=>o.id===id);if(!x)return;const nm=(x.kind==='공사'?'공사발주':'자재·소모품 발주')+` · ${x.vendor||''} ${won(buyAmt(x))}원(VAT별도)`;let reason='';
-  if(ok){const dv=(x.doc||{}).adv==='1'?`\n⚡ 선지급 ${won(Math.round((Number((x.doc||{}).advAmt)||buyAmt(x))*1.1))}원(VAT 포함)도 함께 승인되어 경리 이체 대기로 넘어갑니다.`:'';if(!(await confirmBox(`${nm}\n${x.pname||''}${dv}\n\n승인할까요?`,'승인')))return;}else{reason=await textBox(`${nm} — 반려 사유를 입력하세요.`,'반려','예: 단가 재협의 필요');if(reason==null)return;if(!String(reason).trim()){toast('반려 사유를 입력하세요.');return;}}
+async function signDecide(id,ok){const x=(S.buys||[]).find(o=>o.id===id);if(!x)return;const nm=(x.kind==='공사'?'공사발주':'자재·소모품 발주')+` · ${esc(x.vendor||'')} ${won(buyAmt(x))}원(VAT별도)`;let reason='';
+  if(ok){const dv=(x.doc||{}).adv==='1'?`\n⚡ 선지급 ${won(Math.round((Number((x.doc||{}).advAmt)||buyAmt(x))*1.1))}원(VAT 포함)도 함께 승인되어 경리 이체 대기로 넘어갑니다.`:'';if(!(await confirmBox(`${esc(nm)}\n${esc(x.pname||'')}${dv}\n\n승인할까요?`,'승인')))return;}else{reason=await textBox(`${nm} — 반려 사유를 입력하세요.`,'반려','예: 단가 재협의 필요');if(reason==null)return;if(!String(reason).trim()){toast('반려 사유를 입력하세요.');return;}}
   liveOnly('buy_decide',{id,act:ok?'ok':'no',reason});}
 function aSign(){if(!prqAppr())return '<div class="card"><p class="mute" style="margin:0">결재는 지정된 대표이사에서만 합니다.</p></div>';
   const p=signPend(),wn=id=>(W(id)||{}).name||'',its=x=>{const it=x.items||[];return esc((it[0]||{}).name||x.title||'')+(it.length>1?` <span class="mute">외 ${it.length-1}건</span>`:'');};
@@ -4316,7 +4336,7 @@ function prqSave(id){const g=k=>(document.getElementById(k)||{}).value||'';const
   if(!data.vid){toast('거래처를 고르세요.');return;}if(!data.ctr){toast('수주처를 고르세요.');return;}if(!data.desc.trim()){toast('내용을 입력하세요.');return;}liveOnly('prq_save',{id,data});}
 async function prqDel(id){if(!(await confirmBox('이 선지급 요청을 삭제할까요?','삭제')))return;liveOnly('prq_del',{id});}
 async function prqDecide(id,ok){const x=(S.preq||[]).find(o=>o.id===id);if(!x)return;let reason='';
-  if(ok){if(!(await confirmBox(`${x.vname} 선지급 ${won(x.supply+x.vat)}원을 승인할까요?\n(${x.pname||'공통'} · ${x.desc})`,'승인')))return;}else{reason=await textBox(`${x.vname} ${won(x.supply+x.vat)}원 — 반려 사유를 입력하세요.`,'반려','예: 금액 재협의 필요');if(reason==null)return;if(!reason.trim()){toast('반려 사유를 입력하세요.');return;}}
+  if(ok){if(!(await confirmBox(`${esc(x.vname)} 선지급 ${won(x.supply+x.vat)}원을 승인할까요?\n(${esc(x.pname||'공통')} · ${esc(x.desc)})`,'승인')))return;}else{reason=await textBox(`${x.vname} ${won(x.supply+x.vat)}원 — 반려 사유를 입력하세요.`,'반려','예: 금액 재협의 필요');if(reason==null)return;if(!reason.trim()){toast('반려 사유를 입력하세요.');return;}}
   liveOnly('prq_decide',{id,ok:!!ok,reason});}
 function prqDash(){if(!prqAppr())return '';const n=(S.preq||[]).filter(x=>x.st==='요청').length;return n?`<div class="card click" onclick="aTab('sign')" style="border-left:4px solid var(--warn)"><b>✍ 선지급 결재 대기 ${n}건</b> <span class="mute">눌러서 「결재」 메뉴에서 승인·반려</span></div>`:'';}
 /* ===== 통장 거래내역 대조 (이중 이체 막기) ===== */
@@ -4457,7 +4477,7 @@ function bkKeyLabel(k){const [t,a,b]=String(k).split(':'),M=m=>m?Number(m.slice(
   if(t==='tax'){const x=(S.taxreqs||[]).find(o=>o.id===a);return '🧾 세금계산서 발행분 입금'+(x?' · '+x.client+' · '+(x.pname||''):'');}
   if(t==='note'){const x=(ui.noteL||[]).find(o=>o.id===a);return '📜 받을어음 입금'+(x?' · '+x.client+(x.no?' · '+x.no:''):'');}
   if(t==='pre'){const x=(S.prework||[]).find(o=>o.id===a);return '🛠 선작업 미수금 입금'+(x?' · '+x.client+' · '+String(x.title||'').slice(0,20):'');}return k;}
-async function bkLink2(bid,key){const c=bkX(bid).find(x=>x.key===key);if(c&&c.diff&&/^card/.test(key)&&!(await confirmBox(`카드대금과 시스템 기록 합계가 ${won(Math.abs(c.diff))}원 차이 납니다.\n${c.note||''}\n\n그래도 이 출금을 「${c.label}」로 연결할까요?`,'연결')))return;
+async function bkLink2(bid,key){const c=bkX(bid).find(x=>x.key===key);if(c&&c.diff&&/^card/.test(key)&&!(await confirmBox(`카드대금과 시스템 기록 합계가 ${won(Math.abs(c.diff))}원 차이 납니다.\n${esc(c.note||'')}\n\n그래도 이 출금을 「${esc(c.label)}」로 연결할까요?`,'연결')))return;
   ui.bkXsig='';liveOnly('bank_link',{id:bid,key});}
 /* 세금 예상: 법인 = 법인세(10·20·22·25%), 개인 = 종합소득세(6~45%), 지방소득세 10% 포함 */
 const TAX_B={법인:[[2e8,.10],[2e10,.20],[3e11,.22],[Infinity,.25]],개인:[[1.4e7,.06],[5e7,.15],[8.8e7,.24],[1.5e8,.35],[3e8,.38],[5e8,.40],[1e9,.42],[Infinity,.45]]};
@@ -5359,7 +5379,7 @@ function taxCtForm(i){const o=i>=0?taxContacts()[i]:{client:'',name:'',email:'',
 function taxCtSave(i){const o=i>=0?taxContacts()[i]:{},g=k=>(document.getElementById(k)||{}).value||'';const data={client:g('tc_c'),name:g('tc_n'),email:g('tc_e'),tel:g('tc_t'),memo:g('tc_m'),key0:o.key0||''};
   if(!data.client.trim()){toast('발주처를 입력하세요.');return;}if(data.email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.email.trim())){toast('메일 주소를 확인하세요.');return;}
   if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return;}window.liveRun('tc_save',{id:o.id||'',data},null,true).then(r=>{if(r)taxCtMgr();});}
-async function taxCtDel(i){const o=taxContacts()[i];if(!o)return;if(!(await confirmBox(`「${o.client} · ${o.name||o.email}」을(를) 담당자 목록에서 뺄까요?\n(이미 보낸 요청 기록은 그대로 남습니다)`,'빼기'))){taxCtMgr();return;}
+async function taxCtDel(i){const o=taxContacts()[i];if(!o)return;if(!(await confirmBox(`「${esc(o.client)} · ${esc(o.name||o.email)}」을(를) 담당자 목록에서 뺄까요?\n(이미 보낸 요청 기록은 그대로 남습니다)`,'빼기'))){taxCtMgr();return;}
   const p=o.id?window.liveRun('tc_del',{id:o.id},null,true):window.liveRun('tc_save',{data:{client:o.client,name:o.name,email:o.email,hide:1,key0:o.key0}},null,true);p.then(()=>taxCtMgr());}
 function taxPick(i){const o=taxContacts()[i];if(!o)return;const m=document.getElementById('tx_m'),e=document.getElementById('tx_e');if(m){m.value=o.name;m.dataset.auto='';}if(e){e.value=o.email;e.dataset.auto='';}}
 function taxMgr(){const m=document.getElementById('tx_m'),e=document.getElementById('tx_e');if(!m||!e)return;const c=nmN((document.getElementById('tx_c')||{}).value),v=m.value.trim();if(!v)return;
@@ -5474,7 +5494,7 @@ function aBoard(){const L=S.posts||[];const f=ui.pf2||'';const sh=L.filter(x=>!f
 
 function vAdmin(me){
   const pend=S.records.filter(r=>r.status==='pending').length;
-  let h=`<div class="top"><div class="brand" onclick="goHome(1)" title="오늘 업무로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합업무시스템 · ${me.role==='admin'?'관리자':'메뉴 담당'}</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}<button class="btn sm" onclick="ui.asWorker=true;ui.wTab='today';render()">근로자 화면</button><button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap">`;
+  let h=`<div class="top"><div class="brand" onclick="goHome(1)" title="오늘 업무로" style="cursor:pointer"><span class="logo" role="img" aria-label="GOSHEN ENG"></span><span class="bt">통합업무시스템 · ${me.role==='admin'?'관리자':'메뉴 담당'}</span></div><span class="sp"></span>${helloName(me)}<div class="tbtn">${bellBtn()}<button class="btn sm" onclick="ui.asWorker=true;ui.wTab='today';render()">근로자 화면</button><button class="btn sm" onclick="pwDlg()" title="비밀번호 바꾸기 · 모든 기기 로그아웃">🔑</button><button class="btn sm" onclick="logout()">로그아웃</button></div></div><div class="wrap">`;
   const allT=[['dash','주요 이벤트'],['sign','결재',signPend().n||''],['todo','업무 체크리스트',(()=>{const td=today();return (S.todos||[]).filter(x=>!x.done&&x.due&&x.due<=td).length||'';})()],['ceoviz','한눈에 보기'],['ceo','실시간 손익표'],['ceotodo','직원 업무 현황'],['appr','출퇴근 승인',pend||''],['leave','연차 관리',(S.leaves||[]).filter(l=>l.status==='pending').length||''],['month','월간 출근부'],['qr','출근 QR'],['workers','근로자 관리',S.workers.filter(w=>w.status==='가입대기').length||''],['quals','자격·교육·검진',(qAlertCount()+hReqList().length)||''],['notice','공지·긴급알림 보내기'],['pay','급여명세서'],['proj','공사 등록(기성준공 안)'],['gisung','기성준공'],['safety','안전관리비'],['roster','작업 배치'],['car','차량관리',carAlerts().length||''],['board','건의함',(S.posts||[]).filter(x=>x.status==='접수').length||''],['po_mat','자재 및 소모품 발주',(S.buys||[]).filter(x=>x.kind==='자재'&&x.status==='결재요청').length||''],['po_con','공사발주'],['card','법인카드 지출',canM('card')?((S.buys||[]).filter(x=>x.kind==='카드'&&bSt(x)==='미확인').length||''):''],['stmt','거래명세표·세금계산서',(S.stmts||[]).filter(x=>!x.paid).length||''],['paydue','결재 완료 · 지급 대기',payDueOk()?((S.preq||[]).filter(x=>x.st==='승인'&&!x.paid).length||''):''],['prq','선지급 요청',prqAppr()?((S.preq||[]).filter(x=>x.st==='요청').length||''):((S.preq||[]).filter(x=>x.by===ses.uid&&x.st==='반려').length||'')],['bank','통장 대조'],['vendor','거래처관리'],['vault','계정 보관함'],['tax','세금계산서 요청',canM('gisung')?((S.taxreqs||[]).filter(x=>x.status==='요청').length||''):((S.taxreqs||[]).filter(x=>x.by===ses.uid&&x.status==='반려').length||'')],['notes','받을어음'],['company','회사정보'],['pre','선작업·미수금',(S.prework||[]).filter(x=>x.status==='발주대기').length||''],['ahelp','관리자 사용방법'],['log','변경 이력'],['sysst','시스템 상태',(()=>{const d=ui.drv;return d&&d.limit&&d.used/d.limit>=0.7?'!':'';})()],['next','추가 예정 기능'],['forms','파일양식']];
   const P=permsOf(me),cardOnly=me.role==='manager'&&P.indexOf('card')<0,tl=allT.concat([['ntview','받은 공지·긴급알림',ntMine().filter(n=>!n.read).length||'']]).filter(t=>t[0]==='ntview'?true:t[0]==='paydue'?payDueOk():t[0]==='sign'?prqAppr():t[0]==='todo'?todoOk(me):t[0]==='prq'?me.role!=='worker':t[0]==='ceo'||t[0]==='ceoviz'||t[0]==='ceotodo'?ceoSee(me):t[0]==='next'||t[0]==='vault'||t[0]==='sysst'?me.role==='admin':(t[0]==='ahelp'||P.indexOf(TAB_PERM[t[0]]||t[0])>=0||(t[0]==='card'&&cardOnly)||(t[0]==='month'&&(S.extTodo||[]).length)||t[0]==='forms'||(t[0]==='gisung'&&P.indexOf('proj')>=0)));   /* 권한 없는 관리자도 법인카드 지출은 기록 */
   if(!tl.find(t=>t[0]===ui.aTab))ui.aTab=tl[0][0];
@@ -5787,7 +5807,7 @@ function aWorkers(){
   <span class="mute" style="font-size:12.5px">자격·교육·건강검진은 「자격·교육·검진」 메뉴에서 관리합니다</span><input id="wf_q" type="search" style="width:220px;border:2px solid var(--pri2)" placeholder="🔍 이름·전화·직급·직군 검색" value="${esc(f.q)}" oninput="wFilt(this.value)" autocomplete="off"><span class="sp"></span><button class="btn" onclick="ptnBulk()">🤝 협력업체명 일괄 변경</button><button class="btn pri" onclick="aWorkerForm('')">+ 신규 입사자 등록</button></div>
   <div class="tbl-wrap" style="margin-top:10px"><table class="nw"><tr><th>소속</th><th>부서</th><th>형태</th><th>입사일</th><th>직군</th><th>직급</th><th>이름</th><th>주민등록번호</th><th>전화번호</th><th style="text-align:right">1공수 단가</th><th>퇴사일</th><th>상태</th><th>동의 현황</th><th>권한</th><th>관리</th></tr>`;
   h+=`<tr id="wf_none" style="display:${ws.length?'none':''}"><td colspan="15" class="mute">해당하는 근로자가 없습니다.</td></tr>`;
-  ws.forEach(w=>{h+=`<tr class="wf_r" data-s="${esc([w.name,w.phone,String(w.phone||'').replace(/\D/g,''),w.partner||'',w.rank||'',w.jobType||'',w.empNo||'',w.dept||''].join(' ').toLowerCase())}"><td>${esc(affLabel(w))}</td><td>${w.dept?esc(w.dept):'<span class="mute">-</span>'}</td><td>${w.type}</td><td>${w.join}</td><td>${w.jobType?`<span class="chip ${w.jobType==='사무직'?'st-ok':''}">${esc(w.jobType)}</span>`:'<span class="mute">-</span>'}</td><td>${w.rank?esc(w.rank):'<span class="mute">-</span>'}</td><td><b>${esc(w.name)}</b>${w.empNo?` <span class="mute" style="font-size:12px">#${esc(w.empNo)}</span>`:''}</td><td>${rrnShow(w.rrn)}</td><td>${esc(w.phone)}</td><td style="text-align:right">${rateShow(w.rate)}</td><td>${w.leave||'-'}</td><td><span class="chip ${w.status==='재직'?'st-ok':'st-bad'}">${w.status}</span>${w.status==='재직'&&!w.pw?'<span class="chip c-out">첫 로그인 전</span>':''}</td><td style="white-space:nowrap">${w.privacy?`<span class="chip st-ok" title="개인정보 동의 ${esc(w.privacy)}">개인 ✓</span>`:'<span class="chip c-out" title="개인정보 미동의">개인 ✗</span>'}${w.consent?`<span class="chip st-ok" title="위치정보 동의 ${esc(w.consent)}">위치 ✓</span>`:'<span class="chip c-out" title="위치정보 미동의">위치 ✗</span>'}</td><td style="white-space:nowrap">${roleLabel(w)}</td><td style="white-space:nowrap">${(!isSuper()&&w.role!=='worker')?'<span class="mute">전체 관리자만 변경</span>':`<button class="btn sm" onclick="aWorkerForm('${w.id}')">수정</button> ${isSuper()&&w.status==='재직'?`<button class="btn sm" onclick="aRoleForm('${w.id}')">권한</button> `:''}${w.status==='재직'?(w.id!==ses.uid?`<button class="btn sm bad" onclick="aLeave('${w.id}')">퇴사</button>`:''):(w.status==='퇴사'?`<button class="btn sm" onclick="aRejoin('${w.id}')">재입사</button>`:w.status==='가입반려'?`<button class="btn sm ok" onclick="aSignForm('${w.id}')">승인</button>`:'')} ${w.id!==ses.uid?`<button class="btn sm" onclick="aPin('${w.id}')">비번 초기화</button>`:''}`}</td></tr>`;});
+  ws.forEach(w=>{h+=`<tr class="wf_r" data-s="${esc([w.name,w.phone,String(w.phone||'').replace(/\D/g,''),w.partner||'',w.rank||'',w.jobType||'',w.empNo||'',w.dept||''].join(' ').toLowerCase())}"><td>${esc(affLabel(w))}</td><td>${w.dept?esc(w.dept):'<span class="mute">-</span>'}</td><td>${w.type}</td><td>${w.join}</td><td>${w.jobType?`<span class="chip ${w.jobType==='사무직'?'st-ok':''}">${esc(w.jobType)}</span>`:'<span class="mute">-</span>'}</td><td>${w.rank?esc(w.rank):'<span class="mute">-</span>'}</td><td><b>${esc(w.name)}</b>${w.empNo?` <span class="mute" style="font-size:12px">#${esc(w.empNo)}</span>`:''}</td><td>${rrnShow(w.rrn)}</td><td>${esc(w.phone)}</td><td style="text-align:right">${rateShow(w.rate)}</td><td>${w.leave||'-'}</td><td><span class="chip ${w.status==='재직'?'st-ok':'st-bad'}">${w.status}</span>${w.status==='재직'&&!w.pw?'<span class="chip c-out">첫 로그인 전</span>':''}</td><td style="white-space:nowrap">${w.privacy?`<span class="chip st-ok" title="개인정보 동의 ${esc(w.privacy)}">개인 ✓</span>`:'<span class="chip c-out" title="개인정보 미동의">개인 ✗</span>'}${w.consent?`<span class="chip st-ok" title="위치정보 동의 ${esc(w.consent)}">위치 ✓</span>`:'<span class="chip c-out" title="위치정보 미동의">위치 ✗</span>'}</td><td style="white-space:nowrap">${roleLabel(w)}</td><td style="white-space:nowrap">${(!isSuper()&&w.role!=='worker')?'<span class="mute">전체 관리자만 변경</span>':`<button class="btn sm" onclick="aWorkerForm('${w.id}')">수정</button> ${isSuper()&&w.status==='재직'?`<button class="btn sm" onclick="aRoleForm('${w.id}')">권한</button> `:''}${w.status==='재직'?(w.id!==ses.uid?`<button class="btn sm bad" onclick="aLeave('${w.id}')">퇴사</button>`:''):(w.status==='퇴사'?`<button class="btn sm" onclick="aRejoin('${w.id}')">재입사</button>`:w.status==='가입반려'?`<button class="btn sm ok" onclick="aSignForm('${w.id}')">승인</button>`:'')} ${w.id!==ses.uid?(w.pw?`<button class="btn sm" onclick="aPin('${w.id}')">비번 초기화</button>`:`<button class="btn sm" onclick="aSetupCode('${w.id}')" title="최초 비밀번호 설정용 1회용 코드">🔑 가입코드</button>`):''}`}</td></tr>`;});
   if(q)setTimeout(()=>wFilt(q,1),0);
   return h+`</table></div><p class="mute">퇴사자는 삭제하지 않고 로그인만 막습니다. 근로계약 관련 서류는 근로기준법상 보존 의무(3년)가 있어 출근 기록을 그대로 보존합니다.</p></div>`;
 }
@@ -7384,6 +7404,7 @@ if(LIVE){
 var TOKEN='';
 var TK='goshen_tok';
 function tokGet(){try{return localStorage.getItem(TK)||sessionStorage.getItem(TK)||'';}catch(e){return TOKEN;}}
+window.liveTok=function(t){var k=false;try{k=!!localStorage.getItem(TK);}catch(e){}tokSet(t,k);};window.liveKeep=function(){try{return !!localStorage.getItem(TK);}catch(e){return false;}};
 function tokSet(t,keep){TOKEN=t||'';try{localStorage.removeItem(TK);sessionStorage.removeItem(TK);if(t)(keep?localStorage:sessionStorage).setItem(TK,t);}catch(e){}}
 /* 속도: 서버가 바뀐 항목만 보내면 나머지는 직전 것을 그대로 씀 */
 var ST_H=null,ST_K={};
@@ -7462,17 +7483,18 @@ doLogin=async function(){
   try{const r=await call('login',{phone,pw,keep});
     if(r.setup){ses.keep=keep;ses.setup='x';ses.setupW={name:r.name,phone:r.phone};render();return;}
     tokSet(r.token,keep);applyState(r.state);ui.wTab='today';ui.aTab='dash';ui.asWorker=true;render();
+    if(r.weakPw)setTimeout(()=>pwDlg(true,pw),300);   /* 관리자 비밀번호 8자 미만 → 바로 바꾸기 */
   }catch(e){failMsg(e);}finally{busy(false);}
 };
 doSetup=async function(){
   if(!(document.getElementById('pv_1').checked&&document.getElementById('pv_2').checked)){toast('개인정보 필수 항목에 먼저 동의해 주세요.');return;}
   const g=k=>document.getElementById(k).value.trim();
-  const r1=g('su_r1'),r2=g('su_r2'),pw=document.getElementById('su_pw').value,pw2=document.getElementById('su_pw2').value;
+  const r1=g('su_r1'),r2=g('su_r2'),code=(document.getElementById('su_code')||{}).value||'',pw=document.getElementById('su_pw').value,pw2=document.getElementById('su_pw2').value;
   if(!/^\d{6}$/.test(r1)||!/^[1-8]\d{6}$/.test(r2)){toast('주민등록번호 앞 6자리와 뒤 7자리를 정확히 입력하세요.');return;}
   if(pw.length<4||pw.length>20){toast('비밀번호는 4~20자로 정해 주세요.');return;}
   if(pw!==pw2){toast('비밀번호 확인이 일치하지 않습니다.');return;}
   busy(true);
-  try{const r=await call('setup',{phone:ses.setupW.phone,rrn:r1+'-'+r2,pw,privacy:true,keep:ses.keep});tokSet(r.token,ses.keep);applyState(r.state);ui.wTab='today';render();toast('등록이 완료되었습니다.');}
+  try{const r=await call('setup',{phone:ses.setupW.phone,rrn:r1+'-'+r2,code,pw,privacy:true,keep:ses.keep});tokSet(r.token,ses.keep);applyState(r.state);ui.wTab='today';render();toast('등록이 완료되었습니다.');}
   catch(e){failMsg(e);}finally{busy(false);}
 };
 doPrivacy=function(){if(!(document.getElementById('pv_1').checked&&document.getElementById('pv_2').checked)){toast('필수 항목에 동의해 주세요.');return;}run('privacy');};
