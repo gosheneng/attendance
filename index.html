@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.26b-->
+<!DOCTYPE html><!--v:2026.11.26c-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.26b';
+const APP_VER='2026.11.26c';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5534,9 +5534,9 @@ function injDashCard(){const cut=daysAgo(7),L=S.records.filter(r=>r.date>=cut&&r
   h+=`<div class="card"><div class="row" style="gap:8px;flex-wrap:wrap;cursor:pointer" onclick="ui.dashOpen=!ui.dashOpen;render()"><h3 style="margin:0">오늘(${fmtDayS(td)}) 출근 현황</h3>
   <span class="chip st-ok">출근 ${inN}</span><span class="chip">퇴근 완료 ${done}</span><span class="chip st-pend">미퇴근 ${noOut}</span><span class="chip ${notIn.length?'st-bad':''}">미출근 ${notIn.length}</span><span class="sp"></span>
   <button class="btn sm" onclick="event.stopPropagation();ui.f={from:daysAgo(14),to:today(),status:'pending',proj:'',aff:'',q:''};aTab('appr')">승인 대기 처리 →</button><button class="btn sm">${op?'접기 ▲':'펼치기 ▼'}</button></div>`;
-  if(op){h+=`<div class="tbl-wrap" style="margin-top:8px"><table><tr><th>이름</th><th>소속</th><th>출근</th><th>위치</th><th>퇴근</th><th>상태</th></tr>`;
-  if(!recs.length)h+=`<tr><td colspan="6" class="mute">오늘 출근 기록이 없습니다.</td></tr>`;
-  recs.forEach(r=>{const w=W(r.workerId);h+=`<tr><td>${esc(w.name)}</td><td>${esc(affLabel(w))}</td><td>${r.checkIn?r.checkIn.time:'-'}</td><td>${locChip(r.checkIn)} <span class="mute">${r.checkIn&&r.checkIn.nearId?esc(pname(r.checkIn.nearId)):''}</span></td><td>${r.checkOut?r.checkOut.time:'-'}</td><td>${statusChip(r.status)}</td></tr>`;});
+  if(op){h+=`<div class="tbl-wrap" style="margin-top:8px"><table><tr><th>이름</th><th>소속</th><th>출근</th><th>퇴근</th><th>상태</th></tr>`;
+  if(!recs.length)h+=`<tr><td colspan="5" class="mute">오늘 출근 기록이 없습니다.</td></tr>`;
+  recs.forEach(r=>{const w=W(r.workerId);h+=`<tr><td>${esc(w.name)}</td><td>${esc(affLabel(w))}</td><td>${r.checkIn?r.checkIn.time:'-'}</td><td>${r.checkOut?r.checkOut.time:'-'}</td><td>${statusChip(r.status)}</td></tr>`;});
   h+=`</table></div>`;
   h+=`<p class="mute" style="margin:12px 0 4px">아직 출근 기록이 없는 재직자 (${notIn.length}명)</p>${notIn.map(w=>`<span class="chip">${esc(w.name)} · ${w.type}</span>`).join('')||'<span class="mute">없음</span>'}`;}
   h+=`</div>`;
