@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.25s-->
+<!DOCTYPE html><!--v:2026.11.26a-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2798,7 +2798,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.25s';
+const APP_VER='2026.11.26a';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -6644,9 +6644,10 @@ function leaveSum(w,asOf,list){
   const mine=(list||[]).filter(l=>l.workerId===w.id&&l.start>=p.start&&l.start<p.end);
   const sum=f=>mine.filter(f).reduce((a,l)=>a+Number(l.days||0),0);
   const adj=sum(l=>l.status==='approved'&&l.kind==='발생조정');
-  const used=sum(l=>l.status==='approved'&&l.kind!=='발생조정');
-  const pend=sum(l=>l.status==='pending');
-  return Object.assign(p,{adj,accr:p.base+adj,used,pend,remain:p.base+adj-used,list:mine});
+  const used=sum(l=>l.status==='approved'&&l.kind!=='발생조정'&&l.kind!=='병가');   /* 병가는 연차에서 빼지 않고 따로 집계 */
+  const pend=sum(l=>l.status==='pending'&&l.kind!=='병가');
+  const sick=sum(l=>l.status==='approved'&&l.kind==='병가'),sickPend=sum(l=>l.status==='pending'&&l.kind==='병가');
+  return Object.assign(p,{adj,accr:p.base+adj,used,pend,sick,sickPend,remain:p.base+adj-used,list:mine});
 }
 const asOfW=w=>(w.status==='퇴사'&&w.leave&&w.leave<today())?w.leave:today();
 const fmtD=v=>{v=Math.round(Number(v||0)*10)/10;return (v%1===0?String(v):v.toFixed(1));};
@@ -6715,7 +6716,7 @@ function vMyLeave(me){
   const L=leaveSum(me,today(),S.leaves);
   let h='';
   if(!L)return '<div class="card"><p class="mute">입사일이 등록되지 않아 연차를 계산할 수 없습니다. 관리자에게 문의하세요.</p></div>';
-  h+=`<div class="kpi"><div class="k"><span>잔여 연차</span><b style="color:var(--pri)">${fmtD(L.remain)}일</b></div><div class="k"><span>발생</span><b>${fmtD(L.accr)}일</b></div><div class="k"><span>사용</span><b>${fmtD(L.used)}일</b></div><div class="k"><span>승인 대기</span><b>${fmtD(L.pend)}일</b></div></div>
+  h+=`<div class="kpi"><div class="k"><span>잔여 연차</span><b style="color:var(--pri)">${fmtD(L.remain)}일</b></div><div class="k"><span>발생</span><b>${fmtD(L.accr)}일</b></div><div class="k"><span>사용</span><b>${fmtD(L.used)}일</b></div><div class="k"><span>승인 대기</span><b>${fmtD(L.pend)}일</b></div><div class="k"><span>병가 <small class="mute">(연차와 별도)</small></span><b>${fmtD(L.sick)}일${L.sickPend?` <small class="mute">+대기 ${fmtD(L.sickPend)}</small>`:''}</b></div></div>
   <p class="mute" style="margin-top:-6px">연차 기간 ${L.start} ~ ${ymdAdd(L.end,0,0,-1)} · ${L.n===0?'입사 1년 미만 (1개월 개근마다 1일 발생, 최대 11일)':'근속 '+L.n+'년차'}${L.adj?` · 조정 ${L.adj>0?'+':''}${fmtD(L.adj)}일 포함`:''}</p>`;
   const t=today();
   h+=`<div class="card"><h3>연차 사용 신청</h3>
@@ -6725,7 +6726,7 @@ function vMyLeave(me){
   <label class="f" id="lv_ew"><span>사용 종료일</span><input id="lv_e" type="date" value="${t}" onchange="lvCalc()"></label></div>
   ${halfBox('lv',{kind:'연차'})}
   <label class="f"><span>휴가 사유 (선택)</span><input id="lv_reason" maxlength="200"></label>
-  <p class="mute" style="margin-top:0">사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 병가·기타도 연차에서 차감됩니다.</p>
+  <p class="mute" style="margin-top:0">사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 기타는 연차에서 차감됩니다. 병가는 연차에서 빼지 않고 따로 집계합니다.</p>
   <div class="row"><span class="sp"></span><button class="btn pri" onclick="lvApply()">신청하기</button></div></div>`;
   h+=leaveCalCard();
   const mine=(S.leaves||[]).filter(l=>l.workerId===me.id).sort((a,b)=>b.start.localeCompare(a.start));
@@ -6743,7 +6744,7 @@ async function lvApply(){
   const p=Object.assign({kind:g('lv_kind'),start:g('lv_s'),end:g('lv_e'),days:g('lv_days'),reason:g('lv_reason')},halfVal('lv',g('lv_kind')));
   const er=lvCheck(p,false);if(er){toast(er);return;}
   const me=W(ses.uid),L=leaveSum(me,today(),S.leaves);
-  if(L&&Number(p.days)>L.remain-L.pend&&!(await confirmBox(`신청 일수(${fmtD(p.days)}일)가 남은 연차(${fmtD(L.remain-L.pend)}일, 승인 대기 제외)보다 많습니다.\n그래도 신청할까요?`,'신청')))return;
+  if(L&&p.kind!=='병가'&&Number(p.days)>L.remain-L.pend&&!(await confirmBox(`신청 일수(${fmtD(p.days)}일)가 남은 연차(${fmtD(L.remain-L.pend)}일, 승인 대기 제외)보다 많습니다.\n그래도 신청할까요?`,'신청')))return;
   lvDo('apply',p,'연차를 신청했습니다. 관리자 승인 후 확정됩니다.');
 }
 async function lvCancel(id){if(!(await confirmBox('이 연차 신청을 취소할까요?','신청 취소')))return;lvDo('cancel',{id},'취소했습니다.');}
@@ -6756,7 +6757,7 @@ function aLeaveTab0(){
   let h=`<div class="card"><div class="row"><h3 style="margin:0">승인 대기 신청 (${pend.length}건)</h3><span class="sp"></span><button class="btn" onclick="aLvImport()">구글 폼 기록 가져오기</button><button class="btn pri" onclick="aLvForm('')">+ 연차 직접 등록</button></div>`;
   if(!pend.length)h+=`<p class="mute">승인 대기 중인 연차 신청이 없습니다.</p>`;
   else{h+=`<div class="tbl-wrap" style="margin-top:8px"><table class="nw"><tr><th>신청일시</th><th>이름</th><th>소속</th><th>구분</th><th>사용일</th><th>일수</th><th>사유</th><th>잔여(신청 전)</th><th>처리</th></tr>`;
-    pend.forEach(l=>{const w=W(l.workerId),L=leaveSum(w,asOfW(w),S.leaves);h+=`<tr><td>${esc(l.createdAt)}</td><td><b>${esc(w.name)}</b></td><td>${esc(affLabel(w))}</td><td>${esc(l.kind)}</td><td>${esc(lvLabel(l))}</td><td>${fmtD(l.days)}일</td><td style="white-space:normal;min-width:120px">${esc(l.reason)||'-'}</td><td>${L?fmtD(L.remain)+'일':'-'}${L&&Number(l.days)>L.remain?' <span class="chip c-out">초과</span>':''}</td><td><button class="btn sm ok" onclick="aLvDecide('${l.id}','approved')">승인</button> <button class="btn sm bad" onclick="aLvReject('${l.id}')">반려</button></td></tr>`;});
+    pend.forEach(l=>{const w=W(l.workerId),L=leaveSum(w,asOfW(w),S.leaves);h+=`<tr><td>${esc(l.createdAt)}</td><td><b>${esc(w.name)}</b></td><td>${esc(affLabel(w))}</td><td>${esc(l.kind)}</td><td>${esc(lvLabel(l))}</td><td>${fmtD(l.days)}일</td><td style="white-space:normal;min-width:120px">${esc(l.reason)||'-'}</td><td>${l.kind==='병가'?'<span class="mute">병가(연차 차감 없음)</span>':(L?fmtD(L.remain)+'일':'-')+(L&&Number(l.days)>L.remain?' <span class="chip c-out">초과</span>':'')}</td><td><button class="btn sm ok" onclick="aLvDecide('${l.id}','approved')">승인</button> <button class="btn sm bad" onclick="aLvReject('${l.id}')">반려</button></td></tr>`;});
     h+='</table></div>';}
   h+='</div>';
   const ws=S.workers.filter(w=>(!f.status||w.status===f.status)&&(!f.aff||w.aff===f.aff)&&(!q||w.name.includes(q)||(w.phone||'').includes(q)));
@@ -6764,10 +6765,10 @@ function aLeaveTab0(){
   <select style="width:auto" onchange="ui.lf.status=this.value;render()">${[['재직','재직자'],['퇴사','퇴사자'],['','전체']].map(([v,l])=>`<option value="${v}" ${f.status===v?'selected':''}>${l}</option>`).join('')}</select>
   <select style="width:auto" onchange="ui.lf.aff=this.value;render()"><option value="">전체 소속</option>${['고센이엔지','씨유이엔지','협력업체'].map(a=>`<option ${f.aff===a?'selected':''}>${a}</option>`).join('')}</select>
   <input style="width:160px" placeholder="이름·전화 검색" value="${esc(f.q)}" onchange="ui.lf.q=this.value;render()"></div>
-  <div class="tbl-wrap" style="margin-top:10px"><table class="nw"><tr><th>소속</th><th>형태</th><th>이름</th><th>입사일</th><th>근속</th><th>연차 기간</th><th style="text-align:right">발생</th><th style="text-align:right">사용</th><th style="text-align:right">승인대기</th><th style="text-align:right">잔여</th><th></th></tr>`;
-  if(!ws.length)h+=`<tr><td colspan="11" class="mute">해당하는 근로자가 없습니다.</td></tr>`;
-  ws.forEach(w=>{const L=leaveSum(w,asOfW(w),S.leaves);if(!L){h+=`<tr><td>${esc(affLabel(w))}</td><td>${w.type}</td><td><b>${esc(w.name)}</b></td><td colspan="8" class="mute">입사일 없음</td></tr>`;return;}
-    h+=`<tr><td>${esc(affLabel(w))}</td><td>${w.type}</td><td><b>${esc(w.name)}</b></td><td>${w.join}</td><td>${L.n===0?'1년 미만':L.n+'년'}</td><td>${L.start} ~ ${ymdAdd(L.end,0,0,-1)}</td><td style="text-align:right">${fmtD(L.accr)}${L.adj?`<span class="mute"> (조정 ${L.adj>0?'+':''}${fmtD(L.adj)})</span>`:''}</td><td style="text-align:right">${fmtD(L.used)}</td><td style="text-align:right">${L.pend?fmtD(L.pend):'-'}</td><td style="text-align:right"><b style="color:${L.remain<0?'var(--bad)':'var(--pri)'}">${fmtD(L.remain)}</b></td><td><button class="btn sm" onclick="aLvHist('${w.id}')">내역</button></td></tr>`;});
+  <div class="tbl-wrap" style="margin-top:10px"><table class="nw"><tr><th>소속</th><th>형태</th><th>이름</th><th>입사일</th><th>근속</th><th>연차 기간</th><th style="text-align:right">발생</th><th style="text-align:right">사용</th><th style="text-align:right">승인대기</th><th style="text-align:right">잔여</th><th style="text-align:right">병가<br><small class="mute">(별도)</small></th><th></th></tr>`;
+  if(!ws.length)h+=`<tr><td colspan="12" class="mute">해당하는 근로자가 없습니다.</td></tr>`;
+  ws.forEach(w=>{const L=leaveSum(w,asOfW(w),S.leaves);if(!L){h+=`<tr><td>${esc(affLabel(w))}</td><td>${w.type}</td><td><b>${esc(w.name)}</b></td><td colspan="9" class="mute">입사일 없음</td></tr>`;return;}
+    h+=`<tr><td>${esc(affLabel(w))}</td><td>${w.type}</td><td><b>${esc(w.name)}</b></td><td>${w.join}</td><td>${L.n===0?'1년 미만':L.n+'년'}</td><td>${L.start} ~ ${ymdAdd(L.end,0,0,-1)}</td><td style="text-align:right">${fmtD(L.accr)}${L.adj?`<span class="mute"> (조정 ${L.adj>0?'+':''}${fmtD(L.adj)})</span>`:''}</td><td style="text-align:right">${fmtD(L.used)}</td><td style="text-align:right">${L.pend?fmtD(L.pend):'-'}</td><td style="text-align:right"><b style="color:${L.remain<0?'var(--bad)':'var(--pri)'}">${fmtD(L.remain)}</b></td><td style="text-align:right">${L.sick?fmtD(L.sick):'-'}${L.sickPend?`<small class="mute"> +${fmtD(L.sickPend)}</small>`:''}</td><td><button class="btn sm" onclick="aLvHist('${w.id}')">내역</button></td></tr>`;});
   h+=`</table></div><p class="mute">발생일수는 근로기준법 기준으로 자동 계산합니다 (1년 미만: 1개월 개근마다 1일·최대 11일 / 1년 이상: 15일 / 3년 이상: 2년마다 1일 가산·최대 25일). 결근 등으로 개근·출근율(80%)을 채우지 못한 경우는 "발생조정"으로 직접 맞춰 주세요. 공휴일은 자동으로 빼지 않습니다.</p></div>`;
   return h;
 }
@@ -6822,8 +6823,8 @@ function lvPreview(){
   box.innerHTML=`<div class="tbl-wrap" style="margin-top:10px;max-height:300px;overflow:auto"><table class="nw"><tr><th>가져오기</th><th>이름</th><th>구분</th><th>사용일</th><th>일수</th><th>결재상태</th><th>비고</th></tr>${lvImp.map(x=>`<tr><td>${x.ok?'<span class="chip st-ok">가져옴</span>':'<span class="chip c-out">제외</span>'}</td><td>${esc(x.name)}</td><td>${esc(x.kind)}</td><td>${esc(x.start===x.end?x.start:x.start+' ~ '+x.end)}</td><td>${fmtD(x.days)}</td><td>${esc(x.st)||'-'}</td><td>${esc(x.note)}</td></tr>`).join('')}</table></div>
   <div class="row" style="margin-top:10px"><span class="mute">${okN}건을 "승인" 상태로 가져옵니다. 근로자 이름이 출근부에 먼저 등록되어 있어야 합니다.</span><span class="sp"></span><button class="btn pri" ${okN?'':'disabled'} onclick="lvImportDo()">${okN}건 가져오기</button></div>`;}
 function lvImportDo(){const rows=lvImp.filter(x=>x.ok).map(x=>({workerId:x.workerId,kind:x.kind,start:x.start,end:x.end,days:x.days,reason:x.reason}));lvDo('import',{rows}).then(r=>{if(r)toast(`${r.n}건을 가져왔습니다.`);});}
-function expLeaveCsv(){const rows=[['소속','형태','이름','입사일','근속(년)','연차기간 시작','연차기간 끝','발생','조정','사용','승인대기','잔여']];
-  S.workers.forEach(w=>{const L=leaveSum(w,asOfW(w),S.leaves);if(!L)return;rows.push([affLabel(w),w.type,w.name,w.join,L.n,L.start,ymdAdd(L.end,0,0,-1),L.base,L.adj,L.used,L.pend,L.remain]);});
+function expLeaveCsv(){const rows=[['소속','형태','이름','입사일','근속(년)','연차기간 시작','연차기간 끝','발생','조정','사용','승인대기','잔여','병가(별도)']];
+  S.workers.forEach(w=>{const L=leaveSum(w,asOfW(w),S.leaves);if(!L)return;rows.push([affLabel(w),w.type,w.name,w.join,L.n,L.start,ymdAdd(L.end,0,0,-1),L.base,L.adj,L.used,L.pend,L.remain,L.sick]);});
   saveFile(`연차대장_${today()}.csv`,csv(rows));}
 
 /* ---------- 변경 이력 / 2단계 ---------- */
@@ -7008,7 +7009,7 @@ const I18=[
 ['사용 시작일','Ngày bắt đầu','Start date'],
 ['사용 종료일','Ngày kết thúc','End date'],
 ['휴가 사유 (선택)','Lý do (không bắt buộc)','Reason (optional)'],
-['사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 병가·기타도 연차에서 차감됩니다.','Số ngày không tính thứ Bảy, Chủ nhật. Nếu có ngày lễ hãy tự sửa. Nghỉ nửa ngày = 0,5 ngày; nghỉ ốm và loại khác cũng trừ vào phép năm.','Weekends are excluded. Adjust manually for public holidays. Half day = 0.5; sick and other leave are also deducted from annual leave.'],
+['사용일수는 토·일을 빼고 계산합니다. 공휴일이 끼어 있으면 직접 고쳐 주세요. 반차는 0.5일이며, 기타는 연차에서 차감됩니다. 병가는 연차에서 빼지 않고 따로 집계합니다.','Số ngày không tính thứ Bảy, Chủ nhật. Nếu có ngày lễ hãy tự sửa. Nghỉ nửa ngày = 0,5 ngày; loại khác trừ vào phép năm; nghỉ ốm được tính riêng, không trừ phép năm.','Weekends are excluded. Adjust manually for public holidays. Half day = 0.5; other leave is deducted from annual leave; sick leave is counted separately.'],
 ['신청하기','Gửi đơn','Submit request'],
 ['신청','Gửi','Submit'],
 ['내 연차 신청 내역','Đơn nghỉ phép của tôi','My leave requests'],
