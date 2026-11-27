@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27e-->
+<!DOCTYPE html><!--v:2026.11.27f-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27e';
+const APP_VER='2026.11.27f';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5361,13 +5361,21 @@ function taxForm(id){const x=id?(S.taxreqs||[]).find(o=>o.id===id):null;const pj
   <label class="f"><span>공사명 <b style="color:var(--bad)">* 필수</b> <span class="mute" style="font-size:12px">(등록된 공사에서 선택)</span></span><select id="tx_p" onchange="taxPj(this.value)"><option value="">— 공사 선택 —</option>${pj.map(p=>`<option value="${p.id}" ${x&&x.projectId===p.id?'selected':''}>${esc(pFull(p))}</option>`).join('')}</select></label>
   <div class="grid2"><label class="f"><span>발주처</span><input id="tx_c" value="${esc(x?x.client:'')}" placeholder="공사를 고르면 자동으로 채워집니다" onchange="taxCt()"></label><label class="f"><span>계산서 발행일</span><input id="tx_d" type="date" value="${esc(x?x.issueDate:today())}"></label></div>
   <div class="grid2"><label class="f"><span>발주처 담당자 <span class="mute" style="font-size:12px">(전에 쓴 담당자는 목록에서 고르기)</span></span><input id="tx_m" list="tx_ml" autocomplete="off" value="${esc(x?x.cMgr:'')}" placeholder="예: 김OO 과장" oninput="this.dataset.auto='';taxMgr()"><datalist id="tx_ml"></datalist></label><label class="f"><span>세금계산서 발송 메일 1</span><input id="tx_e" type="email" inputmode="email" list="tx_el" autocomplete="off" value="${esc(x?x.email:'')}" placeholder="name@company.com" oninput="this.dataset.auto=''"><datalist id="tx_el"></datalist></label></div>
-  <div class="grid2"><label class="f"><span>발송 메일 2 <span class="mute" style="font-size:12px">(선택)</span></span><input id="tx_e2" type="email" inputmode="email" list="tx_el" autocomplete="off" value="${esc(x?x.email2||'':'')}" placeholder="추가로 받을 메일"></label><label class="f"><span>발송 메일 3 <span class="mute" style="font-size:12px">(선택)</span></span><input id="tx_e3" type="email" inputmode="email" list="tx_el" autocomplete="off" value="${esc(x?x.email3||'':'')}" placeholder="추가로 받을 메일"></label></div>
+  ${[2,3].map(k=>{const v=x?x['email'+k]||'':'';return `<div class="row tx-em" id="tx_ew${k}" style="gap:6px;margin:-2px 0 8px;${v?'':'display:none'}"><span class="mute" style="font-size:13px;white-space:nowrap">발송 메일 ${k}</span><input id="tx_e${k}" type="email" inputmode="email" list="tx_el" autocomplete="off" value="${esc(v)}" placeholder="추가로 받을 메일" style="flex:1"><button type="button" class="btn sm" title="이 메일 빼기" onclick="taxEmDel(${k})">✕</button></div>`;}).join('')}
+  <div id="tx_eadd" style="margin:-4px 0 8px;${x&&x.email2&&x.email3?'display:none':''}"><button type="button" class="btn sm" onclick="taxEmAdd()">+ 발송 메일 추가</button> <span class="mute" style="font-size:12px">(최대 3개)</span></div>
   <div id="tx_ct" style="margin:-4px 0 8px"></div>
   <div class="f"><span style="display:block;font-size:13px;color:var(--mute);margin-bottom:4px">품목</span><div id="tx_items">${((x&&x.items&&x.items.length)?x.items:['']).map(v=>taxItemRow(v)).join('')}</div><button type="button" class="btn sm" style="margin-top:6px" onclick="taxItemAdd()">+ 품목 추가</button></div>
   <label class="f"><span>발행금액 (VAT 별도, 원)</span><input id="tx_a" inputmode="numeric" value="${x?won(x.amount):''}" oninput="taxAmt(this)"><small class="mute" id="tx_v"></small></label>
   <label class="f"><span>비고(특이사항) (선택)</span><textarea id="tx_n" rows="2" placeholder="예: 11월 기성분, 2차 중도금">${esc(x?x.memo:'')}</textarea></label>
   <div class="row" style="justify-content:flex-end;gap:6px">${x?`<button class="btn bad" onclick="taxDel('${x.id}')">삭제</button>`:''}<span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="taxSave('${x?x.id:''}')">${x&&x.status==='반려'?'다시 요청':'발행요청'}</button></div></div>`);
   taxAmt(document.getElementById('tx_a'));taxCt(1);}
+/* 발송 메일: 처음 1칸, 「+ 발송 메일 추가」로 최대 3칸 */
+function taxEmAdd(){for(const k of [2,3]){const w=document.getElementById('tx_ew'+k);if(w&&w.style.display==='none'){w.style.display='';document.getElementById('tx_e'+k).focus();break;}}
+  const all=[2,3].every(k=>document.getElementById('tx_ew'+k).style.display!=='none');if(all)document.getElementById('tx_eadd').style.display='none';}
+function taxEmDel(k){const e2=document.getElementById('tx_e2'),e3=document.getElementById('tx_e3');
+  if(k===2&&document.getElementById('tx_ew3').style.display!=='none'){e2.value=e3.value;e3.value='';document.getElementById('tx_ew3').style.display='none';}
+  else{document.getElementById('tx_e'+k).value='';document.getElementById('tx_ew'+k).style.display='none';}
+  document.getElementById('tx_eadd').style.display='';}
 /* 품목: 처음 1칸, 필요하면 「+ 품목 추가」로 칸을 늘림 (최대 10칸) */
 function taxItemRow(v){return `<div class="row tx-item" style="gap:6px;margin-top:4px"><input class="tx-it" maxlength="80" value="${esc(v||'')}" placeholder="예: 6호 압연기 3D 검측 용역" style="flex:1"><button type="button" class="btn sm" title="이 칸 빼기" onclick="taxItemDel(this)">✕</button></div>`;}
 function taxItemAdd(){const b=document.getElementById('tx_items');if(!b)return;if(b.querySelectorAll('.tx-item').length>=10){toast('품목은 10칸까지 넣을 수 있습니다.');return;}b.insertAdjacentHTML('beforeend',taxItemRow(''));const L=b.querySelectorAll('.tx-it');L[L.length-1].focus();}
