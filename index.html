@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27m-->
+<!DOCTYPE html><!--v:2026.11.27n-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27m';
+const APP_VER='2026.11.27n';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5370,12 +5370,12 @@ function taxForm(id){const x=id?(S.taxreqs||[]).find(o=>o.id===id):null;const pj
   openModal(`<div class="mbox" style="max-width:980px"><style>@media(min-width:820px){#tx_items .txg{grid-template-columns:62px minmax(120px,2fr) minmax(70px,1fr) 60px minmax(90px,1.2fr) minmax(100px,1.3fr) minmax(90px,1.1fr) minmax(80px,1fr) 44px!important}#tx_items .txg>label{grid-column:auto!important}#tx_items .tx-item+.tx-item .txg>label>span{display:none}#tx_items .tx-del{padding:4px 6px}#tx_items .tx-del b{display:none}}</style><h3 style="margin-top:0">세금계산서 발행요청${x?' 수정':''}</h3>
   <label class="f"><span>공사명 <b style="color:var(--bad)">* 필수</b> <span class="mute" style="font-size:12px">(등록된 공사에서 선택)</span></span><select id="tx_p" onchange="taxPj(this.value)"><option value="">— 공사 선택 —</option>${pj.map(p=>`<option value="${p.id}" ${x&&x.projectId===p.id?'selected':''}>${esc(pFull(p))}</option>`).join('')}</select></label>
   <div class="grid2"><label class="f"><span>발주처</span><input id="tx_c" value="${esc(x?x.client:'')}" placeholder="공사를 고르면 자동으로 채워집니다" onchange="taxCt()"></label><label class="f"><span>계산서 발행일</span><input id="tx_d" type="date" value="${esc(x?x.issueDate:today())}"></label></div>
-  <div class="grid2"><label class="f"><span>발주처 담당자 <b style="color:var(--bad)">*</b> <span class="mute" style="font-size:12px">(등록된 담당자에서 선택)</span></span><select id="tx_ms" onchange="taxMs()"></select><input type="hidden" id="tx_m" value="${esc(x?x.cMgr:'')}"></label><label class="f"><span>세금계산서 발송 메일 1 <span class="mute" style="font-size:12px">(담당자 이메일 자동)</span></span><input id="tx_e" type="email" readonly value="${esc(x?x.email:'')}" placeholder="담당자를 고르면 자동으로 들어갑니다" style="background:var(--bg2,#f4f6f8)" data-old="${esc(x?x.email:'')}"></label></div>
+  <div class="grid2"><label class="f"><span>발주처 담당자 <b style="color:var(--bad)">*</b> <span class="mute" style="font-size:12px">(이름·부서·이메일로 검색해서 선택)</span></span><div style="position:relative"><input id="tx_mq" autocomplete="off" placeholder="🔍 이름·부서·이메일 검색 (누르면 전체 목록)" oninput="taxMq()" onfocus="taxMq()" onkeydown="taxMqKey(event)" onblur="setTimeout(()=>{const r=document.getElementById('tx_mr');if(r)r.style.display='none';},200)"><div id="tx_mr" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--card,#fff);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);max-height:260px;overflow:auto"></div></div><select id="tx_ms" onchange="taxMs()" style="display:none"></select><input type="hidden" id="tx_m" value="${esc(x?x.cMgr:'')}"></label><label class="f"><span>세금계산서 발송 메일 1 <span class="mute" style="font-size:12px">(담당자 이메일 자동)</span></span><input id="tx_e" type="email" readonly value="${esc(x?x.email:'')}" placeholder="담당자를 고르면 자동으로 들어갑니다" style="background:var(--bg2,#f4f6f8)" data-old="${esc(x?x.email:'')}"></label></div>
   <div id="tx_new" style="display:none;border:1px dashed var(--line);border-radius:8px;padding:8px 10px;margin:-2px 0 10px"><b style="font-size:13px">＋ 새 담당자 등록</b> <span class="mute" style="font-size:12px">(「공사·정산 › 발주처 담당자」에도 저장됩니다)</span>
     <div class="grid2" style="margin-top:6px"><input id="tn_dp" maxlength="40" placeholder="부서"><input id="tn_n" maxlength="40" placeholder="이름 *"></div>
     <div class="grid2" style="margin-top:6px"><input id="tn_r" maxlength="20" placeholder="직급"><input id="tn_t" inputmode="tel" placeholder="연락처" onblur="this.value=krTel(this.value)"></div>
     <input id="tn_e" type="email" inputmode="email" placeholder="이메일 *" style="margin-top:6px">
-    <div class="row" style="justify-content:flex-end;gap:6px;margin-top:6px"><button type="button" class="btn sm" onclick="document.getElementById('tx_ms').value='';taxMs()">취소</button><button type="button" class="btn sm pri" onclick="taxNewCt()">담당자 등록하고 고르기</button></div></div>
+    <div class="row" style="justify-content:flex-end;gap:6px;margin-top:6px"><button type="button" class="btn sm" onclick="taxMqPick('')">취소</button><button type="button" class="btn sm pri" onclick="taxNewCt()">담당자 등록하고 고르기</button></div></div>
   ${[2,3].map(k=>{const v=x?x['email'+k]||'':'';return `<div class="row tx-em" id="tx_ew${k}" style="gap:6px;margin:-2px 0 8px;${v?'':'display:none'}"><span class="mute" style="font-size:13px;white-space:nowrap">발송 메일 ${k}</span><select id="tx_e${k}" data-old="${esc(v)}" style="flex:1"></select><button type="button" class="btn sm" title="이 메일 빼기" onclick="taxEmDel(${k})">✕</button></div>`;}).join('')}
   <div id="tx_eadd" style="margin:-4px 0 8px;${x&&x.email2&&x.email3?'display:none':''}"><button type="button" class="btn sm" onclick="taxEmAdd()">+ 발송 메일 추가</button> <span class="mute" style="font-size:12px">(같은 발주처 담당자 이메일에서 선택 · 최대 3개)</span></div>
   <div id="tx_ct" style="margin:-4px 0 8px"></div>
@@ -5440,14 +5440,24 @@ function taxContacts(){const B=(S.tcont||[]),sup=new Set(),out=[];B.forEach(x=>{
 function taxCt(first){const c=(document.getElementById('tx_c')||{}).value||'',k=nmN(c),A=taxContacts(),mine=A.filter(o=>k&&nmN(o.client)===k&&!o.hide);
   const ms=document.getElementById('tx_ms'),mh=document.getElementById('tx_m'),e=document.getElementById('tx_e'),box=document.getElementById('tx_ct');if(!ms)return;
   const cur=first?{label:mh.value,email:e.dataset.old||e.value}:null;
-  let sel='';const opts=mine.map(o=>{const v=String(A.indexOf(o));if(cur&&cur.label&&tcLabel(o)===cur.label&&(o.email||'')===cur.email)sel=v;return `<option value="${v}">${esc([o.dept,tcLabel(o)||'(이름 없음)',o.email||'이메일 없음'].filter(Boolean).join(' · '))}</option>`;});
+  let sel='';const opts=mine.map(o=>{const v=String(A.indexOf(o));if(cur&&cur.label&&tcLabel(o)===cur.label&&(o.email||'')===cur.email)sel=v;return `<option value="${v}" data-tel="${esc(String(o.tel||'').replace(/\D/g,''))}">${esc([o.dept,tcLabel(o)||'(이름 없음)',o.email||'이메일 없음'].filter(Boolean).join(' · '))}</option>`;});
   const old=cur&&cur.label&&!sel?`<option value="old">(기존 입력) ${esc(cur.label)} · ${esc(cur.email)}</option>`:'';if(old)sel='old';
   ms.innerHTML=`<option value="">— ${k?'담당자 선택':'공사를 먼저 고르세요'} —</option>`+old+opts.join('')+(k?'<option value="__new">＋ 새 담당자 등록</option>':'');
   ms.value=sel||(!first&&mine.length===1?String(A.indexOf(mine[0])):'');
   if(box)box.innerHTML=k&&!mine.length?'<div class="mute" style="font-size:12px">이 발주처에 등록된 담당자가 없습니다 — 「＋ 새 담당자 등록」을 고르세요.</div>':'';
-  taxMs(first);
+  taxMs(first);{const q=document.getElementById('tx_mq');if(q){q.value=ms.value&&ms.value!=='__new'?(ms.selectedOptions[0]||{}).text||'':'';q.placeholder=k?'🔍 이름·부서·이메일 검색 (누르면 전체 목록)':'공사를 먼저 고르세요';}}
   [2,3].forEach(n=>{const s2=document.getElementById('tx_e'+n);if(!s2)return;const ov=first?s2.dataset.old||'':s2.value;const em=[...new Set(mine.map(o=>o.email).filter(Boolean))];
     s2.innerHTML='<option value="">— 이메일 선택 —</option>'+(ov&&em.indexOf(ov)<0?`<option value="${esc(ov)}">(기존 입력) ${esc(ov)}</option>`:'')+mine.filter(o=>o.email).map(o=>`<option value="${esc(o.email)}">${esc([tcLabel(o),o.email].filter(Boolean).join(' · '))}</option>`).filter((v,i2,arr)=>arr.indexOf(v)===i2).join('');s2.value=ov;});}
+/* 담당자 자동 검색: 숨은 목록(tx_ms)의 항목을 글자로 걸러서 보여줌 */
+function taxMq(){const ms=document.getElementById('tx_ms'),q=(document.getElementById('tx_mq').value||'').trim().toLowerCase(),qd=q.replace(/\D/g,''),r=document.getElementById('tx_mr');if(!ms||!r)return;
+  const all=[...ms.options].filter(o=>o.value!==''),cur=ms.selectedOptions[0];const sameAsCur=cur&&cur.value!==''&&q===cur.text.toLowerCase();
+  const L=all.filter(o=>o.value==='__new'||sameAsCur||!q||o.text.toLowerCase().indexOf(q)>=0||(qd.length>=3&&String(o.dataset.tel||'').indexOf(qd)>=0));
+  const items=L.filter(o=>o.value!=='__new'),nw=L.find(o=>o.value==='__new');
+  r.innerHTML=(items.length?items.slice(0,30).map((o,i)=>`<div class="tx-mi" data-v="${esc(o.value)}" style="padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--line);${o.value===ms.value?'background:#eef7f8;font-weight:700':''}" onmousedown="taxMqPick('${esc(o.value)}')">${esc(o.text)}</div>`).join('')+(items.length>30?`<div class="mute" style="padding:6px 10px;font-size:12px">${items.length-30}명 더 있음 — 글자를 더 넣어 좁혀 주세요</div>`:''):`<div class="mute" style="padding:8px 10px;font-size:13px">${all.length?'찾는 담당자가 없습니다':'이 발주처에 등록된 담당자가 없습니다'}</div>`)
+    +(nw?`<div class="tx-mi" style="padding:8px 10px;cursor:pointer;color:var(--pri2,#1f6f78);font-weight:700" onmousedown="taxMqPick('__new')">＋ 새 담당자 등록</div>`:'');
+  r.style.display='';}
+function taxMqPick(v){const ms=document.getElementById('tx_ms');ms.value=v;taxMs();const q=document.getElementById('tx_mq');q.value=v&&v!=='__new'?(ms.selectedOptions[0]||{}).text||'':'';document.getElementById('tx_mr').style.display='none';}
+function taxMqKey(ev){if(ev.key!=='Enter')return;ev.preventDefault();const f=document.querySelector('#tx_mr .tx-mi');if(f)taxMqPick(f.dataset.v||'__new');}
 function taxMs(keep){const ms=document.getElementById('tx_ms'),v=ms.value,A=taxContacts(),mh=document.getElementById('tx_m'),e=document.getElementById('tx_e'),nw=document.getElementById('tx_new');
   nw.style.display=v==='__new'?'':'none';if(v==='__new'){mh.value='';e.value='';setTimeout(()=>document.getElementById('tn_n').focus(),50);return;}
   if(v==='old'){mh.value=mh.value;e.value=e.dataset.old||e.value;return;}
@@ -5458,7 +5468,7 @@ async function taxNewCt(){const g=k=>(document.getElementById(k)||{}).value.trim
   if(!LIVE){toast('시제품에서는 저장되지 않습니다.');return;}
   const r=await window.liveCall('tc_save',{id:'',data:d}).catch(e=>({error:e.message||String(e)}));if(!r||r.error){toast((r&&r.error)||'등록하지 못했습니다.');return;}
   if(r.state)applyState(r.state);toast('담당자를 등록했습니다.');['tn_dp','tn_n','tn_r','tn_t','tn_e'].forEach(k=>document.getElementById(k).value='');
-  taxCt();const A=taxContacts(),i=A.findIndex(o=>nmN(o.client)===nmN(c)&&o.name===d.name&&o.email===d.email);if(i>=0){document.getElementById('tx_ms').value=String(i);taxMs();}}
+  taxCt();const A=taxContacts(),i=A.findIndex(o=>nmN(o.client)===nmN(c)&&o.name===d.name&&o.email===d.email);if(i>=0)taxMqPick(String(i));}
 function taxCtMgr(q){if(q!=null)ui.tcQ=q;closeModal();if(ui.aTab!=='tcont')aTab('tcont');else render();}   /* 공사·정산 › 발주처 담당자 메뉴로 이동 */
 function aTcont(){ui.tcQ=ui.tcQ||'';const A=taxContacts(),k=ui.tcQ.trim().toLowerCase(),L=A.filter(o=>!k||([o.client,o.dept,o.name,o.rank,o.email,o.tel].join(' ').toLowerCase().indexOf(k)>=0||(k.replace(/\D/g,'').length>=3&&String(o.tel||'').replace(/\D/g,'').indexOf(k.replace(/\D/g,''))>=0))).sort((a,b)=>String(a.client).localeCompare(String(b.client),'ko')||String(a.name).localeCompare(String(b.name),'ko'));
   const G={};L.forEach(o=>(G[o.client||'(발주처 없음)']=G[o.client||'(발주처 없음)']||[]).push(o));
