@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27v-->
+<!DOCTYPE html><!--v:2026.11.27w-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27v';
+const APP_VER='2026.11.27w';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -6179,7 +6179,7 @@ async function noteImp(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)r
   <p class="mute" style="font-size:12.5px;margin:6px 0">${esc(f.name)} · 어음 <b>${L.length}장</b>을 찾았습니다${L.some(x=>x.dup)?` (이미 등록된 어음번호 <b>${L.filter(x=>x.dup).length}장</b>은 체크를 뺐습니다)`:''}. 체크한 어음만 「보관」 상태로 등록됩니다. 공사는 나중에 어음을 눌러 지정할 수 있습니다.</p>
   <div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:6px"><label class="f" style="margin:0"><span>수주처(받은 회사)</span><select id="ni_ctr">${['고센이엔지','씨유이엔지','선일디엔씨'].map(c=>`<option>${c}</option>`).join('')}</select></label></div>
   <div class="tbl-wrap"><table style="width:100%"><tr><th><input type="checkbox" checked onchange="document.querySelectorAll('.ni_ck:not(:disabled)').forEach(c=>c.checked=this.checked)"></th><th>어음번호</th><th>발행인(발주처)</th><th style="text-align:right">금액</th><th>발행·등록일</th><th>만기일</th><th>구분</th><th>공사(선택)</th></tr>
-  ${L.map((x,i)=>`<tr${x.dup?' style="opacity:.55"':''}><td><input type="checkbox" class="ni_ck" data-i="${i}" ${x.dup?'':'checked'}></td><td>${esc(x.no)}${x.dup?' <span class="chip st-pend">이미 있음</span>':''}</td><td>${esc(x.client)}</td><td style="text-align:right"><b>${won(x.amount)}</b></td><td>${esc(x.issue||'-')}</td><td>${esc(x.due)}</td><td style="font-size:12px">${esc(x.bank)}</td><td><select class="ni_pj" data-i="${i}" style="max-width:200px"><option value="">(나중에)</option>${pjs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></td></tr>`).join('')}
+  ${L.map((x,i)=>`<tr${x.dup?' style="opacity:.55"':''}><td><input type="checkbox" class="ni_ck" data-i="${i}" ${x.dup?'':'checked'}></td><td>${esc(x.no)}${x.dup?' <span class="chip st-pend">이미 있음</span>':''}</td><td>${esc(x.client)}</td><td style="text-align:right"><b>${won(x.amount)}</b></td><td>${esc(x.issue||'-')}</td><td>${esc(x.due)}</td><td style="font-size:12px">${esc(x.bank)}</td><td><select class="ni_pj" data-i="${i}" style="max-width:200px"><option value="">(나중에)</option>${pjOpts('')}</select></td></tr>`).join('')}
   <tr class="tot"><td colspan="3"><b>합계 ${L.length}장</b></td><td style="text-align:right"><b>${won(L.reduce((t,x)=>t+x.amount,0))}</b></td><td colspan="4"></td></tr></table></div>
   <div class="row" style="gap:6px;margin-top:10px"><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="noteImpGo()">체크한 어음 등록</button></div></div>`);}
 async function noteImpGo(){const L=ui._ni||[],ctr=(document.getElementById('ni_ctr')||{}).value||'고센이엔지',pj={};document.querySelectorAll('.ni_pj').forEach(s=>{if(s.value)pj[s.dataset.i]=s.value;});
@@ -6188,12 +6188,13 @@ async function noteImpGo(){const L=ui._ni||[],ctr=(document.getElementById('ni_c
   try{for(const i of sel){const x=L[i];try{const r=await window.liveCall('note_save',{id:'',data:{ctr,client:x.client,projectId:pj[i]||'',no:x.no,issuer:x.issuer,bank:x.bank,amount:x.amount,issue:x.issue,due:x.due,recv:x.recv,status:'보관',memo:x.memo}});if(r&&r.error)throw new Error(r.error);if(r&&r.list)ui.noteL=r.list;ok.push(x.no);}catch(e){bad.push(x.no+' — '+(e.message||e));}}}
   finally{window.liveBusy(false);}closeModal();render();
   if(bad.length)alertBox(`어음 ${ok.length}장을 등록했습니다. <b style="color:var(--bad)">${bad.length}장은 등록하지 못했습니다.</b>`,bad);else toast(`어음 ${ok.length}장을 등록했습니다.`);}
+function pjOpts(sel){const L=(S.projects||[]).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')),o=p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.name)}</option>`,a=L.filter(p=>!p.done),d=L.filter(p=>p.done);return a.map(o).join('')+(d.length?`<optgroup label="── 완료된 공사 ──">${d.map(o).join('')}</optgroup>`:'');}
 function noteForm(id){const x=id?(ui.noteL||[]).find(o=>o.id===id):{ctr:'고센이엔지',client:'',projectId:'',no:'',issuer:'',bank:'',amount:'',issue:'',due:'',recv:today(),status:'보관',discDate:'',discBank:'',discFee:'',paidDate:'',memo:''};if(!x)return;
   const pj=(S.projects||[]).filter(p=>!p.done||p.id===x.projectId).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko')),cl=[...new Set((S.projects||[]).map(p=>p.client).filter(Boolean))].sort();
   openModal(`<div class="mbox" style="max-width:640px"><div class="row"><h2 style="margin:0">${id?'받을어음 수정':'받을어음 등록'}</h2><span class="sp"></span><button class="btn sm" onclick="closeModal()">닫기 ✕</button></div>
   <div class="grid2" style="margin-top:10px"><label class="f"><span>수주처 (받은 곳)</span><select id="nt_ctr">${['고센이엔지','씨유이엔지','선일디엔씨'].map(c=>`<option ${x.ctr===c?'selected':''}>${c}</option>`).join('')}</select></label>
   <label class="f"><span>발주처 (어음 준 곳) *</span><input id="nt_client" list="nt_cl" value="${esc(x.client)}" placeholder="예: 현대제철"><datalist id="nt_cl">${cl.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label></div>
-  <label class="f"><span>공사명 (선택)</span><select id="nt_pj" onchange="const p=(S.projects||[]).find(q=>q.id===this.value);const c=document.getElementById('nt_client');if(p&&p.client&&!c.value)c.value=p.client"><option value="">— 공사 지정 안 함 —</option>${pj.map(p=>`<option value="${p.id}" ${p.id===x.projectId?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+  <label class="f"><span>공사명 (선택)</span><select id="nt_pj" onchange="const p=(S.projects||[]).find(q=>q.id===this.value);const c=document.getElementById('nt_client');if(p&&p.client&&!c.value)c.value=p.client"><option value="">— 공사 지정 안 함 —</option>${pjOpts(x.projectId)}</select></label>
   <div class="grid3"><label class="f"><span>금액 (원) *</span><input id="nt_amt" inputmode="numeric" value="${x.amount?won(x.amount):''}" placeholder="예: 33,000,000"></label><label class="f"><span>만기일 *</span><input id="nt_due" type="date" value="${esc(x.due)}"></label><label class="f"><span>받은날</span><input id="nt_recv" type="date" value="${esc(x.recv)}"></label></div>
   <div class="grid3"><label class="f"><span>어음번호</span><input id="nt_no" value="${esc(x.no)}"></label><label class="f"><span>발행인</span><input id="nt_issuer" value="${esc(x.issuer)}" placeholder="발주처와 다르면"></label><label class="f"><span>지급은행</span><input id="nt_bank" value="${esc(x.bank)}"></label></div>
   <label class="f"><span>발행일</span><input id="nt_issue" type="date" value="${esc(x.issue)}" style="max-width:200px"></label>
