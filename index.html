@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27n-->
+<!DOCTYPE html><!--v:2026.11.27p-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27n';
+const APP_VER='2026.11.27p';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3322,7 +3322,7 @@ function histHtml(r){if(!r.history||!r.history.length)return '';return `<details
    ========================================================= */
 /* 화면 메뉴 → 권한 키 (발주 = buy, 매입 = purch) */
 const TAB_PERM={po_mat:'buy',po_con:'buy',notes:'bank'};
-const ADMIN_GROUPS=[['g_notice','📢 공지',['ntview','notice']],['g_home','오늘 업무',['dash','sign','todo','ceotodo']],['g_ceo','경영 현황',['ceoviz','ceo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','pre','tax','tcont','notes']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['paydue','card','stmt','bank','vendor']],['g_board','소통',['safeinfo','board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','sysst','next']]];
+const ADMIN_GROUPS=[['g_notice','📢 공지',['ntview','notice']],['g_home','오늘 업무',['dash','sign','todo','ceotodo']],['g_ceo','경영 현황',['ceoviz','ceo']],['g_site','현장 운영',['roster','car']],['g_att','근태 관리',['appr','month','leave','qr']],['g_res','인사·노무',['workers','quals','pay']],['g_proj','공사·정산',['gisung','safety','tax','tcont','notes','pre']],['g_buy','발주',['po_mat','po_con','prq']],['g_purch','매입',['paydue','card','stmt','bank','vendor']],['g_board','소통',['safeinfo','board']],['g_co','회사·문서',['company','forms','vault']],['g_log','도움말·시스템',['ahelp','log','sysst','next']]];
 /* 회사 로고 누르면 처음 화면: 관리자 = 오늘 업무, 근로자 = 오늘 출퇴근 */
 function goHome(adm){closeModal();if(adm)aTab('dash');else{ui.wTab='today';render();}try{window.scrollTo(0,0);}catch(e){}}
 function aTab(k){ui.aTab=k;const g=ADMIN_GROUPS.find(x=>x[2].indexOf(k)>=0);if(g){ui.gLast=ui.gLast||{};ui.gLast[g[0]]=k;}render();}
@@ -5380,7 +5380,7 @@ function taxForm(id){const x=id?(S.taxreqs||[]).find(o=>o.id===id):null;const pj
   <div id="tx_eadd" style="margin:-4px 0 8px;${x&&x.email2&&x.email3?'display:none':''}"><button type="button" class="btn sm" onclick="taxEmAdd()">+ 발송 메일 추가</button> <span class="mute" style="font-size:12px">(같은 발주처 담당자 이메일에서 선택 · 최대 3개)</span></div>
   <div id="tx_ct" style="margin:-4px 0 8px"></div>
   <div class="f"><span style="display:block;font-size:13px;color:var(--mute);margin-bottom:4px">품목 <span style="font-size:12px">(국세청 전자세금계산서와 같은 순서 · 수량·단가를 넣으면 공급가액·세액 자동 계산, 직접 고칠 수도 있음)</span></span><div id="tx_items">${((x&&x.items&&x.items.length)?x.items:['']).map(v=>taxItemRow(v)).join('')}</div><button type="button" class="btn sm" style="margin-top:6px" onclick="taxItemAdd()">+ 품목 추가</button><div id="tx_isum" style="margin-top:8px"></div></div>
-  <label class="f"><span>발행금액 (VAT 별도, 원) <span class="mute" style="font-size:12px">— 품목 줄이 있으면 공급가액 합계로 자동 입력</span></span><input id="tx_a" inputmode="numeric" value="${x?won(x.amount):''}" oninput="taxAmt(this)"><small class="mute" id="tx_v"></small></label>
+  <label class="f"><span>발행금액 (VAT 별도, 원) <span class="mute" style="font-size:12px">— 품목 공급가액 합계 (자동 · 직접 고칠 수 없음)</span></span><input id="tx_a" readonly tabindex="-1" value="${x?won(x.amount):''}" placeholder="품목 줄을 넣으면 자동으로 계산됩니다" style="background:var(--bg2,#f4f6f8);font-weight:700"><small class="mute" id="tx_v"></small></label>
   <label class="f"><span>비고(특이사항) (선택)</span><textarea id="tx_n" rows="2" placeholder="예: 11월 기성분, 2차 중도금">${esc(x?x.memo:'')}</textarea></label>
   <div class="row" style="justify-content:flex-end;gap:6px">${x?`<button class="btn bad" onclick="taxDel('${x.id}')">삭제</button>`:''}<span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="taxSave('${x?x.id:''}')">${x&&x.status==='반려'?'다시 요청':'발행요청'}</button></div></div>`);
   taxAmt(document.getElementById('tx_a'));taxCt(1);taxItemCalc();}
@@ -5420,7 +5420,7 @@ function taxItemCalc(src){if(src&&(src.classList.contains('tx-pr')||src.classLis
     if(tx.dataset.man!=='1')tx.value=sv?won(Math.floor(sv/10)):'';   /* 홈택스와 같이 원 미만 버림 */
     const tv=tx.value.trim()?Math.round(txNum(tx.value)):0;if(sv){S1+=sv;S2+=tv;n++;}});
   const box=document.getElementById('tx_isum');if(box)box.innerHTML=n?`<div style="background:var(--bg2,#f4f6f8);border-radius:8px;padding:8px 10px;font-size:13.5px">${n>1?`<b>품목 ${n}줄 합계</b> · `:''}공급가액 <b>${won(S1)}</b>원 · 세액 <b>${won(S2)}</b>원 · <b>합계금액 ${won(S1+S2)}원</b></div>`:'';
-  const a=document.getElementById('tx_a');if(a&&n){a.value=won(S1);taxAmt(a,S2);}}
+  const a=document.getElementById('tx_a');if(a){a.value=n?won(S1):'';taxAmt(a,n?S2:0);}}
 function taxItemAdd(){const b=document.getElementById('tx_items');if(!b)return;if(b.querySelectorAll('.tx-item').length>=10){toast('품목은 10줄까지 넣을 수 있습니다.');return;}b.insertAdjacentHTML('beforeend',taxItemRow(''));const L=b.querySelectorAll('.tx-it');L[L.length-1].focus();}
 function taxItemDel(btn){const b=document.getElementById('tx_items');const row=btn.closest('.tx-item');if(b.querySelectorAll('.tx-item').length<=1){row.querySelectorAll('input').forEach(e=>{e.value='';e.dataset.man='';});row.querySelector('.tx-md').value=txMd();}else row.remove();taxItemCalc();}
 /* 발주처 담당자 주소록: 전에 보낸 발행요청에서 (발주처별 · 최근 순) */
@@ -5504,7 +5504,7 @@ function taxSave(id){const g=k=>document.getElementById(k).value;   /* 입력을
   if(!g('tx_m').trim()){toast('발주처 담당자를 선택하세요.');return;}if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(g('tx_e').trim())){toast('선택한 담당자의 이메일이 없거나 틀립니다. 「공사·정산 › 발주처 담당자」에서 고쳐 주세요.');return;}
   for(const k of ['tx_e2','tx_e3']){const v=g(k).trim();if(v&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){toast('발송 메일 '+k.slice(-1)+' 주소를 확인하세요.');return;}}
   const items=taxItemRead().filter(o=>o.name||o.spec||o.qty!==''||o.price!==''||o.supply!==''||o.note).map(o=>({md:o.md,name:o.name,spec:o.spec,qty:o.qty,price:o.price,supply:o.supply,tax:o.tax,taxMan:o.taxMan,note:o.note}));
-  if(items.some(o=>!o.name)){toast('품목 이름을 입력하세요. (빈 품목 줄은 ✕로 빼세요)');return;}if(!(Number(String(g('tx_a')).replace(/[^\d]/g,''))>0)){toast('발행금액(VAT 별도)을 입력하세요.');return;}
+  if(items.some(o=>!o.name)){toast('품목 이름을 입력하세요. (빈 품목 줄은 ✕로 빼세요)');return;}if(!(Number(String(g('tx_a')).replace(/[^\d]/g,''))>0)){toast('품목 줄에 수량·단가(또는 공급가액)를 넣어 주세요. 발행금액은 품목 합계로 자동 계산됩니다.');return;}
   liveOnly('tax_save',{id,data:{projectId:g('tx_p'),client:g('tx_c'),issueDate:g('tx_d'),cMgr:g('tx_m'),email:g('tx_e'),email2:g('tx_e2'),email3:g('tx_e3'),items,amount:g('tx_a'),memo:g('tx_n')}},null);}
 async function taxDel(id){if(!(await confirmBox('이 발행요청을 삭제할까요?','삭제')))return;liveOnly('tax_del',{id},null);}
 async function taxDo(id,act){if(act==='done'&&!(await confirmBox('세금계산서를 발행했나요?\n「발행완료」로 표시한 뒤 기성준공 대장에 입력해 주세요.','발행완료')))return;liveOnly('tax_done',{id,act},null);}
