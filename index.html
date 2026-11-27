@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.26e-->
+<!DOCTYPE html><!--v:2026.11.27a-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2665,6 +2665,7 @@ function nearest(lat,lng){let best=null;S.projects.filter(p=>p.active&&p.lat>33&
 function locChip(c){
   if(!c)return '<span class="chip">미기록</span>';
   if(c.via==='qr'){const nm='QR';if(c.lat==null)return `<span class="chip c-out">${nm} · GPS없음</span>`;return c.inside?`<span class="chip c-in">${nm} · 위치일치 ${fmtDist(c.dist)}</span>`:`<span class="chip c-out">${nm} · 위치불일치 ${fmtDist(c.dist)}</span>`;}
+  if(c.via==='trip'){const t=c.trip||{};return c.lat==null?`<span class="chip c-out">🚗 출장 · 위치 없음</span>`:`<a class="chip c-man" style="text-decoration:none" target="_blank" rel="noopener" href="https://maps.google.com/?q=${c.lat},${c.lng}">🚗 출장 · ${esc(t.place||'')} 📍</a>`;}
   if(c.method==='manual'||c.method==='admin')return `<span class="chip c-man">${c.method==='admin'?'관리자 입력':'수기 입력'}</span>`;
   if(c.lat==null)return '<span class="chip">위치 없음</span>';
   return `<a class="chip c-in" style="text-decoration:none" target="_blank" rel="noopener" href="https://maps.google.com/?q=${c.lat},${c.lng}">📍 위치 기록${c.nearId?' · '+esc(pname(c.nearId))+' '+fmtDist(c.dist):''}</a>`;
@@ -2674,6 +2675,7 @@ function locText(c){
   if(c.via==='qr'){const sn=(SP(c.spotId)||{name:'(삭제된 장소)'}).name;
     if(c.lat==null)return `QR 촬영: ${sn} · GPS 확인 불가`;
     return `QR 촬영: ${sn} · GPS ${c.inside?'일치':'불일치 (QR 장소에서 '+fmtDist(c.dist)+' 떨어짐)'}${c.inside?' ('+fmtDist(c.dist)+')':''}${c.method==='sim'?' [데모 위치]':''}`;}
+  if(c.via==='trip'){const t=c.trip||{};return '외부 출장: '+(t.place||'')+(t.reason?' · 사유: '+t.reason:'')+(c.lat==null?' · 위치 없음':' · 위치 '+c.lat+','+c.lng+(c.acc?' (±'+c.acc+'m)':''));}
   if(c.lat==null)return c.method==='admin'?'관리자 입력':c.method==='manual'?'수기 입력(위치정보 없음)':'위치 없음';
   return '위치 기록 '+c.lat+','+c.lng+(c.nearId?' · 가까운 현장: '+pname(c.nearId)+' ('+fmtDist(c.dist)+')':'');
 }
@@ -2798,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.26e';
+const APP_VER='2026.11.27a';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3083,7 +3085,7 @@ function vDay(isToday){
   if(isToday){
     const qo=false;   /* 퇴근은 어디서나 버튼 · 출근은 지정 QR 촬영 필수 */
     const qrGuide=(!r||!r.checkIn?scanBtn('in'):`<div class="infobox" style="margin-top:12px"><b>퇴근 순서</b> ① 아래 작업 내역을 먼저 작성 → ② QR 촬영 → ③ 퇴근 (승인 요청까지 자동)</div>`+scanBtn('out'))+`${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
-    if(!r||!r.checkIn)h+=scanBtn('in')+`<p class="mute" style="margin-bottom:0">출근은 <b>현장(쉼터)에 붙은 지정 QR</b>을 촬영해야 기록됩니다. 퇴근은 어디서나 버튼으로 됩니다.</p>${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
+    if(!r||!r.checkIn)h+=scanBtn('in')+tripBtn()+`<p class="mute" style="margin-bottom:0">출근은 <b>현장(쉼터)에 붙은 지정 QR</b>을 촬영해야 기록됩니다. 퇴근은 어디서나 버튼으로 됩니다.</p>${LIVE?'':`<details><summary class="mute">QR 촬영 체험 (데모)</summary><div style="margin-top:8px">${qrDemoBtns()}</div></details>`}`;
     else{h+=checkLine('출근',r.checkIn,r);
       if(!r.checkOut)h+=`<p class="mute" style="margin:10px 0 0">퇴근은 맨 아래 「작업 내역 입력 후 퇴근하기」 버튼으로 합니다.</p>`;
       else h+=checkLine('퇴근',r.checkOut,r);}
@@ -3162,6 +3164,19 @@ async function scanFound(txt){const raw=qrParse(txt);if(!raw){scanMsg('전자 �
   scanStop();closeModal();await qrUse(raw);}
 async function qrUse(raw){const [c,k]=raw.split('-');const sp=S.spots.find(x=>x.code===c&&x.key===k&&x.active);
   if(!sp){qr={bad:true};render();return;}qr={spot:sp,raw};ui.wTab='today';render();window.scrollTo(0,0);}
+/* 외부 출장 출근: QR 없이 버튼 + 위치 기록 (출장지·사유 필수, 위치 없으면 불가) */
+function tripBtn(){return `<button class="btn big" style="margin-top:10px;width:100%" onclick="tripIn()">🚗 외부 출장 출근 (QR 없이)</button><p class="mute" style="margin:6px 0 0">외부 지역 출장으로 지정 QR이 없을 때만 누르세요. 출장지와 사유를 적고, 휴대폰 위치가 함께 기록됩니다.</p>`;}
+function tripIn(){openModal(`<div class="mbox" style="max-width:420px"><h3 style="margin-top:0">🚗 외부 출장 출근</h3>
+  <div class="infobox">지정 QR 없이 출근합니다. <b>지금 휴대폰 위치</b>가 함께 기록되고, 관리자가 승인할 때 확인합니다.</div>
+  <label>출장지 <span style="color:var(--bad)">*</span></label><input id="tp_place" maxlength="60" placeholder="예: 포항 OO제철소, 울산 OO공장">
+  <label style="margin-top:8px">출장 사유 (업무 내용) <span style="color:var(--bad)">*</span></label><input id="tp_why" maxlength="200" placeholder="예: 설비 측정 지원, 자재 인수">
+  <div class="mute" style="margin-top:6px">휴대폰 위치(GPS)가 꺼져 있으면 출장 출근이 되지 않습니다.</div>
+  <div class="row" style="margin-top:14px;gap:8px"><span class="sp"></span><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="tripGo()">출장 출근하기</button></div></div>`);
+  setTimeout(()=>{const e=document.getElementById('tp_place');if(e)e.focus();},50);if(typeof gpsWarm==='function')gpsWarm();}
+function tripGo(){const pl=(document.getElementById('tp_place').value||'').trim(),wy=(document.getElementById('tp_why').value||'').trim();
+  if(pl.length<2){toast('출장지를 입력하세요.');return;}if(wy.length<2){toast('출장 사유(업무 내용)를 입력하세요.');return;}
+  closeModal();doCheck('in','',false,{place:pl,reason:wy});}
+const tripTag=c=>c&&c.via==='trip'?' <span class="chip c-man" title="외부 출장 출근">🚗출장</span>':'';
 function scanBtn(kind){return `<button class="btn ${kind==='out'?'ok':'pri'} big" style="margin-top:12px" onclick="scanOpen()">📷 QR 촬영하고 ${kind==='out'?'퇴근하기':'출근하기'}</button><p class="mute" style="margin:6px 0 0">카메라가 열리면 휴게쉼터 QR을 비추세요. 휴대폰 기본 카메라로 찍어도 됩니다.</p>`;}
 
 /* ---------- 퇴근 전에 작업 내역 확인 (퇴근하면 자동 승인 요청) ---------- */
@@ -3188,9 +3203,10 @@ async function reOutSave(date){const t=document.getElementById('ro_t').value,od=
   window.liveBusy(true);let res;try{res=await window.liveCall('reOut',{date,time:t,outDate:od});}catch(e){window.liveBusy(false);window.liveFail(e);return;}window.liveBusy(false);
   if(res&&res.error){toast(res.error);return;}if(res.state)window.liveApply(res.state);closeModal();render();
   if(res.submitted)toast('퇴근 '+t+' 다시 기록 · 공수 승인 요청 완료');else alertBox('퇴근 시각은 다시 기록되었습니다',['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 「다시 승인 요청」을 눌러 주세요.'].concat(res.errors||[]));}
-async function doCheck(kind,dateArg,noConf){
+async function doCheck(kind,dateArg,noConf,trip){
   if(kind==='out'&&!noConf&&!(await outConfirm()))return;
   const date=dateArg||today();const spot=qr&&qr.spot?qr.spot:null;
+  if(kind==='in'&&!spot&&trip){toast('데모 화면에서는 출장 출근을 기록하지 않습니다.');return;}
   if(kind==='out'&&!(await outPrecheck(date)))return;
   if(kind==='in'&&!spot){alertBox('출근은 QR 촬영으로 하세요',['현장(쉼터)에 붙어 있는 지정 QR 코드를 휴대폰 카메라로 촬영하면 출근 화면이 열립니다.','퇴근은 어디서나 버튼으로 할 수 있습니다.']);return;}
   openModal(`<div class="mbox" style="max-width:320px;text-align:center"><div class="spin"></div>위치 확인 중…</div>`);
@@ -5536,7 +5552,7 @@ function injDashCard(){const cut=daysAgo(7),L=S.records.filter(r=>r.date>=cut&&r
   <button class="btn sm" onclick="event.stopPropagation();ui.f={from:daysAgo(14),to:today(),status:'pending',proj:'',aff:'',q:''};aTab('appr')">승인 대기 처리 →</button><button class="btn sm">${op?'접기 ▲':'펼치기 ▼'}</button></div>`;
   if(op){h+=`<div class="tbl-wrap" style="margin-top:8px"><table><tr><th>이름</th><th>소속</th><th>출근</th><th>퇴근</th><th>상태</th></tr>`;
   if(!recs.length)h+=`<tr><td colspan="5" class="mute">오늘 출근 기록이 없습니다.</td></tr>`;
-  recs.forEach(r=>{const w=W(r.workerId);h+=`<tr><td>${esc(w.name)}</td><td>${esc(affLabel(w))}</td><td>${r.checkIn?r.checkIn.time:'-'}</td><td>${r.checkOut?r.checkOut.time:'-'}</td><td>${statusChip(r.status)}</td></tr>`;});
+  recs.forEach(r=>{const w=W(r.workerId);h+=`<tr><td>${esc(w.name)}</td><td>${esc(affLabel(w))}</td><td>${r.checkIn?r.checkIn.time:'-'}${tripTag(r.checkIn)}</td><td>${r.checkOut?r.checkOut.time:'-'}</td><td>${statusChip(r.status)}</td></tr>`;});
   h+=`</table></div>`;
   h+=`<p class="mute" style="margin:12px 0 4px">아직 출근 기록이 없는 재직자 (${notIn.length}명)</p>${notIn.map(w=>`<span class="chip">${esc(w.name)} · ${w.type}</span>`).join('')||'<span class="mute">없음</span>'}`;}
   h+=`</div>`;
@@ -5572,7 +5588,7 @@ function aAppr(){
   if(!rs.length)h+=`<tr><td colspan="9" class="mute">조건에 맞는 기록이 없습니다.</td></tr>`;
   rs.forEach(r=>{const w=W(r.workerId);
     const flags=(r.manual?'<span class="chip c-man">사후/수기</span>':'')+(r.history.some(x=>x.action==='관리자 수정')?'<span class="chip">관리자 수정</span>':'');
-    h+=`<tr><td><input type="checkbox" ${r.status==='pending'?'':'disabled'} ${ui.sel.has(r.id)?'checked':''} onchange="tSel('${r.id}',this.checked)"></td><td style="white-space:nowrap">${fmtDayS(r.date)}</td><td style="white-space:nowrap"><b>${esc(w.name)}</b><div class="mute">${esc(affLabel(w))} · ${w.type}</div></td><td>${r.checkIn?r.checkIn.time:'-'}</td><td style="white-space:nowrap">${r.checkOut?r.checkOut.time+(r.checkOut.date!==r.date?' (익일)':''):'-'}</td><td style="min-width:260px">${r.entries.map(e=>`<div>${esc(pname(e.projectId))} <b>${entryG(e)?fmtG(entryG(e)):'?'}</b><br><span class="mute">└ ${esc(e.desc)||'(내용 없음)'}</span></div>`).join('')||'-'}</td><td><b>${fmtG(totalG(r))}</b></td><td>${statusChip(r.status)}${flags}</td><td><button class="btn sm" onclick="aOpen('${r.id}')">상세·수정</button></td></tr>`;});
+    h+=`<tr><td><input type="checkbox" ${r.status==='pending'?'':'disabled'} ${ui.sel.has(r.id)?'checked':''} onchange="tSel('${r.id}',this.checked)"></td><td style="white-space:nowrap">${fmtDayS(r.date)}</td><td style="white-space:nowrap"><b>${esc(w.name)}</b><div class="mute">${esc(affLabel(w))} · ${w.type}</div></td><td>${r.checkIn?r.checkIn.time:'-'}${tripTag(r.checkIn)}</td><td style="white-space:nowrap">${r.checkOut?r.checkOut.time+(r.checkOut.date!==r.date?' (익일)':''):'-'}</td><td style="min-width:260px">${r.entries.map(e=>`<div>${esc(pname(e.projectId))} <b>${entryG(e)?fmtG(entryG(e)):'?'}</b><br><span class="mute">└ ${esc(e.desc)||'(내용 없음)'}</span></div>`).join('')||'-'}</td><td><b>${fmtG(totalG(r))}</b></td><td>${statusChip(r.status)}${flags}</td><td><button class="btn sm" onclick="aOpen('${r.id}')">상세·수정</button></td></tr>`;});
   return h+'</table></div></div>';
 }
 function tSel(id,on){on?ui.sel.add(id):ui.sel.delete(id);render();}
@@ -7156,6 +7172,15 @@ const I18=[
 ['관리자 화면','Màn hình quản lý','Admin screen'],
 ['출근하기 전입니다','Chưa vào ca','Not clocked in yet'],
 ['📷 QR 촬영하고 출근하기','📷 Quét QR để vào ca','📷 Scan QR to clock in'],
+['🚗 외부 출장 출근 (QR 없이)','🚗 Vào ca đi công tác (không cần QR)','🚗 Business trip clock-in (no QR)'],
+['외부 지역 출장으로 지정 QR이 없을 때만 누르세요. 출장지와 사유를 적고, 휴대폰 위치가 함께 기록됩니다.','Chỉ bấm khi đi công tác ở nơi không có mã QR. Nhập nơi công tác và lý do; vị trí điện thoại sẽ được ghi lại.','Use only when on a business trip with no designated QR. Enter the place and reason; your phone location is recorded.'],
+['🚗 외부 출장 출근','🚗 Vào ca đi công tác','🚗 Business trip clock-in'],
+['출장지','Nơi công tác','Trip location'],
+['출장 사유 (업무 내용)','Lý do công tác (nội dung công việc)','Reason (work description)'],
+['휴대폰 위치(GPS)가 꺼져 있으면 출장 출근이 되지 않습니다.','Nếu tắt vị trí (GPS) trên điện thoại thì không thể vào ca công tác.','Trip clock-in will not work if phone location (GPS) is off.'],
+['출장 출근하기','Vào ca công tác','Clock in (trip)'],
+['출장지를 입력하세요.','Hãy nhập nơi công tác.','Enter the trip location.'],
+['출장 사유(업무 내용)를 입력하세요.','Hãy nhập lý do công tác.','Enter the trip reason.'],
 ['📷 QR 촬영하고 퇴근하기','📷 Quét QR để tan ca','📷 Scan QR to clock out'],
 ['카메라가 열리면 휴게쉼터 QR을 비추세요. 휴대폰 기본 카메라로 찍어도 됩니다.','Khi camera mở, hãy hướng vào mã QR ở khu nghỉ ngơi. Cũng có thể dùng camera mặc định của điện thoại.','When the camera opens, point it at the rest-area QR. You can also use your phone\'s normal camera.'],
 ['📷 QR 촬영','📷 Quét QR','📷 Scan QR'],
@@ -7529,19 +7554,20 @@ function ckBar(t,kind){let b=document.getElementById('ckbar');if(!t){if(b)b.remo
    +'<div class="ckmsg" style="font-size:19px;font-weight:700;color:'+col+';line-height:1.45"></div>'
    +(wait?'<div style="margin-top:14px;padding:10px 12px;border-radius:10px;background:#fff4e5;color:#9a3412;font-weight:700;font-size:15px;line-height:1.45">아무것도 누르지 마세요<br>화면을 끄거나 앱을 닫지 마세요</div><div style="margin-top:8px;font-size:13px;color:#666">완료 표시가 나올 때까지 기다려 주세요</div>':'<div style="margin-top:12px;font-size:13px;color:#666">화면을 누르면 닫힙니다</div>')+'</div>';
   b.querySelector('.ckmsg').textContent=String(t).replace(/^[📍📤✅⚠]\uFE0F?\s*/u,'').replace(' (화면을 닫지 마세요)','');}
-doCheck=async function(kind,dateArg,noConf){
+doCheck=async function(kind,dateArg,noConf,trip){
   if(CK_ON){toast('보내는 중입니다. 잠시만 기다려 주세요.');return;}
   let sf=null;if(kind==='out'&&!noConf){sf=await outConfirm();if(!sf)return;}   /* 잘못 눌러 퇴근되는 것 방지 + 무사고 확인 */
   const raw=qr&&qr.raw?qr.raw:'';
-  if(kind==='in'&&!raw){alertBox('출근은 QR 촬영으로 하세요',['현장(쉼터)에 붙어 있는 지정 QR 코드를 휴대폰 카메라로 촬영하면 출근 화면이 열립니다.','퇴근은 어디서나 버튼으로 할 수 있습니다.']);return;}
+  if(kind==='in'&&!raw&&!trip){alertBox('출근은 QR 촬영으로 하세요',['현장(쉼터)에 붙어 있는 지정 QR 코드를 휴대폰 카메라로 촬영하면 출근 화면이 열립니다.','퇴근은 어디서나 버튼으로 할 수 있습니다.']);return;}
   if(kind==='out'&&!(await outPrecheck(dateArg||today())))return;
   if(false&&!raw&&S.settings.qrOnly){alertBox('QR 코드로 출퇴근하세요',['휴게쉼터에 붙어 있는 QR 코드를 휴대폰 카메라로 촬영하면 출퇴근 화면이 열립니다.']);return;}
   const lb0=kind==='in'?'출근':'퇴근',tap=hm(new Date());CK_ON=true;
   ckBar(`📍 ${lb0} ${tap} — 위치 확인 중…`);
   const pos=await getPos();
+  if(trip&&pos.lat==null){CK_ON=false;ckBar('');GPS_LAST=null;alertBox('출장 출근을 할 수 없습니다',['휴대폰 위치(GPS)를 확인하지 못했습니다.','휴대폰 설정에서 위치를 켜고, 브라우저의 위치 권한을 "허용"으로 바꾼 뒤 「외부 출장 출근」을 다시 눌러 주세요.']);return;}
   ckBar(`📤 ${lb0} ${tap} — 기록 보내는 중… (화면을 닫지 마세요)`);let r;
   const rec=recOf(ses.uid,dateArg||today());if(kind==='out'){clearTimeout(syncT);syncT=null;await syncP;}
-  try{r=await call('check',{kind,date:dateArg||'',qr:raw,lat:pos.lat,lng:pos.lng,acc:pos.acc,entries:kind==='out'&&rec?rec.entries:undefined,autoEnd:kind==='out',submit:kind==='out',safe:sf&&sf.safe||'',safeNote:sf&&sf.note||''});}
+  try{r=await call('check',{kind,date:dateArg||'',qr:raw,trip:trip||undefined,lat:pos.lat,lng:pos.lng,acc:pos.acc,entries:kind==='out'&&rec?rec.entries:undefined,autoEnd:kind==='out',submit:kind==='out',safe:sf&&sf.safe||'',safeNote:sf&&sf.note||''});}
   catch(e){CK_ON=false;ckBar(`⚠ ${lb0} 기록을 보내지 못했습니다 — 다시 눌러 주세요`,'bad');setTimeout(()=>ckBar(''),6000);failMsg(e);return;}
   CK_ON=false;
   const lb=kind==='in'?'출근':'퇴근';
