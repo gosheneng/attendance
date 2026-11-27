@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27w-->
+<!DOCTYPE html><!--v:2026.11.27x-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27w';
+const APP_VER='2026.11.27x';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3204,6 +3204,17 @@ async function reOutSave(date){const t=document.getElementById('ro_t').value,od=
   window.liveBusy(true);let res;try{res=await window.liveCall('reOut',{date,time:t,outDate:od});}catch(e){window.liveBusy(false);window.liveFail(e);return;}window.liveBusy(false);
   if(res&&res.error){toast(res.error);return;}if(res.state)window.liveApply(res.state);closeModal();render();
   if(res.submitted)toast('퇴근 '+t+' 다시 기록 · 공수 승인 요청 완료');else alertBox('퇴근 시각은 다시 기록되었습니다',['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 「다시 승인 요청」을 눌러 주세요.'].concat(res.errors||[]));}
+function reIn(date){const r=recOf(ses.uid,date);if(!r||!r.checkIn)return;const cur=r.checkIn.time;
+  openModal(`<div class="mbox" style="max-width:380px"><h3 style="margin-top:0">출근 시각 다시 기록</h3><p class="mute" style="margin-top:0">지금 기록: ${esc(cur)}${r.checkIn.real&&r.checkIn.real!==cur?' (처음 '+esc(r.checkIn.real)+')':''} · 퇴근 ${esc(r.checkOut?r.checkOut.time:'-')}</p>
+  <label class="f"><span>실제 출근 시각 <small class="mute">${esc(fmtDayS(date))}</small></span><input id="ri_t" type="time" value="${esc(cur)}"></label>
+  <p class="mute" style="font-size:12px">저장하면 이전 시각은 처리이력에 남고, 공수가 다시 승인 요청됩니다. 위치는 처음 기록한 그대로 둡니다.</p>
+  <div class="row" style="justify-content:flex-end;gap:6px"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="reInSave('${date}')">저장</button></div></div>`);}
+async function reInSave(date){const t=document.getElementById('ri_t').value;if(!/^\d{2}:\d{2}$/.test(t)){toast('출근 시각을 고르세요.');return;}
+  const r0=recOf(ses.uid,date);if(r0&&r0.checkOut&&(r0.checkOut.date||date)===date&&toMin(t)>=toMin(r0.checkOut.time)){toast('출근 시각이 퇴근 시각('+r0.checkOut.time+')보다 빨라야 합니다.');return;}
+  if(!LIVE){const r=r0;r.history.push({at:stamp(),by:ses.uid,action:'출근 시각 다시 기록',detail:'이전 '+r.checkIn.time+' → '+t});if(!r.checkIn.real)r.checkIn.real=r.checkIn.time;r.checkIn.time=t;r.status='pending';save();closeModal();render();toast('출근 '+t+' 다시 기록 · 승인 요청');return;}
+  window.liveBusy(true);let res;try{res=await window.liveCall('reIn',{date,time:t});}catch(e){window.liveBusy(false);window.liveFail(e);return;}window.liveBusy(false);
+  if(res&&res.error){toast(res.error);return;}if(res.state)window.liveApply(res.state);closeModal();render();
+  if(res.submitted)toast('출근 '+t+' 다시 기록 · 공수 승인 요청 완료');else alertBox('출근 시각은 다시 기록되었습니다',['승인 요청은 아직 하지 못했습니다. 아래를 고친 뒤 「다시 승인 요청」을 눌러 주세요.'].concat(res.errors||[]));}
 async function doCheck(kind,dateArg,noConf,trip){
   if(kind==='out'&&!noConf&&!(await outConfirm()))return;
   const date=dateArg||today();const spot=qr&&qr.spot?qr.spot:null;
@@ -3248,7 +3259,7 @@ async function doCheck(kind,dateArg,noConf,trip){
 function entriesCard(r){
   const ed=editable(r);
   let h=`<div class="card"><div class="row" style="margin-bottom:8px"><h3 style="margin:0">작업 내역</h3><span class="sp"></span>${statusChip(r.status)}</div>`;
-  if(r.status==='rejected')h+=`<div class="badbox"><b>반려 사유:</b> ${esc(r.rejectReason)}<br>수정한 뒤 다시 승인 요청해 주세요.${r.checkOut&&r.date>=addDaysC(today(),-2)?`<div style="margin-top:8px"><button class="btn sm" onclick="reOut('${r.date}')">🔄 퇴근 시각 다시 기록</button> <span class="mute" style="font-size:12px">지금 퇴근 ${esc(r.checkOut.time)}</span></div>`:''}</div>`;
+  if(r.status==='rejected')h+=`<div class="badbox"><b>반려 사유:</b> ${esc(r.rejectReason)}<br>수정한 뒤 다시 승인 요청해 주세요.${r.checkIn&&r.date>=addDaysC(today(),-2)?`<div style="margin-top:8px"><button class="btn sm" onclick="reIn('${r.date}')">🔄 출근 시각 다시 기록</button> <span class="mute" style="font-size:12px">지금 출근 ${esc(r.checkIn.time)}</span></div>`:''}${r.checkOut&&r.date>=addDaysC(today(),-2)?`<div style="margin-top:8px"><button class="btn sm" onclick="reOut('${r.date}')">🔄 퇴근 시각 다시 기록</button> <span class="mute" style="font-size:12px">지금 퇴근 ${esc(r.checkOut.time)}</span></div>`:''}</div>`;
   if(r.status==='pending')h+=`<div class="infobox">관리자 승인 대기 중입니다. 수정이 필요하면 관리자에게 반려를 요청하세요.</div>`;
   if(r.status==='approved')h+=`<div class="infobox">승인된 기록입니다 (${esc(r.decidedAt)}).</div>`;
   h+=entriesEditor(r.entries,'w',ed);
@@ -7491,7 +7502,7 @@ const I18P=[
 ['알림 켜는 방법','Cách bật thông báo','How to turn on'],['휴대폰 알림','Thông báo điện thoại','Phone notifications'],['알림 켜기','Bật thông báo','Turn on'],['시험 알림','Thông báo thử','Test notification'],['푸는 방법','Cách mở lại','How to fix'],['차단됨','Bị chặn','Blocked'],
 ['퇴근하면 공수가 바로 승인 요청됩니다.','Khi tan ca, số công sẽ được gửi duyệt ngay.','Clocking out submits your man-days for approval.'],['에 퇴근할까요?',' — tan ca bây giờ?',' — clock out now?'],
 ['으로 다시 기록할까요?',' — ghi lại giờ tan ca?',' — record clock-out again?'],['퇴근 시각을 지금 ','Giờ tan ca: ','Clock-out time: '],['이전 퇴근 시각은 처리이력에 남습니다.','Giờ cũ vẫn được lưu trong lịch sử.','The previous time stays in the history.'],
-['퇴근 시각 다시 기록','Ghi lại giờ tan ca','Record clock-out again'],['실제 퇴근 시각','Giờ tan ca thực tế','Actual clock-out time'],['퇴근 날짜','Ngày tan ca','Clock-out date'],['지금 퇴근 ','Giờ tan ca hiện tại ','Current clock-out '],['다시 기록','Ghi lại','Record again'],
+['퇴근 시각 다시 기록','Ghi lại giờ tan ca','Record clock-out again'],['출근 시각 다시 기록','Ghi lại giờ vào ca','Record clock-in again'],['실제 출근 시각','Giờ vào ca thực tế','Actual clock-in time'],['지금 출근 ','Giờ vào ca hiện tại ','Current clock-in '],['실제 퇴근 시각','Giờ tan ca thực tế','Actual clock-out time'],['퇴근 날짜','Ngày tan ca','Clock-out date'],['지금 퇴근 ','Giờ tan ca hiện tại ','Current clock-out '],['다시 기록','Ghi lại','Record again'],
 [' 공수',' công',' man-days'],['공수 합계 ','Tổng công ','Total man-days '],['공수를 고르세요.','hãy chọn số công.','select man-days.'],
 ['(출근 당일)','(cùng ngày vào ca)','(same day)'],['(다음날)','(hôm sau)','(next day)'],['다음날 ','Hôm sau ','Next day '],
 ['담당자','Phụ trách','Contact'],
