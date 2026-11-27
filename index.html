@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27b-->
+<!DOCTYPE html><!--v:2026.11.27c-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27b';
+const APP_VER='2026.11.27c';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -5534,8 +5534,14 @@ const MENU_KW={paydue:'결재 완료 지급 대기 선지급 이체 대기 경�
 function menuHits(q){q=String(q||'').trim().toLowerCase();if(!q)return '<span class="mute" style="font-size:13px">메뉴 이름이나 하는 일을 입력하면 바로 갈 수 있는 메뉴가 나옵니다. (Enter = 첫 번째 메뉴로 이동)</span>';const L=(ui._menus||[]).filter(m=>m.k!=='dash'&&(!q||(m.l+' '+m.g+' '+(MENU_KW[m.k]||'')).toLowerCase().indexOf(q)>=0));
   if(!L.length)return '<span class="mute">찾는 메뉴가 없습니다.</span>';return L.map(m=>`<button class="stab" onclick="aTab('${m.k}')">${esc(m.l)}${m.g!==m.l?` <span class="mute" style="font-size:12px">${esc(m.g)}</span>`:''}</button>`).join('');}
 function menuSearch(q){const e=document.getElementById('msr');if(e)e.innerHTML=menuHits(q);}
-function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return signDash()+pushCard(1)+bdayDash()+menuSearchCard()+todoDash()+extTodoDash()+(calDash())+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+injDashCard()+(P.indexOf('notice')>=0?noticeDashCard():'')+(P.indexOf('quals')>=0?hReqCard():'')+(P.indexOf('quals')>=0?qualDashCard():'')+aDash();}finally{ui._dashCar=0;}}
+function aDash(){if(!ui._dashCar){ui._dashCar=1;try{const P=permsOf(W(ses.uid));return signDash()+pushCard(1)+bdayDash()+menuSearchCard()+todoDash()+extTodoDash()+(calDash())+(P.indexOf('gisung')>=0?taxDash():'')+(P.indexOf('car')>=0?carAlertCard():'')+injDashCard()+missOutCard()+(P.indexOf('notice')>=0?noticeDashCard():'')+(P.indexOf('quals')>=0?hReqCard():'')+(P.indexOf('quals')>=0?qualDashCard():'')+aDash();}finally{ui._dashCar=0;}}
 /* 오늘 업무: 최근 7일 부상 보고 */
+/* 퇴근 누락: 지난 14일 중 출근만 있고 퇴근 기록이 없는 날 (오늘은 위 '오늘 미퇴근'에서 봄) */
+function missOutCard(){const td=today(),cut=daysAgo(14),L=S.records.filter(r=>r.date<td&&r.date>=cut&&r.checkIn&&!r.checkOut).sort((a,b)=>b.date.localeCompare(a.date)||((W(a.workerId)||{}).name||'').localeCompare((W(b.workerId)||{}).name||'','ko'));if(!L.length)return '';
+  const op=!!ui.missOpen,show=op?L:L.slice(0,5);
+  return `<div class="card" style="border-left:4px solid var(--warn,#d97706)"><div class="row" style="gap:8px;flex-wrap:wrap"><h3 style="margin:0">⏰ 퇴근 누락 (지난 14일)</h3><span class="chip st-pend">${L.length}건</span><span class="sp"></span>${L.length>5?`<button class="btn sm" onclick="ui.missOpen=!ui.missOpen;render()">${op?'접기 ▲':'전체 보기 ▼'}</button>`:''}</div>
+  <p class="mute" style="margin:6px 0 8px">출근만 하고 퇴근 기록이 없는 날입니다. 근로자에게 퇴근 시각을 확인한 뒤 「상세·수정」에서 넣어 주세요. 근로자도 「출퇴근」 화면에서 날짜를 그날로 바꿔 직접 퇴근을 넣을 수 있습니다 (최근 14일).</p>
+  <div class="tbl-wrap"><table><tr><th>날짜</th><th>이름</th><th>소속</th><th>출근</th><th></th></tr>${show.map(r=>{const w=W(r.workerId)||{};return `<tr><td>${fmtDayS(r.date)}</td><td>${esc(w.name||'')}</td><td>${esc(affLabel(w))}</td><td>${r.checkIn.time||'-'}${tripTag(r.checkIn)}</td><td><button class="btn sm" onclick="aOpen('${r.id}')">상세·수정</button></td></tr>`;}).join('')}</table></div></div>`;}
 function injDashCard(){const cut=daysAgo(7),L=S.records.filter(r=>r.date>=cut&&r.checkOut&&r.checkOut.safe==='N').sort((a,b)=>b.date.localeCompare(a.date));if(!L.length)return '';
   return `<div class="card" style="border-left:4px solid var(--bad)"><h3 style="margin:0">⚠ 부상 보고 (최근 7일)</h3>${L.map(r=>{const w=W(r.workerId)||{};return `<div style="margin-top:6px"><b>${esc(w.name||'')}</b> ${fmtDayS(r.date)} 퇴근 ${esc(r.checkOut.time)} — ${esc(r.checkOut.safeNote||'(내용 없음)')}</div>`;}).join('')}<p class="mute" style="font-size:12px;margin:6px 0 0">퇴근할 때 근로자가 「다친 곳이 있습니다」를 고른 기록입니다. 산재 처리 여부를 확인하세요.</p></div>`;}
 
