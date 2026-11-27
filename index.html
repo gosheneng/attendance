@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27z-->
+<!DOCTYPE html><!--v:2026.11.27z2-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27z';
+const APP_VER='2026.11.27z2';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3098,7 +3098,7 @@ function vDay(isToday){
     if(!inGps||!outGps){
       h+=`<div class="warnbox">버튼으로 기록하지 못한 시각을 직접 입력합니다. 위치정보 없이 저장되며 관리자 확인 후 승인됩니다.</div><div class="grid2 g2fixed">`;
       const wd=curDate(),od=r&&r.checkOut&&r.checkOut.date?r.checkOut.date:wd;
-      if(!inGps)h+=`<label class="f" style="grid-column:1/-1;max-width:calc(50% - 6px)"><span>출근 시각 <small class="mute">${esc(fmtDayS(wd))}</small></span>${tPick(r&&r.checkIn?r.checkIn.time:'',"v=>setManual('in',v)",{def:'07:30',dis:!ed})}</label>`;
+      if(!inGps)h+=`<label class="f"><span>출근 날짜</span><input value="${esc(fmtDayS(wd))}" readonly tabindex="-1" style="background:var(--bg,#f5f6f8);color:inherit"></label><label class="f"><span>출근 시각</span>${tPick(r&&r.checkIn?r.checkIn.time:'',"v=>setManual('in',v)",{def:'07:30',dis:!ed})}</label>`;   /* 출근 날짜·시각 한 줄 (2026-11-27 요청) */
       if(!outGps){const nd=nextDay(wd),on=outNext(r);
         h+=`<label class="f"><span>퇴근 날짜</span><select ${ed?'':'disabled'} onchange="setManual('outDay',this.value)"><option value="same" ${on?'':'selected'}>${esc(fmtDayS(wd))} (출근 당일)</option><option value="next" ${on?'selected':''}>${esc(fmtDayS(nd))} (다음날)</option></select></label>`;
         h+=`<label class="f"><span>퇴근 시각 <small class="mute">${on?'<b style="color:var(--warn)">다음날 '+esc(fmtDayS(nd))+'</b>':esc(fmtDayS(wd))}</small></span>${tPick(r&&r.checkOut?r.checkOut.time:'',"v=>setManual('out',v)",{dis:!ed})}</label>`;}
@@ -7471,7 +7471,7 @@ const I18=[
 ['어디서나 버튼을 누르면 지금 시각과 위치가 기록됩니다. (위치가 꺼져 있어도 기록됩니다)','Bấm nút ở bất cứ đâu để ghi giờ và vị trí hiện tại. (Vẫn ghi khi tắt vị trí)','Tap the button anywhere to record the time and location. (Recorded even if location is off)'],
 ['공수 (0.5 단위)','Công (đơn vị 0.5)','Man-days (0.5 steps)'],['— 공수 선택 —','— Chọn công —','— Select man-days —'],['공수','Công','Man-days'],['공수 합계','Tổng công','Total man-days'],
 ['+ 작업 추가 (다른 공사)','+ Thêm công việc (công trình khác)','+ Add task (another project)'],['이번 달 승인 공수','Công đã duyệt tháng này','Approved man-days this month'],['승인 대기 공수','Công chờ duyệt','Man-days pending'],
-['출퇴근','Chấm công','Attendance'],['📅 출근 날짜','📅 Ngày vào ca','📅 Clock-in date'],['퇴근 날짜','Ngày tan ca','Clock-out date'],
+['출퇴근','Chấm công','Attendance'],['📅 출근 날짜','📅 Ngày vào ca','📅 Clock-in date'],['출근 날짜','Ngày vào ca','Clock-in date'],['퇴근 날짜','Ngày tan ca','Clock-out date'],
 ['💡 지난 날짜를 신청하려면?','💡 Muốn đăng ký ngày đã qua?','💡 Need to submit a past day?'],['💡 지난 날짜 신청','💡 Đăng ký ngày đã qua','💡 Past day'],['출장·버튼 누락 등은 위 날짜를 바꿔 입력하세요 (최근 14일)','Công tác, quên bấm…: đổi ngày ở trên rồi nhập (14 ngày gần nhất)','Business trip, missed button, etc.: change the date above (last 14 days)'],['📝 수기 신청 중','📝 Đang đăng ký thủ công','📝 Manual entry'],['출장·버튼 누락 등 지난 날은 위 「📅 출근 날짜」를 눌러 날짜를 바꿔 입력하세요 (최근 14일)','Ngày đã qua (công tác, quên bấm…): bấm «📅 Ngày vào ca» ở trên để đổi ngày rồi nhập (trong 14 ngày gần nhất)','For past days (business trip, missed button, etc.) tap «📅 Clock-in date» above to change the date (last 14 days)'],['지난 날짜는 출퇴근 시각을 직접 입력하고 관리자 승인을 받습니다. 반려된 기록도 날짜를 골라 고칩니다.','Ngày đã qua: tự nhập giờ vào/ra ca và chờ quản lý duyệt. Bản ghi bị từ chối cũng chọn ngày để sửa.','For past days, enter clock-in/out times yourself and get manager approval. Rejected records are also fixed by picking the date.'],['📝 지난 날짜 수기 신청 중','📝 Đang đăng ký thủ công ngày đã qua','📝 Submitting a past day manually'],['기본은 오늘(한국 날짜). 출장·버튼 누락 등 지난 날은 날짜를 바꿔 입력하세요 (최근 14일)','Mặc định là hôm nay (giờ Hàn Quốc). Ngày đã qua (công tác, quên bấm…) thì đổi ngày để nhập (trong 14 ngày gần nhất)','Defaults to today (Korea time). For past days (business trip, missed button, etc.) change the date and enter times (last 14 days)'],
 ['지난 날짜는 출퇴근 시각을 직접 입력하고 관리자 승인을 받습니다. 반려된 기록도 날짜를 골라 고칩니다.','Ngày đã qua: nhập giờ vào/tan ca bằng tay và chờ quản lý duyệt. Bản ghi bị trả lại cũng sửa bằng cách chọn ngày.','For past days, enter clock-in/out times manually for admin approval. Returned records are also fixed by picking the date.'],
 ['퇴근 시각이 출근 시각보다 빠릅니다. 다음날 퇴근했다면 퇴근 날짜를 「다음날」로 바꾸세요.','Giờ tan ca sớm hơn giờ vào ca. Nếu tan ca hôm sau, hãy đổi Ngày tan ca thành 「Hôm sau」.','Clock-out is earlier than clock-in. If you clocked out the next day, set Clock-out date to "Next day".'],
