@@ -1,4 +1,4 @@
-<!DOCTYPE html><!--v:2026.11.27z3-->
+<!DOCTYPE html><!--v:2026.11.28a-->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -2800,7 +2800,7 @@ function render(){
 }
 async function resetDemo(){if(await confirmBox('데모 데이터를 처음 상태로 되돌릴까요?\n입력한 내용은 모두 지워집니다.','초기화')){S=seed();save();ses.uid=null;ui.asWorker=false;render();toast('초기화했습니다');}}
 
-const APP_VER='2026.11.27z3';
+const APP_VER='2026.11.28a';
 /* 새 버전 자동 확인: 화면을 다시 볼 때·10분마다 서버의 화면 파일 버전을 보고 다르면 새로고침 안내 */
 (function(){let last=0,shown=false;const chk=()=>{if(shown||Date.now()-last<60000||!/^https?:/.test(location.protocol))return;last=Date.now();
   fetch(location.pathname+'?vchk='+Date.now(),{cache:'no-store',headers:{Range:'bytes=0-120'}}).then(r=>r.ok?r.text():'').then(t=>{const m=t&&t.slice(0,400).match(/<!--v:([^-]+?)-->/);if(!m||m[1]===APP_VER)return;shown=true;
@@ -3612,7 +3612,8 @@ function pushEnv(){const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(
   return {ios,sa,sup,iosOld,inapp};}
 async function pushRefresh(){const E=pushEnv();let st='off';
   if(!E.sup)st='nosup';else if(Notification.permission==='denied')st='denied';
-  else{try{const r=await navigator.serviceWorker.getRegistration();const sb=r&&await r.pushManager.getSubscription();st=sb?'on':'off';}catch(e){st='off';}}
+  else{try{const r=await navigator.serviceWorker.getRegistration();const sb=r&&await r.pushManager.getSubscription();st=sb?'on':'off';
+    if(sb){let c=null;try{c=await window.liveCall('push_chk',{endpoint:sb.endpoint});}catch(e){}if(c&&c.on===false){st='off';ui.pushMoved=1;try{await sb.unsubscribe();}catch(e){}}}}catch(e){st='off';}}   /* 다른 앱에서 알림을 다시 켜서 여기 알림이 해제된 경우 */
   if(ui.pushSt!==st){ui.pushSt=st;render();}}
 const isMobileDev=()=>{const ua=navigator.userAgent||'';return /Android|iPhone|iPad|iPod|Mobile/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);};
 function pushCard(adm){if(!LIVE||!isMobileDev())return '';   /* 휴대폰 알림 카드는 휴대폰에서만 */if(!ui.pushChk){ui.pushChk=1;setTimeout(pushRefresh,0);}
@@ -3621,7 +3622,7 @@ function pushCard(adm){if(!LIVE||!isMobileDev())return '';   /* 휴대폰 알림
     :st==='denied'?`<span class="chip st-bad">차단됨</span> <button class="btn sm" onclick="pushHelp('denied')">푸는 방법</button>`
     :st==='nosup'?`<button class="btn sm pri" onclick="pushHelp()">알림 켜는 방법</button>`:`<button class="btn sm pri" onclick="pushOn()">알림 켜기</button>`;
   const chip=st==='on'?'<span class="chip st-ok">켜짐</span>':st==='denied'?'<span class="chip st-bad">차단됨</span>':'<span class="chip">꺼짐</span>';
-  return `<details class="card" style="padding:12px 16px" ${foldOpen('push')?'open':''} ontoggle="foldSet('push',this.open)"><summary style="display:flex;gap:6px;align-items:center;font-weight:700"><span>📱 휴대폰 알림</span>${chip}<span class="sp"></span></summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${btn}</div><div class="mute" style="font-size:12px;margin-top:6px">${what}을 휴대폰 알림으로 받습니다.${E.ios&&!E.sa?' (아이폰은 홈 화면에 추가한 앱에서만)':''}</div></details>`;}
+  return `<details class="card" style="padding:12px 16px" ${foldOpen('push')?'open':''} ontoggle="foldSet('push',this.open)"><summary style="display:flex;gap:6px;align-items:center;font-weight:700"><span>📱 휴대폰 알림</span>${chip}<span class="sp"></span></summary><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${btn}</div><div class="mute" style="font-size:12px;margin-top:6px">${what}을 휴대폰 알림으로 받습니다.${E.ios&&!E.sa?' (아이폰은 홈 화면에 추가한 앱에서만)':''}</div>${st==='on'||st==='off'?`<div style="font-size:12.5px;margin-top:6px;padding:6px 10px;border-radius:8px;background:#f3f6fb;border:1px solid #d6e0ee">${ui.pushMoved&&st==='off'?'ℹ️ 다른 앱에서 알림을 켜서 여기 알림은 꺼졌습니다.<br>':''}${st==='on'?'🔔 알림을 누르면 <b>'+esc(pushWhere())+'</b>(으)로 열립니다.':'여기서 켜면 알림을 누를 때 <b>'+esc(pushWhere())+'</b>(으)로 열립니다.'} <a href="javascript:void 0" onclick="pushMove()" style="white-space:nowrap">다른 앱으로 옮기기</a></div>`:''}</details>`;}
 /* 접고 펴기 상태 기억 (이 기기에서만) */
 function foldOpen(k){try{const v=localStorage.getItem('fold_'+k);return v===null?true:v==='1';}catch(e){return true;}}
 function foldSet(k,o){try{localStorage.setItem('fold_'+k,o?'1':'0');}catch(e){}}
@@ -3632,7 +3633,10 @@ function pushHelp(k){const E=pushEnv();
   if(E.ios&&!E.sa)return alertBox('아이폰은 홈 화면에 추가해야 알림을 받을 수 있습니다',['① Safari 아래쪽 공유 버튼(□↑)을 누르세요.','② 「홈 화면에 추가」를 누르세요.','③ 홈 화면에 생긴 「고센」 아이콘으로 열고, 다시 로그인하세요.','④ 화면의 「📱 휴대폰 알림 → 알림 켜기」를 누르고 「허용」을 고르세요.']);
   return alertBox('이 브라우저는 알림을 지원하지 않습니다',['안드로이드는 Chrome, 아이폰은 Safari에서 열어 주세요.']);}
 function b64uU8(s){s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);const b=atob(s),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
-function devName(){const ua=navigator.userAgent||'';return (/iPhone/.test(ua)?'iPhone':/iPad/.test(ua)?'iPad':/Android/.test(ua)?'Android':/Windows/.test(ua)?'Windows PC':/Mac/.test(ua)?'Mac':'기기')+(/SamsungBrowser/.test(ua)?' 삼성인터넷':/CriOS|Chrome/.test(ua)?' Chrome':/Safari/.test(ua)?' Safari':'');}
+function devName(){const ua=navigator.userAgent||'';return (/iPhone/.test(ua)?'iPhone':/iPad/.test(ua)?'iPad':/Android/.test(ua)?'Android':/Windows/.test(ua)?'Windows PC':/Mac/.test(ua)?'Mac':'기기')+(/SamsungBrowser/.test(ua)?' 삼성인터넷':/CriOS|Chrome/.test(ua)?' Chrome':/Safari/.test(ua)?' Safari':'');+(pushEnv().sa?' 설치 앱':'');}
+/* 알림을 누르면 열리는 곳 (알림을 켠 브라우저·앱) */
+function pushWhere(){const ua=navigator.userAgent||'',sa=pushEnv().sa,b=/SamsungBrowser/.test(ua)?'삼성 인터넷':/EdgA|Edg\//.test(ua)?'Edge':/Whale/.test(ua)?'네이버 웨일':/CriOS|Chrome/.test(ua)?'크롬(Chrome)':/Safari/.test(ua)?'Safari':'이 브라우저';return sa?'홈 화면의 고센 앱 ('+b+'로 설치)':b;}
+function pushMove(){alertBox('알림을 평소 쓰는 앱으로 옮기는 방법',['알림은 「알림 켜기」를 누른 브라우저·앱으로 열립니다. 지금은 「'+pushWhere()+'」입니다.','① 평소 쓰는 방법(홈 화면의 고센 아이콘 또는 크롬 등)으로 이 시스템을 엽니다.','② 로그인 → 「📱 휴대폰 알림」 → 「알림 켜기」를 누르고 「허용」을 고릅니다.','③ 그러면 이 휴대폰의 예전 알림(예: 삼성 인터넷)은 자동으로 꺼지고, 알림을 누르면 새로 켠 곳으로 열립니다.']);}
 async function pushOn(){const E=pushEnv();if(!E.sup||E.inapp)return pushHelp();
   let perm;try{perm=await Notification.requestPermission();}catch(e){perm=Notification.permission;}
   if(perm!=='granted'){ui.pushSt=perm==='denied'?'denied':'off';render();return alertBox('알림을 허용하지 않았습니다',['알림을 받으려면 「허용」을 눌러야 합니다. 다시 「알림 켜기」를 눌러 주세요.']);}
@@ -3641,7 +3645,7 @@ async function pushOn(){const E=pushEnv();if(!E.sup||E.inapp)return pushHelp();
     let sb=await reg.pushManager.getSubscription();if(!sb)sb=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uU8(PUSH_PUB)});
     const r=await window.liveCall('push_sub',{sub:sb.toJSON(),ua:devName()});if(!r||r.error||!r.k)throw new Error((r&&r.error)||'서버 등록 실패');
     const c=await caches.open('goshen-push');await c.put('cfg',new Response(JSON.stringify({api:BOOT.api,k:r.k})));
-    window.liveBusy(false);ui.pushSt='on';render();toast('휴대폰 알림을 켰습니다. 「테스트」 버튼으로 확인해 보세요.');}
+    window.liveBusy(false);ui.pushSt='on';render();if(r.removed&&r.removed.length)alertBox('휴대폰 알림을 켰습니다',['이제 알림을 누르면 「'+pushWhere()+'」(으)로 열립니다.','이 휴대폰의 예전 알림('+r.removed.map(x=>String(x).replace(/^(Android|iPhone) ?/,'')||'다른 브라우저').join(', ')+')은 자동으로 껐습니다.','「테스트」 버튼으로 확인해 보세요.']);else toast('휴대폰 알림을 켰습니다. 「테스트」 버튼으로 확인해 보세요.');}
   catch(e){window.liveBusy(false);alertBox('알림을 켜지 못했습니다',[String(e&&e.message||e)]);}}
 async function pushOff(){window.liveBusy(true);try{const r=await navigator.serviceWorker.getRegistration();const sb=r&&await r.pushManager.getSubscription();
   if(sb){try{await window.liveCall('push_unsub',{endpoint:sb.endpoint});}catch(e){}await sb.unsubscribe();}try{await caches.delete('goshen-push');}catch(e){}}catch(e){}
@@ -6090,7 +6094,7 @@ function wGuideCard(){const e=brEnv(),L=LANG==='vi'?'vi':LANG==='en'?'en':'ko',T
     :st==='nosup'?`<button class="btn sm pri" onclick="pushHelp()">${T({ko:'알림 켜는 방법',vi:'Cách bật',en:'How to enable'})}</button>`:`<button class="btn sm pri" onclick="pushOn()">${T({ko:'알림 켜기',vi:'Bật thông báo',en:'Turn on alerts'})}</button>`;
   return warn+`<details class="card" style="padding:10px 14px;border-left:4px solid var(--pri2)" ${ui.agOpen?'open':''} ontoggle="ui.agOpen=this.open"><summary style="cursor:pointer;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap" data-notr="1">📲 ${T({ko:'앱 설치 · 휴대폰 알림 방법',vi:'Cài ứng dụng · bật thông báo',en:'Install app · phone alerts'})} ${e.sa?`<span class="chip st-ok">${T({ko:'앱 설치됨',vi:'Đã cài',en:'Installed'})}</span>`:''}${pst}<span class="sp"></span></summary>
   <div style="margin-top:8px;line-height:1.6" data-notr="1"><b>① ${T({ko:'앱으로 설치 (처음 한 번)',vi:'Cài như ứng dụng (một lần)',en:'Install as an app (once)'})}</b>${agSteps(e)}
-  <div style="margin-top:10px"><b>② ${T({ko:'휴대폰 알림 켜기',vi:'Bật thông báo điện thoại',en:'Turn on phone alerts'})}</b><div class="mute" style="font-size:12.5px">${T({ko:'반려·승인·작업 배치·연차 결과·공지를 휴대폰 알림으로 받습니다.',vi:'Nhận thông báo duyệt/từ chối, danh sách, nghỉ phép, thông báo.',en:'Get alerts for approvals, rejections, crew lists, leave and notices.'})}${E.ios&&!e.sa?' '+T({ko:'(아이폰은 홈 화면에 추가한 앱으로 열어야 켤 수 있습니다)',vi:'(iPhone: phải mở từ biểu tượng trên màn hình chính)',en:'(iPhone: open from the Home-screen icon first)'}):''}</div><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${btn}</div></div></div></details>`;}
+  <div style="margin-top:10px"><b>② ${T({ko:'휴대폰 알림 켜기',vi:'Bật thông báo điện thoại',en:'Turn on phone alerts'})}</b><div class="mute" style="font-size:12.5px">${T({ko:'반려·승인·작업 배치·연차 결과·공지를 휴대폰 알림으로 받습니다.',vi:'Nhận thông báo duyệt/từ chối, danh sách, nghỉ phép, thông báo.',en:'Get alerts for approvals, rejections, crew lists, leave and notices.'})}${E.ios&&!e.sa?' '+T({ko:'(아이폰은 홈 화면에 추가한 앱으로 열어야 켤 수 있습니다)',vi:'(iPhone: phải mở từ biểu tượng trên màn hình chính)',en:'(iPhone: open from the Home-screen icon first)'}):''}</div><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap">${btn}</div>${LIVE&&mob&&(st==='on'||st==='off')?`<div style="font-size:12.5px;margin-top:6px">${ui.pushMoved&&st==='off'?'ℹ️ '+T({ko:'다른 앱에서 알림을 켜서 여기 알림은 꺼졌습니다.',vi:'Đã bật ở ứng dụng khác nên ở đây đã tắt.',en:'Alerts were moved to another app, so they are off here.'})+'<br>':''}${st==='on'?'🔔 '+T({ko:'알림을 누르면 이곳으로 열립니다:',vi:'Bấm thông báo sẽ mở tại:',en:'Tapping an alert opens:'}):T({ko:'여기서 켜면 알림을 누를 때 이곳으로 열립니다:',vi:'Nếu bật ở đây, thông báo sẽ mở tại:',en:'If turned on here, alerts open in:'})} <b>${esc(pushWhere())}</b> <a href="javascript:void 0" onclick="pushMove()" style="white-space:nowrap">${T({ko:'다른 앱으로 옮기기',vi:'Chuyển sang ứng dụng khác',en:'Move to another app'})}</a></div>`:''}</div></div></details>`;}
 function appGuideCard(){const e=brEnv();if(e.sa&&e.good)return '';let hid=0;try{hid=Number(localStorage.getItem('agHide')||0);}catch(x){}
   const warn=e.inapp?`<div class="badbox" style="margin:6px 0">⚠ 지금 <b>카카오톡·네이버 같은 앱 안의 브라우저</b>로 열려 있습니다. 위치 기록과 알림이 제대로 되지 않습니다. 화면 오른쪽 위나 아래의 ⋮(또는 공유) 메뉴에서 「다른 브라우저로 열기」를 눌러 ${e.ios?'사파리':'크롬'}으로 여세요.</div>`
     :!e.good?`<div class="warnbox" style="margin:6px 0">⚠ 이 사이트는 <b>${e.ios?'아이폰은 사파리':'안드로이드는 크롬'}</b>에서 써야 출퇴근 위치와 알림이 제대로 됩니다. ${e.ios?'사파리':'크롬'}으로 다시 열어 주세요.</div>`:'';
